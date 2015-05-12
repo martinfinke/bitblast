@@ -1,0 +1,4 @@
+.cabal-sandbox
+*.sublime-workspace
+dist
+cabal.sandbox.config
