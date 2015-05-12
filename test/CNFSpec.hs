@@ -4,6 +4,9 @@ import Test.Hspec
 import Test.QuickCheck
 import CNF
 
+cnfWithOnlyEmptyClauses :: CNF
+cnfWithOnlyEmptyClauses = (And EmptyFalse (And EmptyFalse (And EmptyFalse EmptyTrue)))
+
 instance Arbitrary Literal where
     arbitrary = do
         randomVarName <- fmap show $ choose ('a', 'z') :: Gen String
@@ -49,6 +52,23 @@ spec = do
             property $ \lit1 lit2 -> clauseToList (Or lit1 (Or lit2 EmptyFalse)) `shouldBe` [lit1, lit2]
         it "is inverse to clauseFromList" $
             property $ \list -> (clauseToList . clauseFromList) list == list
+
+    describe "cnfFromList" $ do
+        it "doesn't add empty clauses" $ (case cnfFromList [[]] of
+                EmptyTrue -> True
+                _ -> False) `shouldBe` True
+
+    describe "cnfToList" $ do
+        it "creates the empty list from an empty CNF" $
+            cnfToList EmptyTrue `shouldBe` []
+        it "creates the empty list from a pseudo-nonempty CNF" $
+            cnfToList cnfWithOnlyEmptyClauses `shouldBe` []
+        it "creates a list with one list of literals from a CNF with one clause" $
+            property $ \clause -> cnfToList (And clause EmptyTrue) `shouldBe` [clauseToList clause]
+        it "creates a list with two lists of literals from a clause with two literals" $
+            property $ \clause1 clause2 -> cnfToList (And clause1 (And clause2 EmptyTrue)) `shouldBe` map clauseToList [clause1, clause2]
+        it "is NOT inverse to cnfFromList if there are empty clauses" $
+            (cnfToList . cnfFromList) [[]] `shouldBe` []
 
     describe "Clause Eq instance" $ do
         it "is equal for two empty clauses" $

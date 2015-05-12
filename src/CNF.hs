@@ -36,11 +36,19 @@ combine lhs "" = lhs
 combine lhs rhs = lhs ++ " " ++ andSign ++ " " ++ rhs
 
 cnfFromList :: [[Literal]] -> CNF
-cnfFromList = foldr (And . clauseFromList) EmptyTrue
+cnfFromList = foldr addIfNonEmpty EmptyTrue
+
+addIfNonEmpty :: [Literal] -> CNF -> CNF
+addIfNonEmpty [] restCnf = restCnf
+addIfNonEmpty literals restCnf = (And . clauseFromList) literals restCnf
 
 cnfToList :: CNF -> [[Literal]]
 cnfToList EmptyTrue = []
-cnfToList (And cls restCnf) = clauseToList cls : cnfToList restCnf
+cnfToList (And cls restCnf) = if null currentClause
+                                then rest
+                                else currentClause : rest
+    where currentClause = clauseToList cls
+          rest = cnfToList restCnf
 
 data Clause = Or Literal Clause
             | EmptyFalse
@@ -65,7 +73,7 @@ data Literal = Pos VarName
     deriving (Eq)
 
 instance Ord Literal where
-    lit1 <= lit2 = varFromLiteral lit1 <= varFromLiteral lit2
+    lit1 `compare` lit2 = varFromLiteral lit1 `compare` varFromLiteral lit2
 
 instance Show Literal where
     show (Pos varName) = varName
