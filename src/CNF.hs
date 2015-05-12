@@ -5,8 +5,10 @@ module CNF (CNF(..),
             clauseFromList,
             clauseToList,
             Literal(..),
+            varFromLiteral,
             VarName) where
 
+import Data.List (sort)
 
 andSign, orSign, negationSign :: String
 andSign = "&"
@@ -48,6 +50,9 @@ instance Show Clause where
     show (Or lit EmptyFalse) = show lit
     show (Or lit restClause) = show lit ++ " " ++ orSign ++ " " ++ show restClause
 
+instance Eq Clause where
+    lhs == rhs = (sort . clauseToList) lhs == (sort . clauseToList) rhs
+
 clauseFromList :: [Literal] -> Clause
 clauseFromList = foldr Or EmptyFalse
 
@@ -57,9 +62,17 @@ clauseToList (Or lit restClause) = lit : clauseToList restClause
 
 data Literal = Pos VarName
              | Neg VarName
+    deriving (Eq)
+
+instance Ord Literal where
+    lit1 <= lit2 = varFromLiteral lit1 <= varFromLiteral lit2
 
 instance Show Literal where
     show (Pos varName) = varName
     show (Neg varName) = negationSign ++ varName
+
+varFromLiteral :: Literal -> VarName
+varFromLiteral (Pos varName) = varName
+varFromLiteral (Neg varName) = varName
 
 type VarName = String
