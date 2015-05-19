@@ -90,4 +90,53 @@ spec = do
         it "is false if one term is false" $ do
             eval allFalse (Equiv [Not $ Atom (var 1), Atom (var 15), Not $ Atom (var 3)]) `shouldBe` False
 
+    describe "Formula Show instance" $ do
+        it "shows an Atom correctly" $ do
+            show (Atom (var 5)) `shouldBe` "5"
+
+        it "shows a negated literal" $ do
+            show (Not $ Atom (var 33)) `shouldBe` "-33"
+
+        it "shows an empty conjunct as true" $ do
+            show (And []) `shouldBe` "true"
+
+        it "shows a conjunct with just one term as just this term" $ do
+            show (And [Not $ Atom (var 11)]) `shouldBe` "(-11)"
+
+        it "shows a conjunct with two terms" $ do
+            show (And [Not $ Atom (var 11), Atom (var 3)]) `shouldBe` "(-11 && 3)"
+
+        it "shows an empty disjunct as false" $ do
+            show (Or []) `shouldBe` "false"
+
+        it "shows a disjunct with just one term as just this term" $ do
+            show (Or [Atom (var 25)]) `shouldBe` "(25)"
+
+        it "shows a disjunct with three terms" $ do
+            show (Or [Not $ Atom (var 11), Atom (var 23), Not $ Atom (var 3)]) `shouldBe` "(-11 || 23 || -3)"
+
+        it "shows an implication" $ do
+            show (Implies (Atom (var 4)) (Not $ Atom (var 1))) `shouldBe` "(4 -> -1)"
+
+        it "shows an empty Xor as false" $ do
+            show (Xor []) `shouldBe` "false"
+
+        it "shows an Xor with one term as this term" $ do
+            show (Xor [Atom (var 2)]) `shouldBe` "(2)"
+
+        it "shows an Xor with three terms" $ do
+            show (Xor [Atom (var 2), Not $ Atom (var 1), Atom (var 15)]) `shouldBe` "(2 XOR -1 XOR 15)"
+
+        it "shows equivalence without terms as true" $ do
+            show (Equiv []) `shouldBe` "true"
+
+        it "shows equivalence with one term as true" $ do
+            show (Equiv [Not $ Atom (var 3)]) `shouldBe` "true"
+
+        it "shows equivalence with two terms" $ do
+            show (Equiv [Not $ Atom (var 3), Atom (var 14)]) `shouldBe` "(-3 <=> 14)"
+
+        it "shows equivalence with three terms" $ do
+            show (Equiv [Not $ Atom (var 3), Atom (var 14), Not $ Atom (var 25)]) `shouldBe` "(-3 <=> 14 <=> -25)"
+
     -- TODO: Nested, more complicated formulae

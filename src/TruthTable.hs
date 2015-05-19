@@ -27,7 +27,7 @@ import Data.Char (intToDigit)
 import Text.Printf (printf)
 
 newtype Variable = Variable Int
-    deriving(Show,Eq,Ord)
+    deriving(Eq,Ord)
 
 maxNumVariables :: Int
 maxNumVariables = B.popCount (maxBound::Int)
@@ -39,6 +39,9 @@ instance Bounded Variable where
 instance Enum Variable where
     fromEnum (Variable i) = i
     toEnum = var
+
+instance Show Variable where
+    show (Variable i) = show i
 
 var :: Int -> Variable
 var i   | Variable i < minBound = error $ printf "Negative variable index (%d) is not allowed" i
