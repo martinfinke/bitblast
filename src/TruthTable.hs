@@ -86,7 +86,6 @@ instance Show OutputValue where
 type InternalOutputValue = (Bool, Bool)
 
 newtype TruthTable = TruthTable (V.Vector InternalOutputValue)
-    deriving (Eq)
 
 instance Show TruthTable where
     show table@(TruthTable outputColumn) = unlines $ map trim $ V.ifoldr appendRow [] outputColumn
