@@ -90,6 +90,17 @@ spec = do
         it "is false if one term is false" $ do
             eval allFalse (Equiv [Not $ Atom (var 1), Atom (var 15), Not $ Atom (var 3)]) `shouldBe` False
 
+    describe "eval nestedFormula" $ do
+        it "evaluates nestedFormula correctly" $ do
+            let assignment = setVariables allFalse [
+                    (var 1, True),
+                    (var 2, False),
+                    (var 3, True),
+                    (var 15, False),
+                    (var 27, True)
+                    ]
+            eval assignment nestedFormula `shouldBe` True
+
     describe "Formula Show instance" $ do
         it "shows an Atom correctly" $ do
             show (Atom (var 5)) `shouldBe` "5"
@@ -139,4 +150,16 @@ spec = do
         it "shows equivalence with three terms" $ do
             show (Equiv [Not $ Atom (var 3), Atom (var 14), Not $ Atom (var 25)]) `shouldBe` "(-3 <=> 14 <=> -25)"
 
-    -- TODO: Nested, more complicated formulae
+        it "shows nestedFormula correctly" $ do
+            show nestedFormula `shouldBe` "-(-3 && 1 && ((15 XOR -27 XOR (3 <=> 2 <=> (-3) <=> 27)) -> (3 || 2)))"
+
+nestedFormula :: Formula
+nestedFormula = Not $ And [Not x3, x1, Implies (Xor [x15, Not x27, Equiv [x3, x2, Or [Not x3], x27]]) (Or [x3, x2])]
+    where x1 = Atom $ var 1
+          x2 = Atom $ var 2
+          x3 = Atom $ var 3
+          x15 = Atom $ var 15
+          x27 = Atom $ var 27
+
+
+-- TODO: Nested, more complicated formulae
