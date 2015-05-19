@@ -4,6 +4,7 @@ import TruthTable (Variable, var, Assignment, getVariable)
 import qualified Prelude as P
 import Prelude hiding (not,and,or)
 import Data.List (intercalate)
+import qualified Data.Set as Set
 
 data Formula = Atom     Variable
              | Not      Formula
@@ -42,3 +43,16 @@ eval assignment formula = case formula of
     Equiv [] -> True
     Equiv (f:fs) -> P.all (== eval assignment f) (map (eval assignment) fs)
 
+variableSet :: Formula -> Set.Set Variable
+variableSet formula = case formula of
+    Atom v -> Set.fromList [v]
+    Not f -> variableSet f
+    And fs -> foldList fs
+    Or fs -> foldList fs
+    Implies premise conclusion -> foldList [premise, conclusion]
+    Xor fs -> foldList fs
+    Equiv fs -> foldList fs
+    where foldList = foldr (Set.union . variableSet) Set.empty
+
+numVariablesInFormula :: Formula -> Int
+numVariablesInFormula = Set.size . variableSet

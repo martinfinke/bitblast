@@ -3,6 +3,7 @@ module FormulaSpec where
 import SpecHelper
 import Formula
 import TruthTable
+import qualified Data.Set as Set
 
 spec :: Spec
 spec = do
@@ -152,6 +153,29 @@ spec = do
 
         it "shows nestedFormula correctly" $ do
             show nestedFormula `shouldBe` "-(-3 && 1 && ((15 XOR -27 XOR (3 <=> 2 <=> (-3) <=> 27)) -> (3 || 2)))"
+
+    describe "variableSet" $ do
+        it "is the singleton set with one variable for an atom" $ do
+            variableSet (Atom (var 4)) `shouldBe` Set.fromList [var 4]
+
+        it "is the singleton set with one variable for a negated atom" $ do
+            variableSet (Not $ Atom (var 14)) `shouldBe` Set.fromList [var 14]
+
+        it "is the empty set for an empty conjunct" $ do
+            variableSet (And []) `shouldBe` Set.empty
+
+        it "works for And with one term" $ do
+            variableSet (And [Atom $ var 3]) `shouldBe` Set.fromList [var 3]
+
+        it "works for nestedFormula" $ do
+            variableSet nestedFormula `shouldBe` Set.fromList (map var [1, 2, 3, 15, 27])
+
+    describe "numVariablesInFormula" $ do
+        it "is 0 for an empty Formula" $ do
+            numVariablesInFormula (And []) `shouldBe` 0
+
+        it "is 5 for nestedFormula" $ do
+            numVariablesInFormula nestedFormula `shouldBe` 5
 
 nestedFormula :: Formula
 nestedFormula = Not $ And [Not x3, x1, Implies (Xor [x15, Not x27, Equiv [x3, x2, Or [Not x3], x27]]) (Or [x3, x2])]
