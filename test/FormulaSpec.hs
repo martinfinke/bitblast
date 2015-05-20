@@ -178,8 +178,8 @@ spec = do
             numVariablesInFormula nestedFormula `shouldBe` 5
 
     describe "allBoolCombinations" $ do
-        it "is the empty list for the empty set with no variables" $ do
-            allBoolCombinations (Set.fromList []) `shouldBe` []
+        it "is the allFalse assignment for no variables" $ do
+            allBoolCombinations (Set.fromList []) `shouldBe` [allFalse]
 
         it "gives two assignments for a set with one variable" $ do
             let variable = var 0
@@ -188,29 +188,20 @@ spec = do
                     setVariable variable True allFalse
                 ]
 
+        it "gives four assignments for two variables" $ do
+            let variables = Set.fromList [var 3, var 15]
+            let combinations = allBoolCombinations variables
+            combinations `shouldBe` [
+                allFalse,
+                setVariable (var 3) True allFalse,
+                setVariable (var 15) True allFalse,
+                setVariable (var 15) True $ setVariable (var 3) True allFalse
+                ]
 
-        --it "is True and False for just one variable" $ do
-        --    allBoolCombinations 1 `shouldBe` [[False], [True]]
-
-        --it "works for two variables" $ do
-        --    allBoolCombinations 2 `shouldBe` [
-        --        [False, False],
-        --        [False, True],
-        --        [True, False],
-        --        [True, True]
-        --        ]
-
-        --it "works for three variables" $ do
-        --    allBoolCombinations 3 `shouldBe` [
-        --        [False, False, False],
-        --        [False, False, True],
-        --        [False, True, False],
-        --        [False, True, True],
-        --        [True, False, False],
-        --        [True, False, True],
-        --        [True, True, False],
-        --        [True, True, True]
-        --        ]
+    describe "possibleAssignments" $ do
+        it "gives 2^5 = 64 assignments for nestedFormula" $ do
+            length (possibleAssignments nestedFormula) `shouldBe` 2^5
+            
 
 nestedFormula :: Formula
 nestedFormula = Not $ And [Not x3, x1, Implies (Xor [x15, Not x27, Equiv [x3, x2, Or [Not x3], x27]]) (Or [x3, x2])]

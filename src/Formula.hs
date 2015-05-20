@@ -58,26 +58,11 @@ numVariablesInFormula :: Formula -> Int
 numVariablesInFormula = Set.size . variableSet
 
 possibleAssignments :: Formula -> [Assignment]
-possibleAssignments formula = undefined -- TODO
-    where variables = Set.toList $ variableSet formula
-          len = length variables
-          --combinations = allBoolCombinations len
-
--- TODO: This is not what we need. We need a way to specify the set of variables and have only them switch between True and False.
---allBoolCombinations :: Int -> [[Bool]]
---allBoolCombinations i
---    | i < 0 = error $ "Invalid number for allBoolCombinations: " ++ show i
---    | i == 0 = [[]]
---    | otherwise = map (False:) rest ++ map (True:) rest
---        where rest = allBoolCombinations (i-1)
+possibleAssignments = allBoolCombinations . variableSet
 
 allBoolCombinations :: Set.Set Variable -> [Assignment]
 allBoolCombinations variables
-    | Set.null variables = []
-    | Set.size variables == 1 = [
-                    allFalse,
-                    setVariable variable True allFalse
-                ]
-    | otherwise = map (setVariable variable True) rest
-    where variable = Set.elemAt 0 variables
+    | Set.null variables = [allFalse]
+    | otherwise = rest ++ map (setVariable variable True) rest
+    where variable = Set.elemAt (Set.size variables - 1) variables
           rest = allBoolCombinations (Set.delete variable variables)
