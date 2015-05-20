@@ -9,6 +9,7 @@ import Test.Hspec
 import Test.QuickCheck
 
 import TruthTable
+import Formula
 
 
 data OneHundredOrLess = OneHundredOrLess Int
@@ -44,3 +45,28 @@ instance Arbitrary TruthTable where
         randomOutputs <- vector (length randomAssignments) :: Gen [OutputValue]
         let rows = zip randomAssignments randomOutputs
         return $ setOutputs rows empty
+
+instance Arbitrary Formula where
+    arbitrary = do
+        (TenOrLess tenOrLess) <- arbitrary
+        let numVariables = max 2 tenOrLess
+        let variables = map var [0..numVariables-1]
+        depth <- choose (1,4::Int)
+        randomFormula variables depth
+
+randomFormula :: [Variable] -> Int -> Gen Formula
+randomFormula variables 0 = do
+    variable <- elements variables
+    return $ Atom variable
+randomFormula variables depth = do
+    breadth <- choose (2,5::Int)
+    subFormulas <- vectorOf breadth $ randomFormula variables (depth-1)
+    operator <- elements [
+        Not . head,
+        And,
+        Or,
+        \(f1:f2:_) -> Implies f1 f2,
+        Xor,
+        Equiv
+        ]
+    return $ operator subFormulas
