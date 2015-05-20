@@ -65,18 +65,18 @@ instance Show Assignment where
 
 allFalse, allTrue :: Assignment
 allFalse = Assignment B.zeroBits
-allTrue = setVariables allFalse $ zip [minBound..maxBound::Variable] (repeat True)
+allTrue = setVariables (zip [minBound..maxBound::Variable] (repeat True)) allFalse
 
-setVariable :: Assignment -> Variable -> Bool -> Assignment
-setVariable (Assignment bits) (Variable index) isTrue = Assignment $ bits `operation` index
+setVariable :: Variable -> Bool -> Assignment -> Assignment
+setVariable (Variable index) isTrue (Assignment bits) = Assignment $ bits `operation` index
     where operation = if isTrue then B.setBit else B.clearBit
 
-setVariables :: Assignment -> [(Variable, Bool)] -> Assignment
-setVariables assignment varsWithValues = foldr setValue assignment varsWithValues
-    where setValue (variable, value) a = setVariable a variable value
+setVariables :: [(Variable, Bool)] -> Assignment -> Assignment
+setVariables varsWithValues assignment = foldr setValue assignment varsWithValues
+    where setValue (variable, value) a = setVariable variable value a
 
-getVariable :: Assignment -> Variable -> Bool
-getVariable (Assignment bits) (Variable index) = B.testBit bits index
+getVariable :: Variable -> Assignment -> Bool
+getVariable (Variable index) (Assignment bits) = B.testBit bits index
 
 data OutputValue = T | F | DC
     deriving(Eq)
@@ -112,18 +112,18 @@ numVariablesInTable (TruthTable outputColumn)
     | otherwise = B.popCount (len-1)
     where len = V.length outputColumn
 
-getOutput :: TruthTable -> Assignment -> OutputValue
-getOutput (TruthTable outputColumn) (Assignment index) = case outputColumn V.!? index of
+getOutput :: Assignment -> TruthTable -> OutputValue
+getOutput (Assignment index) (TruthTable outputColumn) = case outputColumn V.!? index of
     Nothing -> error $ printIndexError index (V.length outputColumn)
     Just internal -> fromInternal internal
 
-setOutput :: TruthTable -> Assignment -> OutputValue -> TruthTable
-setOutput (TruthTable outputColumn) (Assignment index) newValue
+setOutput :: Assignment -> OutputValue -> TruthTable -> TruthTable
+setOutput (Assignment index) newValue (TruthTable outputColumn)
     | index >= (V.length outputColumn) = error $ printIndexError index (V.length outputColumn)
     | otherwise = TruthTable (outputColumn V.// [(index, toInternal newValue)])
 
-setOutputs :: TruthTable -> [(Assignment, OutputValue)] -> TruthTable
-setOutputs = foldr $ \(assignment, outputValue) table -> setOutput table assignment outputValue
+setOutputs :: [(Assignment, OutputValue)] -> TruthTable -> TruthTable
+setOutputs outputValues truthTable = foldr (\(assignment, outputValue) table -> setOutput assignment outputValue table) truthTable outputValues
 
 toInternal :: OutputValue -> InternalOutputValue
 toInternal T = (True, True)
@@ -135,8 +135,8 @@ fromInternal (True, True) = T
 fromInternal (True, False) = F
 fromInternal (False, _) = DC
 
-isValidAssignment :: TruthTable -> Assignment -> Bool
-isValidAssignment (TruthTable outputColumn) (Assignment index) = index < V.length outputColumn
+isValidAssignment :: Assignment -> TruthTable -> Bool
+isValidAssignment (Assignment index) (TruthTable outputColumn) = index < V.length outputColumn
 
 printIndexError :: Int -> Int -> String
 printIndexError index len = printf "Index out of range: %d >= %d" index len

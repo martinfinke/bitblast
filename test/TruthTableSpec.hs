@@ -32,7 +32,7 @@ spec = do
 
     describe "Assignment" $ do
         it "sets and gets a Variable value correctly" $ do
-            property $ \assignment variable bool -> getVariable (setVariable assignment variable bool) variable == bool
+            property $ \assignment variable bool -> getVariable variable (setVariable variable bool assignment) == bool
             
     describe "TruthTable emptyTable" $ do
         it "can create an empty table with a valid size" $ do
@@ -44,23 +44,23 @@ spec = do
     describe "TruthTable setOutput" $ do
         it "doesn't allow setting an output value that's out of bounds" $ do
             let table = emptyTable 3
-            evaluate (setOutput table (toEnum 8) F) `shouldThrow` anyErrorCall
+            evaluate (setOutput (toEnum 8) F table) `shouldThrow` anyErrorCall
 
         it "sets a valid assignment correctly" $ do
             let randomAssignment table i = toEnum $ max 0 $ min (i-1) (numVariablesInTable table - 1)
             property $ \table (TenOrLess i) outputValue ->
-                getOutput (setOutput table (randomAssignment table i) outputValue) (randomAssignment table i) == outputValue
+                getOutput (randomAssignment table i) (setOutput (randomAssignment table i) outputValue table) == outputValue
 
     describe "TruthTable setOutputs" $ do
         it "sets multiple outputs correctly" $ do
             let outputValues = [
                     (allFalse, T)
-                    , (setVariable allFalse (var 0) True, F)
+                    , (setVariable (var 0) True allFalse, F)
                     ]
             let empty = emptyTable 3
-            let t1 = setOutputs empty outputValues
-            getOutput t1 allFalse `shouldBe` T
-            getOutput t1 (setVariable allFalse (var 0) True) `shouldBe` F
+            let t1 = setOutputs outputValues empty
+            getOutput allFalse t1 `shouldBe` T
+            getOutput (setVariable (var 0) True allFalse) t1 `shouldBe` F
 
     describe "toInternal" $ do
         it "is inverse to fromInternal" $ do

@@ -1,6 +1,6 @@
 module Formula where
 
-import TruthTable (Variable, var, Assignment, getVariable)
+import TruthTable (Variable, var, Assignment, allFalse, getVariable, setVariable)
 import qualified Prelude as P
 import Prelude hiding (not,and,or)
 import Data.List (intercalate)
@@ -34,7 +34,7 @@ instance Show Formula where
 
 eval :: Assignment -> Formula -> Bool
 eval assignment formula = case formula of
-    Atom v -> getVariable assignment v
+    Atom v -> getVariable v assignment
     Not f -> P.not $ eval assignment f
     And fs -> P.all (eval assignment) fs
     Or fs -> P.any (eval assignment) fs
@@ -56,3 +56,28 @@ variableSet formula = case formula of
 
 numVariablesInFormula :: Formula -> Int
 numVariablesInFormula = Set.size . variableSet
+
+possibleAssignments :: Formula -> [Assignment]
+possibleAssignments formula = undefined -- TODO
+    where variables = Set.toList $ variableSet formula
+          len = length variables
+          --combinations = allBoolCombinations len
+
+-- TODO: This is not what we need. We need a way to specify the set of variables and have only them switch between True and False.
+--allBoolCombinations :: Int -> [[Bool]]
+--allBoolCombinations i
+--    | i < 0 = error $ "Invalid number for allBoolCombinations: " ++ show i
+--    | i == 0 = [[]]
+--    | otherwise = map (False:) rest ++ map (True:) rest
+--        where rest = allBoolCombinations (i-1)
+
+allBoolCombinations :: Set.Set Variable -> [Assignment]
+allBoolCombinations variables
+    | Set.null variables = []
+    | Set.size variables == 1 = [
+                    allFalse,
+                    setVariable variable True allFalse
+                ]
+    | otherwise = map (setVariable variable True) rest
+    where variable = Set.elemAt 0 variables
+          rest = allBoolCombinations (Set.delete variable variables)

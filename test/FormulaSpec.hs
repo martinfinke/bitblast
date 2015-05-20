@@ -18,12 +18,12 @@ spec = do
 
         it "evaluates any Atom correctly" $ do
             property $ \variable bool ->
-                let assignment = setVariable allFalse variable bool
+                let assignment = setVariable variable bool allFalse
                 in eval assignment (Atom variable) `shouldBe` bool
 
         it "evaluates any negated Atom correctly" $ do
             property $ \variable bool ->
-                let assignment = setVariable allTrue variable bool
+                let assignment = setVariable variable bool allTrue
                 in eval assignment (Not $ Atom variable) `shouldBe` not bool
 
     describe "eval And" $ do
@@ -93,13 +93,13 @@ spec = do
 
     describe "eval nestedFormula" $ do
         it "evaluates nestedFormula correctly" $ do
-            let assignment = setVariables allFalse [
+            let assignment = setVariables [
                     (var 1, True),
                     (var 2, False),
                     (var 3, True),
                     (var 15, False),
                     (var 27, True)
-                    ]
+                    ] allFalse
             eval assignment nestedFormula `shouldBe` True
 
     describe "Formula Show instance" $ do
@@ -177,13 +177,43 @@ spec = do
         it "is 5 for nestedFormula" $ do
             numVariablesInFormula nestedFormula `shouldBe` 5
 
+    describe "allBoolCombinations" $ do
+        it "is the empty list for the empty set with no variables" $ do
+            allBoolCombinations (Set.fromList []) `shouldBe` []
+
+        it "gives two assignments for a set with one variable" $ do
+            let variable = var 0
+            allBoolCombinations (Set.fromList [variable]) `shouldBe` [
+                    allFalse,
+                    setVariable variable True allFalse
+                ]
+
+
+        --it "is True and False for just one variable" $ do
+        --    allBoolCombinations 1 `shouldBe` [[False], [True]]
+
+        --it "works for two variables" $ do
+        --    allBoolCombinations 2 `shouldBe` [
+        --        [False, False],
+        --        [False, True],
+        --        [True, False],
+        --        [True, True]
+        --        ]
+
+        --it "works for three variables" $ do
+        --    allBoolCombinations 3 `shouldBe` [
+        --        [False, False, False],
+        --        [False, False, True],
+        --        [False, True, False],
+        --        [False, True, True],
+        --        [True, False, False],
+        --        [True, False, True],
+        --        [True, True, False],
+        --        [True, True, True]
+        --        ]
+
 nestedFormula :: Formula
 nestedFormula = Not $ And [Not x3, x1, Implies (Xor [x15, Not x27, Equiv [x3, x2, Or [Not x3], x27]]) (Or [x3, x2])]
-    where x1 = Atom $ var 1
-          x2 = Atom $ var 2
-          x3 = Atom $ var 3
-          x15 = Atom $ var 15
-          x27 = Atom $ var 27
+    where [x1, x2, x3, x15, x27] = map (Atom . var) [1, 2, 3, 15, 27]
 
 
--- TODO: Nested, more complicated formulae

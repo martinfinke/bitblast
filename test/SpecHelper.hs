@@ -29,7 +29,7 @@ instance Arbitrary Variable where
 instance Arbitrary Assignment where
     arbitrary = resize (fromEnum (maxBound::Variable)) $ do
         trueVariables <- listOf1 arbitrary :: Gen [Variable]
-        return $ setVariables allFalse (zip trueVariables (repeat True))
+        return $ setVariables (zip trueVariables (repeat True)) allFalse
 
 instance Arbitrary OutputValue where
     arbitrary = elements [T,F,DC]
@@ -43,4 +43,4 @@ instance Arbitrary TruthTable where
         randomAssignments <- listOf1 boundedAssignmentsGen
         randomOutputs <- vector (length randomAssignments) :: Gen [OutputValue]
         let rows = zip randomAssignments randomOutputs
-        return $ setOutputs empty rows
+        return $ setOutputs rows empty
