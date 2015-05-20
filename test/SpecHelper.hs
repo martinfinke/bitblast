@@ -51,7 +51,7 @@ instance Arbitrary Formula where
         (TenOrLess tenOrLess) <- arbitrary
         let numVariables = max 2 tenOrLess
         let variables = map var [0..numVariables-1]
-        depth <- choose (1,4::Int)
+        depth <- choose (1,5::Int)
         randomFormula variables depth
 
 randomFormula :: [Variable] -> Int -> Gen Formula
