@@ -1,6 +1,6 @@
 module Formula where
 
-import TruthTable (Variable, var, Assignment, allFalse, getVariable, setVariable)
+import TruthTable (Variable, var, Assignment, allFalse, getVariable, setVariable, TruthTable, emptyTable, setOutputs, boolToOutputValue)
 import qualified Prelude as P
 import Prelude hiding (not,and,or)
 import Data.List (intercalate)
@@ -66,3 +66,9 @@ allBoolCombinations variables
     | otherwise = rest ++ map (setVariable variable True) rest
     where variable = Set.elemAt (Set.size variables - 1) variables
           rest = allBoolCombinations (Set.delete variable variables)
+
+toTruthTable :: Formula -> TruthTable
+toTruthTable formula = setOutputs outputs (emptyTable numVariables)
+    where assignments = possibleAssignments formula
+          numVariables = numVariablesInFormula formula
+          outputs = map (\assignment -> (assignment, boolToOutputValue $ eval assignment formula)) assignments

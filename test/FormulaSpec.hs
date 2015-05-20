@@ -201,7 +201,15 @@ spec = do
     describe "possibleAssignments" $ do
         it "gives 2^5 = 64 assignments for nestedFormula" $ do
             length (possibleAssignments nestedFormula) `shouldBe` 2^5
-            
+    
+    describe "toTruthTable" $ do
+        it "creates a TruthTable for a single Atom" $ do
+            let expectedTable = setOutput (setVariable (var 0) True allFalse) T $ setOutput allFalse F $ emptyTable 1
+            toTruthTable (Atom (var 0)) `shouldBe` expectedTable
+
+        it "creates a TruthTable for a negated Atom" $ do
+            let expectedTable = setOutput (setVariable (var 0) True allFalse) F $ setOutput allFalse T $ emptyTable 1
+            toTruthTable (Not $ Atom (var 0)) `shouldBe` expectedTable
 
 nestedFormula :: Formula
 nestedFormula = Not $ And [Not x3, x1, Implies (Xor [x15, Not x27, Equiv [x3, x2, Or [Not x3], x27]]) (Or [x3, x2])]

@@ -17,6 +17,7 @@ module TruthTable (
     setOutputs,
     fromInternal,
     toInternal,
+    boolToOutputValue,
     isValidAssignment
 ) where
 
@@ -89,6 +90,7 @@ instance Show OutputValue where
 type InternalOutputValue = (Bool, Bool)
 
 newtype TruthTable = TruthTable (V.Vector InternalOutputValue)
+    deriving (Eq)
 
 instance Show TruthTable where
     show table@(TruthTable outputColumn) = unlines $ map trim $ V.ifoldr appendRow [] outputColumn
@@ -134,6 +136,10 @@ fromInternal :: InternalOutputValue -> OutputValue
 fromInternal (True, True) = T
 fromInternal (True, False) = F
 fromInternal (False, _) = DC
+
+boolToOutputValue :: Bool -> OutputValue
+boolToOutputValue True = T
+boolToOutputValue False = F
 
 isValidAssignment :: Assignment -> TruthTable -> Bool
 isValidAssignment (Assignment index) (TruthTable outputColumn) = index < V.length outputColumn
