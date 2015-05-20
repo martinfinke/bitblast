@@ -15,7 +15,9 @@ module Formula (Formula(..),
                 isPositiveLiteral,
                 FormType(..),
                 assignmentToMinterm,
-                assignmentToMaxterm
+                assignmentToMaxterm,
+                isCanonical,
+                ensureCanonical
                 ) where
 
 import TruthTable (Variable, var, Assignment, allFalse, getVariable, setVariable, TruthTable, emptyTable, setOutputs, boolToOutputValue, getOutput, OutputValue(..))
@@ -152,3 +154,17 @@ isLiteral _ = False
 isPositiveLiteral :: Formula -> Bool
 isPositiveLiteral (Atom _) = True
 isPositiveLiteral _ = False
+
+isCanonical :: Formula -> Bool
+isCanonical formula
+    | isCnf formula = let (And maxterms) = formula in P.all canonical maxterms
+    | isDnf formula = let (Or minterms) = formula in P.all canonical minterms
+    | otherwise = False
+    where canonical term = variableSet term == variables
+          variables = variableSet formula
+
+ensureCanonical :: Formula -> Formula
+ensureCanonical formula
+    | isCanonical formula = formula
+    | isDnf formula = toCanonicalDnf formula
+    | otherwise = toCanonicalCnf formula

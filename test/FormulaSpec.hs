@@ -298,6 +298,26 @@ spec = do
         it "is False for a conjunct" $ do
             isLiteral (And []) `shouldBe` False
 
+    describe "isCanonical" $ do
+        it "is True for a canonical DNF" $ do
+            property $ \formula ->
+                let dnf = toCanonicalDnf formula
+                in isCanonical dnf `shouldBe` True
+
+        it "is False for a non-canonical CNF" $ do
+            let nonCanonical = And [Or [Atom (var 0), Not $ Atom (var 1)], Or [Atom (var 1)]]
+            isCanonical nonCanonical `shouldBe` False
+
+        it "is False for a Formula that isn't a CNF/DNF" $ do
+            isCanonical nestedFormula `shouldBe` False
+            isCanonical smallNestedFormula `shouldBe` False
+
+    describe "ensureCanonical" $ do
+        it "makes any formula canonical" $ do
+            property $ \formula ->
+                let canonical = ensureCanonical formula
+                in isCanonical canonical `shouldBe` True
+
 nestedFormula :: Formula
 nestedFormula = Not $ And [Not x3, x1, Implies (Xor [x15, Not x27, Equiv [x3, x2, Or [Not x3], x27]]) (Or [x3, x2])]
     where [x1, x2, x3, x15, x27] = map (Atom . var) [1, 2, 3, 15, 27]

@@ -6,7 +6,6 @@ import Data.List(groupBy, sortBy)
 import Data.Ord(comparing)
 import Debug.Trace(traceShow)
 
--- TODO: We should convert to the canonical form first!
 numRelevantLiterals :: Formula -> Int
 numRelevantLiterals formula
     | isMinterm formula = let (And literals) = formula in countPositive literals
@@ -17,6 +16,7 @@ numRelevantLiterals formula
 
 groupByRelevantLiterals :: Formula -> Map.Map Int [Formula]
 groupByRelevantLiterals formula
+    | not (isCanonical formula) = groupByRelevantLiterals (ensureCanonical formula)
     | isCnf formula = let (And maxterms) = formula in toMap maxterms
     | isDnf formula = let (Or minterms) = formula in toMap minterms
     | otherwise = error $ "Not a CNF or DNF: " ++ show formula
