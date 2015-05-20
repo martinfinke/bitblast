@@ -9,7 +9,11 @@ module Formula (Formula(..),
                 toDnf,
                 isCnf,
                 isDnf,
+                isMinterm,
+                isMaxterm,
                 isLiteral,
+                isPositiveLiteral,
+                FormType(..),
                 assignmentToMinterm,
                 assignmentToMaxterm
                 ) where
@@ -123,18 +127,25 @@ assignmentToTerm formType variables assignment = operator $ Set.foldr addLiteral
 
 isCnf, isDnf :: Formula -> Bool
 isCnf (And clauses) = P.all isMaxterm clauses
-    where isMaxterm t = case t of
-            (Or literals) -> P.all isLiteral literals
-            _ -> False
 isCnf _ = False
 
 isDnf (Or terms) = P.all isMinterm terms
-    where isMinterm t = case t of
-            (And literals) -> P.all isLiteral literals
-            _ -> False
 isDnf _ = False
+
+isMinterm, isMaxterm :: Formula -> Bool
+isMaxterm t = case t of
+    (Or literals) -> P.all isLiteral literals
+    _ -> False
+
+isMinterm t = case t of
+    (And literals) -> P.all isLiteral literals
+    _ -> False
 
 isLiteral :: Formula -> Bool
 isLiteral (Atom _) = True
 isLiteral (Not (Atom _)) = True
 isLiteral _ = False
+
+isPositiveLiteral :: Formula -> Bool
+isPositiveLiteral (Atom _) = True
+isPositiveLiteral _ = False
