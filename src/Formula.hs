@@ -5,8 +5,8 @@ module Formula (Formula(..),
                 allBoolCombinations,
                 possibleAssignments,
                 toTruthTable,
-                toCnf,
-                toDnf,
+                toCanonicalCnf,
+                toCanonicalDnf,
                 isCnf,
                 isDnf,
                 isMinterm,
@@ -77,7 +77,10 @@ numVariablesInFormula :: Formula -> Int
 numVariablesInFormula = Set.size . variableSet
 
 highestVariableIndex :: Formula -> Int
-highestVariableIndex = fromEnum . Set.findMax . variableSet
+highestVariableIndex formula = case Set.toList variables of
+    [] -> -1
+    _ -> fromEnum $ Set.findMax variables
+    where variables = variableSet formula
 
 possibleAssignments :: Formula -> [Assignment]
 possibleAssignments = allBoolCombinations . variableSet
@@ -95,9 +98,9 @@ toTruthTable formula = setOutputs outputs (emptyTable tableSize)
           tableSize = highestVariableIndex formula + 1
           outputs = map (\assignment -> (assignment, boolToOutputValue $ eval assignment formula)) assignments
 
-toCnf, toDnf :: Formula -> Formula
-toCnf = toNormalForm CNFType
-toDnf = toNormalForm DNFType
+toCanonicalCnf, toCanonicalDnf :: Formula -> Formula
+toCanonicalCnf = toNormalForm CNFType
+toCanonicalDnf = toNormalForm DNFType
 
 toNormalForm :: FormType -> Formula -> Formula
 toNormalForm formType formula = operator maxterms

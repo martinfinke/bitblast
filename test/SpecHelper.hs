@@ -2,7 +2,8 @@ module SpecHelper
     ( module Test.Hspec,
       module Test.QuickCheck,
       OneHundredOrLess(..),
-      TenOrLess(..)
+      TenOrLess(..),
+      shouldBeOneOf
     ) where
 
 import Test.Hspec
@@ -70,3 +71,7 @@ randomFormula variables depth = do
         Equiv
         ]
     return $ operator subFormulas
+
+
+shouldBeOneOf :: (Eq a, Show a) => a -> [a] -> Expectation
+shouldBeOneOf x xs = x `shouldSatisfy` (`elem` xs)

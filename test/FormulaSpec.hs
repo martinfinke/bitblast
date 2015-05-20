@@ -213,42 +213,48 @@ spec = do
             let expectedTable = setOutput (setVariable variable True allFalse) F $ setOutput allFalse T $ emptyTable 2
             toTruthTable (Not $ Atom variable) `shouldBe` expectedTable
 
-    describe "toCnf" $ do
+    describe "toCanonicalCnf" $ do
         it "creates a CNF for a literal" $ do
             let formula = Atom (var 14)
-            toCnf formula `shouldBe` And [Or [Atom (var 14)]]
+            toCanonicalCnf formula `shouldBe` And [Or [Atom (var 14)]]
 
-        it "creates an identical CNF for a conjunct of maxterms" $ do
+        it "creates an identical CNF for a canonical CNF" $ do
             let formula = And [Or [Atom (var 1), Not $ Atom (var 2), Atom (var 3)], Or [Not $ Atom (var 1), Atom (var 2), Not $ Atom (var 3)]]
-            toCnf formula `shouldBe` formula
+            toCanonicalCnf formula `shouldBe` formula
 
-        it "doesn't change anything when converting a CNF to a CNF" $ do
-            let alreadyCnf = toCnf smallNestedFormula
-            toCnf alreadyCnf `shouldBe` alreadyCnf
+        it "doesn't change anything when converting a canonical CNF to a canonical CNF" $ do
+            let alreadyCnf = toCanonicalCnf smallNestedFormula
+            toCanonicalCnf alreadyCnf `shouldBe` alreadyCnf
 
         it "creates CNFs that are equivalent (for one random assignment) to the original formula" $ do
             property $ \formula assignment ->
-                let cnf = toCnf formula
+                let cnf = toCanonicalCnf formula
                 in eval assignment cnf `shouldBe` eval assignment formula
 
-    describe "toDnf" $ do
+        it "can create a CNF for a formula without variables" $ do
+            let formula = Or [Implies (And []) (And []), Xor []]
+            let cnf = toCanonicalCnf formula
+            cnf `shouldBe` And []
+
+    describe "toCanonicalDnf" $ do
         it "creates a DNF for a literal" $ do
             let formula = Atom (var 1)
-            toDnf formula `shouldBe` Or [And [Atom (var 1)]]
+            toCanonicalDnf formula `shouldBe` Or [And [Atom (var 1)]]
 
-        it "doesn't change anything when converting a DNF to a DNF" $ do
-            let alreadyDnf = toDnf smallNestedFormula
-            toDnf alreadyDnf `shouldBe` alreadyDnf
+        it "doesn't change anything when converting a canonical DNF to a canonical DNF" $ do
+            let alreadyDnf = toCanonicalDnf smallNestedFormula
+            toCanonicalDnf alreadyDnf `shouldBe` alreadyDnf
 
-        it "yields the original CNF when converting a CNF to DNF and back" $ do
-            let cnf = toCnf smallNestedFormula
-            let dnf = toDnf cnf
-            let cnf' = toCnf dnf
-            cnf' `shouldBe` cnf
+        it "yields the original CNF (or a false CNF) when converting a CNF to DNF and back" $ do
+            property $ \formula ->
+                let cnf = toCanonicalCnf formula
+                    dnf = toCanonicalDnf cnf
+                    cnf' = toCanonicalCnf dnf
+                in cnf' `shouldBeOneOf` [cnf, And [Or []]]
 
         it "creates DNFs that are equivalent (for one random assignment) to the original formula" $ do
             property $ \formula assignment ->
-                let dnf = toDnf formula
+                let dnf = toCanonicalDnf formula
                 in eval assignment dnf `shouldBe` eval assignment formula
 
     describe "assignmentToMaxterm" $ do
@@ -260,11 +266,11 @@ spec = do
 
     describe "isCnf" $ do
         it "is True for a CNF" $ do
-            let cnf = toCnf smallNestedFormula
+            let cnf = toCanonicalCnf smallNestedFormula
             isCnf cnf `shouldBe` True
 
         it "is False for a DNF" $ do
-            let dnf = toDnf smallNestedFormula
+            let dnf = toCanonicalDnf smallNestedFormula
             isCnf dnf `shouldBe` False
 
         it "is False for a non-CNF formula" $ do
@@ -272,11 +278,11 @@ spec = do
 
     describe "isDnf" $ do
         it "is True for a DNF" $ do
-            let dnf = toDnf smallNestedFormula
+            let dnf = toCanonicalDnf smallNestedFormula
             isDnf dnf `shouldBe` True
 
         it "is False for a CNF" $ do
-            let cnf = toCnf smallNestedFormula
+            let cnf = toCanonicalCnf smallNestedFormula
             isDnf cnf `shouldBe` False
 
         it "is False for a non-DNF formula" $ do

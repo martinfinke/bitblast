@@ -104,7 +104,6 @@ renderRow rowIndex outputValue = show (assignments!!rowIndex) ++ " " ++ show (fr
 
 emptyTable :: Int -> TruthTable
 emptyTable numVariables
-    | numVariables == 0 = TruthTable $ V.empty
     | numVariables <= maxNumVariables = TruthTable $ V.replicate (2^numVariables) (toInternal DC)
     | otherwise = error $ "Can't create TruthTable with too many variables (" ++ show numVariables ++ ")"
 
