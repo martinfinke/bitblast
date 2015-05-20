@@ -204,15 +204,64 @@ spec = do
     
     describe "toTruthTable" $ do
         it "creates a TruthTable for a single Atom" $ do
-            let expectedTable = setOutput (setVariable (var 0) True allFalse) T $ setOutput allFalse F $ emptyTable 1
-            toTruthTable (Atom (var 0)) `shouldBe` expectedTable
+            let variable = var 0
+            let expectedTable = setOutput (setVariable variable True allFalse) T $ setOutput allFalse F $ emptyTable 1
+            toTruthTable (Atom variable) `shouldBe` expectedTable
 
         it "creates a TruthTable for a negated Atom" $ do
-            let expectedTable = setOutput (setVariable (var 0) True allFalse) F $ setOutput allFalse T $ emptyTable 1
-            toTruthTable (Not $ Atom (var 0)) `shouldBe` expectedTable
+            let variable = var 1
+            let expectedTable = setOutput (setVariable variable True allFalse) F $ setOutput allFalse T $ emptyTable 2
+            toTruthTable (Not $ Atom variable) `shouldBe` expectedTable
+
+    describe "toCnf" $ do
+        it "creates a CNF for a literal" $ do
+            let formula = Atom (var 14)
+            toCnf formula `shouldBe` And [Or [Atom (var 14)]]
+
+        it "creates an identical CNF for a conjunct of maxterms" $ do
+            let formula = And [Or [Atom (var 1), Not $ Atom (var 2), Atom (var 3)], Or [Not $ Atom (var 1), Atom (var 2), Not $ Atom (var 3)]]
+            toCnf formula `shouldBe` formula
+
+        it "doesn't change anything when converting a CNF to a CNF" $ do
+            let alreadyCnf = toCnf smallNestedFormula
+            toCnf alreadyCnf `shouldBe` alreadyCnf
+
+        it "creates CNFs that are equivalent (for one random assignment) to the original formula" $ do
+            property $ \formula assignment ->
+                let cnf = toCnf formula
+                in eval assignment cnf `shouldBe` eval assignment formula
+
+    describe "toDnf" $ do
+        it "creates a DNF for a literal" $ do
+            let formula = Atom (var 1)
+            toDnf formula `shouldBe` Or [And [Atom (var 1)]]
+
+        it "doesn't change anything when converting a DNF to a DNF" $ do
+            let alreadyDnf = toDnf smallNestedFormula
+            toDnf alreadyDnf `shouldBe` alreadyDnf
+
+        it "yields the original CNF when converting a CNF to DNF and back" $ do
+            let cnf = toCnf smallNestedFormula
+            let dnf = toDnf cnf
+            let cnf' = toCnf dnf
+            cnf' `shouldBe` cnf
+
+        it "creates DNFs that are equivalent (for one random assignment) to the original formula" $ do
+            property $ \formula assignment ->
+                let dnf = toDnf formula
+                in eval assignment dnf `shouldBe` eval assignment formula
+
+    describe "assignmentToMaxterm" $ do
+        it "creates a disjunct of a single literal for a singleton set of variables" $ do
+            assignmentToMaxterm (Set.fromList [var 3]) allFalse `shouldBe` Or [Atom $ var 3]
+
+        it "creates a disjunct of two literals for a set of two variables" $ do
+            assignmentToMaxterm (Set.fromList [var 1, var 3]) allTrue `shouldBe` Or [Not $ Atom (var 1), Not $ Atom (var 3)]
 
 nestedFormula :: Formula
 nestedFormula = Not $ And [Not x3, x1, Implies (Xor [x15, Not x27, Equiv [x3, x2, Or [Not x3], x27]]) (Or [x3, x2])]
     where [x1, x2, x3, x15, x27] = map (Atom . var) [1, 2, 3, 15, 27]
 
+smallNestedFormula :: Formula
+smallNestedFormula = Equiv [Xor [Not $ Atom (var 1), Atom (var 0)], Not $ And [Atom (var 1), Or [Not $ Atom (var 0), Atom (var 3)]]]
 

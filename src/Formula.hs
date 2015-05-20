@@ -1,6 +1,17 @@
-module Formula where
+module Formula (Formula(..),
+                eval,
+                variableSet,
+                numVariablesInFormula,
+                allBoolCombinations,
+                possibleAssignments,
+                toTruthTable,
+                toCnf,
+                toDnf,
+                assignmentToMinterm,
+                assignmentToMaxterm
+                ) where
 
-import TruthTable (Variable, var, Assignment, allFalse, getVariable, setVariable, TruthTable, emptyTable, setOutputs, boolToOutputValue)
+import TruthTable (Variable, var, Assignment, allFalse, getVariable, setVariable, TruthTable, emptyTable, setOutputs, boolToOutputValue, getOutput, OutputValue(..))
 import qualified Prelude as P
 import Prelude hiding (not,and,or)
 import Data.List (intercalate)
@@ -13,6 +24,7 @@ data Formula = Atom     Variable
              | Implies  Formula Formula
              | Xor     [Formula]
              | Equiv   [Formula]
+    deriving (Eq)
 
 instance Show Formula where
     show f = case f of
@@ -57,6 +69,9 @@ variableSet formula = case formula of
 numVariablesInFormula :: Formula -> Int
 numVariablesInFormula = Set.size . variableSet
 
+highestVariableIndex :: Formula -> Int
+highestVariableIndex = fromEnum . Set.findMax . variableSet
+
 possibleAssignments :: Formula -> [Assignment]
 possibleAssignments = allBoolCombinations . variableSet
 
@@ -68,7 +83,37 @@ allBoolCombinations variables
           rest = allBoolCombinations (Set.delete variable variables)
 
 toTruthTable :: Formula -> TruthTable
-toTruthTable formula = setOutputs outputs (emptyTable numVariables)
+toTruthTable formula = setOutputs outputs (emptyTable tableSize)
     where assignments = possibleAssignments formula
-          numVariables = numVariablesInFormula formula
+          tableSize = highestVariableIndex formula + 1
           outputs = map (\assignment -> (assignment, boolToOutputValue $ eval assignment formula)) assignments
+
+toCnf, toDnf :: Formula -> Formula
+toCnf = toNormalForm CNFType
+toDnf = toNormalForm DNFType
+
+toNormalForm :: FormType -> Formula -> Formula
+toNormalForm formType formula = operator maxterms
+    where truthTable = toTruthTable formula
+          assignments = possibleAssignments formula
+          maxterms = map (assignmentToTerm formType $ variableSet formula) onlyRelevantOutput
+          relevantOutput = if formType == CNFType then F else T
+          operator = if formType == CNFType then And else Or
+          onlyRelevantOutput = filter (\assignment -> getOutput assignment truthTable == relevantOutput) assignments
+
+data FormType = CNFType | DNFType
+    deriving(Eq)
+
+assignmentToMinterm, assignmentToMaxterm :: Set.Set Variable -> Assignment -> Formula
+assignmentToMinterm = assignmentToTerm DNFType
+assignmentToMaxterm = assignmentToTerm CNFType
+
+assignmentToTerm :: FormType -> Set.Set Variable -> Assignment -> Formula
+assignmentToTerm formType variables assignment = operator $ Set.foldr addLiteral [] variables
+    where operator = if formType == CNFType then Or else And
+          addLiteral variable literals =
+            let ifTrue = if formType == CNFType then Not (Atom variable) else Atom variable
+                ifFalse = if formType == CNFType then Atom variable else Not (Atom variable)
+            in if getVariable variable assignment
+                then ifTrue : literals
+                else ifFalse : literals
