@@ -7,6 +7,9 @@ module Formula (Formula(..),
                 toTruthTable,
                 toCnf,
                 toDnf,
+                isCnf,
+                isDnf,
+                isLiteral,
                 assignmentToMinterm,
                 assignmentToMaxterm
                 ) where
@@ -117,3 +120,21 @@ assignmentToTerm formType variables assignment = operator $ Set.foldr addLiteral
             in if getVariable variable assignment
                 then ifTrue : literals
                 else ifFalse : literals
+
+isCnf, isDnf :: Formula -> Bool
+isCnf (And clauses) = P.all isMaxterm clauses
+    where isMaxterm t = case t of
+            (Or literals) -> P.all isLiteral literals
+            _ -> False
+isCnf _ = False
+
+isDnf (Or terms) = P.all isMinterm terms
+    where isMinterm t = case t of
+            (And literals) -> P.all isLiteral literals
+            _ -> False
+isDnf _ = False
+
+isLiteral :: Formula -> Bool
+isLiteral (Atom _) = True
+isLiteral (Not (Atom _)) = True
+isLiteral _ = False

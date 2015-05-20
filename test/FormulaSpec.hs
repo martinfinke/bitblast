@@ -258,6 +258,40 @@ spec = do
         it "creates a disjunct of two literals for a set of two variables" $ do
             assignmentToMaxterm (Set.fromList [var 1, var 3]) allTrue `shouldBe` Or [Not $ Atom (var 1), Not $ Atom (var 3)]
 
+    describe "isCnf" $ do
+        it "is True for a CNF" $ do
+            let cnf = toCnf smallNestedFormula
+            isCnf cnf `shouldBe` True
+
+        it "is False for a DNF" $ do
+            let dnf = toDnf smallNestedFormula
+            isCnf dnf `shouldBe` False
+
+        it "is False for a non-CNF formula" $ do
+            isCnf smallNestedFormula `shouldBe` False
+
+    describe "isDnf" $ do
+        it "is True for a DNF" $ do
+            let dnf = toDnf smallNestedFormula
+            isDnf dnf `shouldBe` True
+
+        it "is False for a CNF" $ do
+            let cnf = toCnf smallNestedFormula
+            isDnf cnf `shouldBe` False
+
+        it "is False for a non-DNF formula" $ do
+            isDnf smallNestedFormula `shouldBe` False
+
+    describe "isLiteral" $ do
+        it "is True for a literal" $ do
+            isLiteral (Atom (var 3)) `shouldBe` True
+
+        it "is True for a negated literal" $ do
+            isLiteral (Not $ Atom (var 15)) `shouldBe` True
+
+        it "is False for a conjunct" $ do
+            isLiteral (And []) `shouldBe` False
+
 nestedFormula :: Formula
 nestedFormula = Not $ And [Not x3, x1, Implies (Xor [x15, Not x27, Equiv [x3, x2, Or [Not x3], x27]]) (Or [x3, x2])]
     where [x1, x2, x3, x15, x27] = map (Atom . var) [1, 2, 3, 15, 27]
