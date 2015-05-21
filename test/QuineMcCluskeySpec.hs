@@ -9,12 +9,13 @@ import qualified Data.Map.Lazy as Map
 
 spec :: Spec
 spec = do
-    let [x0,x1,x2] = map (Atom . var) [0,1,2]
+    let [x0,x1,x2,x3] = map (Atom . var) [0,1,2,3]
     let _0pos3neg = [Not x0, Not x1, Not x2]
     let _1pos2neg = [x0, Not x1, Not x2]
     let _2pos1neg_1diff = [x0, Not x1, x2]
     let _2pos1neg_2diff = [Not x0, x1, x2]
     let _3pos0neg = [x0, x1, x2]
+
     describe "numRelevantLiterals" $ do
         it "is 0 for a disjunction without negative literals" $ do
             numRelevantLiterals (Or [Atom (var 1), Atom (var 2)]) `shouldBe` 0
@@ -108,3 +109,29 @@ spec = do
             mergeTerms (Or _1pos2neg, Or _2pos1neg_1diff) `shouldBe` Or [x0, Not x1]
             mergeTerms (And _3pos0neg, And _2pos1neg_1diff) `shouldBe` And [x0, x2]
             mergeTerms (Or _3pos0neg, Or _2pos1neg_2diff) `shouldBe` Or [x1, x2]
+
+    describe "partitionTerms" $ do
+        it "partitions an empty Map into two empty lists" $ do
+            let termMap = groupByRelevantLiterals $ And []
+            partitionTerms termMap `shouldBe` ([], [])
+
+    describe "Mikhelson example" $ do
+        -- https://www.youtube.com/watch?v=G9_oICLaLBU
+        let mikhelsonExample@(Or [mik2, mik5, mik6, mik11, mik12, mik14, mik15]) = Or [
+                And [Not x0, x1, Not x2, Not x3], -- 2
+                And [x0, Not x1, x2, Not x3], -- 5
+                And [Not x0, x1, x2, Not x3], -- 6
+                And [x0, x1, Not x2, x3], -- 11
+                And [Not x0, Not x1, x2, x3], -- 12
+                And [Not x0, x1, x2, x3], -- 14
+                And [x0, x1, x2, x3] -- 15
+                ]
+
+        it "groups by relevant literals as in the video" $ do
+            let expected = Map.fromList [
+                    (1, [mik2]),
+                    (2, [mik5, mik6, mik12]),
+                    (3, [mik11, mik14]),
+                    (4, [mik15])
+                    ]
+            groupByRelevantLiterals mikhelsonExample `shouldBe` expected
