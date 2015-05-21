@@ -61,7 +61,3 @@ spec = do
             let t1 = setOutputs outputValues empty
             getOutput allFalse t1 `shouldBe` T
             getOutput (setVariable (var 0) True allFalse) t1 `shouldBe` F
-
-    describe "toInternal" $ do
-        it "is inverse to fromInternal" $ do
-            property $ \outputValue -> (fromInternal . toInternal) outputValue == outputValue

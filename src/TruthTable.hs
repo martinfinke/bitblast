@@ -19,9 +19,7 @@ module TruthTable (
     setOutput,
     setOutputs,
     isValidAssignment,
-    boolToOutputValue,
-    fromInternal,
-    toInternal
+    boolToOutputValue
 ) where
 
 import qualified Data.Vector.Unboxed as V
