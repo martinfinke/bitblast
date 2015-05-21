@@ -6,8 +6,8 @@ module NormalForm (toCanonicalCnf,
                    isCnf,
                    isDnf,
                    isCanonical,
-                   isMinterm,
-                   isMaxterm,
+                   isConjunctionOfLiterals,
+                   isDisjunctionOfLiterals,
                    isLiteral,
                    isPositiveLiteral,
                    assignmentToMinterm,
@@ -25,10 +25,10 @@ toCanonicalCnf = toNormalForm CNFType
 toCanonicalDnf = toNormalForm DNFType
 
 toNormalForm :: FormType -> Formula -> Formula
-toNormalForm formType formula = operator maxterms
+toNormalForm formType formula = operator terms
     where truthTable = toTruthTable formula
           assignments = possibleAssignments formula
-          maxterms = map (assignmentToTerm formType $ variableSet formula) onlyRelevantOutput
+          terms = map (assignmentToTerm formType $ variableSet formula) onlyRelevantOutput
           relevantOutput = if formType == CNFType then F else T
           operator = if formType == CNFType then And else Or
           onlyRelevantOutput = filter (\assignment -> getOutput assignment truthTable == relevantOutput) assignments
@@ -37,9 +37,9 @@ data FormType = CNFType | DNFType
     deriving(Eq)
 
 assignmentToMinterm, assignmentToMaxterm :: Set.Set Variable -> Assignment -> Formula
--- | Converts an 'Assignment' (i.e. a row in a 'TruthTable.TruthTable') to a minterm for a DNF. The 'Formula.variableSet' has to be passed as well.
+-- | Converts an 'Assignment' (i.e. a row in a 'TruthTable.TruthTable') to a minterm for a canonical DNF. The 'Formula.variableSet' has to be passed as well.
 assignmentToMinterm = assignmentToTerm DNFType
--- | Converts an 'Assignment' (i.e. a row in a 'TruthTable.TruthTable') to a maxterm (clause) for a CNF. The 'Formula.variableSet' has to be passed as well.
+-- | Converts an 'Assignment' (i.e. a row in a 'TruthTable.TruthTable') to a maxterm (clause) for a canonical CNF. The 'Formula.variableSet' has to be passed as well.
 assignmentToMaxterm = assignmentToTerm CNFType
 
 assignmentToTerm :: FormType -> Set.Set Variable -> Assignment -> Formula
@@ -53,19 +53,19 @@ assignmentToTerm formType variables assignment = operator $ Set.foldr addLiteral
                 else ifFalse : literals
 
 isCnf, isDnf :: Formula -> Bool
--- | Checks whether a 'Formula' is a conjunction of clauses (disjuncts). Doesn't check if it is canonical.
-isCnf (And clauses) = all isMaxterm clauses
+-- | Checks whether a 'Formula' is a conjunction of clauses (disjunctions of literals). Doesn't check if it is canonical.
+isCnf (And clauses) = all isDisjunctionOfLiterals clauses
 isCnf _ = False
 
--- | Checks whether a 'Formula' is a disjunction of terms (conjuncts). Doesn't check if it is canonical.
-isDnf (Or terms) = all isMinterm terms
+-- | Checks whether a 'Formula' is a disjunction of conjunctions of literals. Doesn't check if it is canonical.
+isDnf (Or terms) = all isConjunctionOfLiterals terms
 isDnf _ = False
 
 -- | Checks whether a 'Formula' is canonical. This is true iff (1) it is CNF or DNF, and (2) each 'Variable' in the 'Formula.variableSet' appears exactly once in every clause/term.
 isCanonical :: Formula -> Bool
 isCanonical formula
-    | isCnf formula = let (And maxterms) = formula in all canonical maxterms
-    | isDnf formula = let (Or minterms) = formula in all canonical minterms
+    | isCnf formula = let (And disjunctions) = formula in all canonical disjunctions
+    | isDnf formula = let (Or conjunctions) = formula in all canonical conjunctions
     | otherwise = False
     where canonical term = variableSet term == variables && termLength term == Set.size variables
           variables = variableSet formula
@@ -73,14 +73,14 @@ isCanonical formula
             (Or literals) -> length literals
             (And literals) -> length literals
 
-isMinterm, isMaxterm :: Formula -> Bool
--- | Checks whether a given 'Formula' is a maxterm (clause). A maxterm is a disjunction of literals.
-isMaxterm t = case t of
+isConjunctionOfLiterals, isDisjunctionOfLiterals :: Formula -> Bool
+-- | Checks whether a given 'Formula' is a disjunction of literals (clause).
+isDisjunctionOfLiterals t = case t of
     (Or literals) -> all isLiteral literals
     _ -> False
 
--- | Checks whether a given 'Formula' is a minterm. A minterm is a conjunction of literals.
-isMinterm t = case t of
+-- | Checks whether a given 'Formula' is a conjunction of literals.
+isConjunctionOfLiterals t = case t of
     (And literals) -> all isLiteral literals
     _ -> False
 

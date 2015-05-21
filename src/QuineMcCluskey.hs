@@ -12,17 +12,17 @@ import Data.Ord(comparing)
 
 numRelevantLiterals :: Formula -> Int
 numRelevantLiterals formula
-    | isMinterm formula = let (And literals) = formula in countPositive literals
-    | isMaxterm formula = let (Or literals) = formula in countNegative literals
-    | otherwise = error $ "Not a min- or maxterm: " ++ show formula
+    | isConjunctionOfLiterals formula = let (And literals) = formula in countPositive literals
+    | isDisjunctionOfLiterals formula = let (Or literals) = formula in countNegative literals
+    | otherwise = error $ "Not a conjunction/disjunction of literals: " ++ show formula
     where countPositive = length . filter isPositiveLiteral
           countNegative = length . filter (not . isPositiveLiteral)
 
 groupByRelevantLiterals :: Formula -> Map.Map Int [Formula]
 groupByRelevantLiterals formula
     | not (isCanonical formula) = groupByRelevantLiterals (ensureCanonical formula)
-    | isCnf formula = let (And maxterms) = formula in groupTerms maxterms
-    | isDnf formula = let (Or minterms) = formula in groupTerms minterms
+    | isCnf formula = let (And disjunctions) = formula in groupTerms disjunctions
+    | isDnf formula = let (Or conjunctions) = formula in groupTerms conjunctions
     | otherwise = error $ "Not a CNF or DNF: " ++ show formula
     
 groupTerms :: [Formula] -> Map.Map Int [Formula]
