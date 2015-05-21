@@ -8,6 +8,7 @@ module TruthTable (
     Assignment,
     allFalse,
     allTrue,
+    fromTermNumber,
     setVariable,
     setVariables,
     getVariable,
@@ -75,6 +76,9 @@ allFalse, allTrue :: Assignment
 allFalse = Assignment B.zeroBits
 -- | An 'Assignment' with every 'Variable' set to true.
 allTrue = setVariables (zip [minBound..maxBound::Variable] (repeat True)) allFalse
+
+fromTermNumber :: Int -> Assignment
+fromTermNumber = toEnum
 
 -- | Sets a single 'Variable' in an 'Assignment' to 'True' or 'False'.
 setVariable :: Variable -- ^ The 'Variable' to set

@@ -1,5 +1,8 @@
-module QuineMcCluskey (numRelevantLiterals,
+module QuineMcCluskey (quineMinterms,
+                       quineMaxterms,
+                       numRelevantLiterals,
                        groupByRelevantLiterals,
+                       hammingDistance,
                        neighbourKeys,
                        partitionTerms,
                        neighbourTerms,
@@ -8,10 +11,27 @@ module QuineMcCluskey (numRelevantLiterals,
 
 import Formula (Formula(..))
 import NormalForm
+import TruthTable(var, fromTermNumber, Variable, Assignment)
 import qualified Data.Map.Lazy as Map
 import qualified Data.Set as Set
 import Data.List(groupBy, sortBy)
 import Data.Ord(comparing)
+
+import qualified Data.Vector.Unboxed as V
+
+newtype QMCTerm = QMCTerm (V.Vector (Maybe Bool))
+
+
+quineMinterms, quineMaxterms :: Int -> [Formula]
+quineMinterms = quineTerms assignmentToMinterm
+quineMaxterms = quineTerms assignmentToMaxterm
+
+quineTerms :: (Set.Set Variable -> Assignment -> Formula) -> Int -> [Formula]
+quineTerms toTerm numVariables
+    | numVariables <= 0 = []
+    | otherwise = map (toTerm variables . fromTermNumber) [0..numTerms]
+    where numTerms = (2^numVariables)-1
+          variables = Set.fromList [minBound..(var $ numVariables-1)]
 
 numRelevantLiterals :: Formula -> Int
 numRelevantLiterals formula
@@ -23,7 +43,6 @@ numRelevantLiterals formula
 
 groupByRelevantLiterals :: Formula -> Map.Map Int [Formula]
 groupByRelevantLiterals formula
-    | not (isCanonical formula) = groupByRelevantLiterals (ensureCanonical formula)
     | isCnf formula || isDnf formula = groupTerms $ normalFormChildren formula
     | otherwise = error $ "Not a CNF or DNF: " ++ show formula
     
@@ -50,10 +69,9 @@ neighbourTerms termMap = filter ((== 1) . hammingDistance) $ concatMap allTermPa
           allTermPairsForKeyPair (key1,key2) = [(term1,term2) | term1 <- lookupOrEmptyList key1, term2 <- lookupOrEmptyList key2]
           lookupOrEmptyList key = maybe [] id (Map.lookup key termMap)
 
--- | The terms have to be min/maxterms.
+
 hammingDistance :: (Formula, Formula) -> Int
-hammingDistance (term1, term2) = Set.size diff
-    where diff = Set.difference (termLiterals term1) (termLiterals term2)
+hammingDistance (term1, term2) = undefined -- TODO: broken
           
 
 mergeTerms :: (Formula, Formula) -> Formula

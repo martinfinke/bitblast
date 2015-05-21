@@ -3,9 +3,11 @@ module QuineMcCluskeySpec where
 import SpecHelper
 import Control.Exception (evaluate)
 import QuineMcCluskey
-import TruthTable(var)
+import TruthTable(var, fromTermNumber)
 import Formula(Formula(..))
+import NormalForm(assignmentToMinterm, termLiterals)
 import qualified Data.Map.Lazy as Map
+import qualified Data.Set as Set
 
 spec :: Spec
 spec = do
@@ -68,35 +70,56 @@ spec = do
         it "is two pairs for a list with two neighbouring pairs which are apart from each other" $ do
             neighbourKeys [3,4, 7,8] `shouldBe` [(3,4), (7,8)]
 
-    describe "neighbourTerms" $ do
-        it "is empty for an empty map" $ do
-            neighbourTerms Map.empty `shouldBe` []
+    --describe "hammingDistance" $ do
+    --    it "is zero for two empty terms" $ do
+    --        hammingDistance (Or [], Or []) `shouldBe` 0
 
-        it "is empty if there are no neighbour terms" $ do
-            let termMap = groupByRelevantLiterals $ And [Or _0pos3neg, Or _2pos1neg_1diff]
-            neighbourTerms termMap `shouldBe` []
+    --    it "is 1 for an empty term and one with 1 literal" $ do
+    --        hammingDistance (And [], And [Atom (var 0)]) `shouldBe` 1
+    --        hammingDistance (And [Atom (var 0)], And []) `shouldBe` 1
 
-        it "is one pair if there are two neighbour terms" $ do
-            let termMap = groupByRelevantLiterals $ Or [And _1pos2neg, And _2pos1neg_1diff]
-            neighbourTerms termMap `shouldBe` [(And _1pos2neg, And _2pos1neg_1diff)]
 
-        it "checks the Hamming distance, not just the number of relevant literals" $ do
-            let termMap = groupByRelevantLiterals $ Or [And _1pos2neg, And _2pos1neg_2diff]
-            neighbourTerms termMap `shouldBe` []
+    --    it "is 2 for an empty term and one with 1 literal" $ do
+    --        hammingDistance (And [], And [Atom (var 0), Not $ Atom (var 1)]) `shouldBe` 2
+    --        hammingDistance (And [Not $ Atom (var 0), Atom (var 0)], And []) `shouldBe` 2
 
-        it "is one pair if the hamming distance is correct" $ do
-            let termMap = groupByRelevantLiterals $ And [Or _1pos2neg, Or _2pos1neg_1diff]
-            neighbourTerms termMap `shouldBe` [(Or _2pos1neg_1diff, Or _1pos2neg)]
+    --    it "is 2 for a term with 1 literal and another with 3 literals" $ do
+    --        hammingDistance (And [Atom (var 0)], And [Atom (var 0), Atom (var 1), Not $ Atom (var 0)]) `shouldBe` 2
 
-        it "is two pairs if there are two neighbours" $ do
-            let termMap = groupByRelevantLiterals $ Or [And _0pos3neg, And _1pos2neg, And _2pos1neg_1diff, And _2pos1neg_2diff, And _3pos0neg]
-            let expected = [
-                    (And _0pos3neg, And _1pos2neg),
-                    (And _1pos2neg, And _2pos1neg_1diff),
-                    (And _2pos1neg_1diff, And _3pos0neg),
-                    (And _2pos1neg_2diff, And _3pos0neg)
-                    ]
-            neighbourTerms termMap `shouldBe` expected
+    --    it "is 1 for a pair of terms with one different literal" $ do
+    --        hammingDistance (And _1pos2neg, And _2pos1neg_1diff) `shouldBe` 1
+    --        hammingDistance (And _1pos2neg, And _2pos1neg_2diff) `shouldBe` 2
+            
+
+    --describe "neighbourTerms" $ do
+    --    it "is empty for an empty map" $ do
+    --        neighbourTerms Map.empty `shouldBe` []
+
+    --    it "is empty if there are no neighbour terms" $ do
+    --        let termMap = groupByRelevantLiterals $ And [Or _0pos3neg, Or _2pos1neg_1diff]
+    --        neighbourTerms termMap `shouldBe` []
+
+    --    it "is one pair if there are two neighbour terms" $ do
+    --        let termMap = groupByRelevantLiterals $ Or [And _1pos2neg, And _2pos1neg_1diff]
+    --        neighbourTerms termMap `shouldBe` [(And _1pos2neg, And _2pos1neg_1diff)]
+
+    --    it "checks the Hamming distance, not just the number of relevant literals" $ do
+    --        let termMap = groupByRelevantLiterals $ Or [And _1pos2neg, And _2pos1neg_2diff]
+    --        neighbourTerms termMap `shouldBe` []
+
+    --    it "is one pair if the hamming distance is correct" $ do
+    --        let termMap = groupByRelevantLiterals $ And [Or _1pos2neg, Or _2pos1neg_1diff]
+    --        neighbourTerms termMap `shouldBe` [(Or _2pos1neg_1diff, Or _1pos2neg)]
+
+    --    it "is two pairs if there are two neighbours" $ do
+    --        let termMap = groupByRelevantLiterals $ Or [And _0pos3neg, And _1pos2neg, And _2pos1neg_1diff, And _2pos1neg_2diff, And _3pos0neg]
+    --        let expected = [
+    --                (And _0pos3neg, And _1pos2neg),
+    --                (And _1pos2neg, And _2pos1neg_1diff),
+    --                (And _2pos1neg_1diff, And _3pos0neg),
+    --                (And _2pos1neg_2diff, And _3pos0neg)
+    --                ]
+    --        neighbourTerms termMap `shouldBe` expected
 
     describe "mergeTerms" $ do
         it "merges two identical terms to that same term" $ do
@@ -135,3 +158,36 @@ spec = do
                     (4, [mik15])
                     ]
             groupByRelevantLiterals mikhelsonExample `shouldBe` expected
+
+    describe "quineMinterms/quineMaxterms" $ do
+        it "yields no terms for no variables" $ do
+            quineMinterms 0 `shouldBe` []
+
+        it "gives a positive and negated literal for one variable" $ do
+            quineMinterms 1 `shouldBe` [And [Not $ Atom $ var 0], And [Atom $ var 0]]
+
+    describe "Lesson 10 example" $ do
+        let [t0,t1,t2,t3,t4,t5,t6,t7] = quineMinterms 3
+        let onSet = [t2,t4,t5,t6,t7]
+        it "groups by relevant literals as in the video" $ do
+            let expected = Map.fromList [
+                    (1, [t2,t4]),
+                    (2, [t5,t6]),
+                    (3, [t7])
+                    ]
+            groupByRelevantLiterals (Or onSet) `shouldBe` expected
+
+        --it "partitions the terms as in the video" $ do
+        --    let initialTermMap = groupByRelevantLiterals $ Or onSet
+        --    let afterFirstStep = partitionTerms initialTermMap
+        --    afterFirstStep `shouldBe` ([], map mergeTerms [
+        --                               (t2,t6),
+        --                               (t4,t5),
+        --                               (t4,t6),
+        --                               (t5,t7),
+        --                               (t6,t7)
+        --                               ])
+        --    let termMapAfterFirstStep = groupByRelevantLiterals $ Or (snd afterFirstStep)
+        --    let afterSecondStep = partitionTerms termMapAfterFirstStep
+        --    pending
+            --afterFirstStep `shouldBe` ([],[])
