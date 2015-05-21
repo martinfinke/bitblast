@@ -308,6 +308,10 @@ spec = do
             let nonCanonical = And [Or [Atom (var 0), Not $ Atom (var 1)], Or [Atom (var 1)]]
             isCanonical nonCanonical `shouldBe` False
 
+        it "is False for a DNF with a clause containing two literals of one variable" $ do
+            let nonCanonical = Or [And [Atom (var 0), Atom (var 0)]]
+            isCanonical nonCanonical `shouldBe` False
+
         it "is False for a Formula that isn't a CNF/DNF" $ do
             isCanonical nestedFormula `shouldBe` False
             isCanonical smallNestedFormula `shouldBe` False

@@ -160,8 +160,11 @@ isCanonical formula
     | isCnf formula = let (And maxterms) = formula in P.all canonical maxterms
     | isDnf formula = let (Or minterms) = formula in P.all canonical minterms
     | otherwise = False
-    where canonical term = variableSet term == variables
+    where canonical term = variableSet term == variables && termLength term == Set.size variables
           variables = variableSet formula
+          termLength term = case term of
+            (Or literals) -> length literals
+            (And literals) -> length literals
 
 ensureCanonical :: Formula -> Formula
 ensureCanonical formula
