@@ -80,6 +80,20 @@ spec = do
             let termMap = groupByRelevantLiterals $ Or [And _1pos2neg, And _2pos1neg_1diff]
             neighbourTerms termMap `shouldBe` [(And _1pos2neg, And _2pos1neg_1diff)]
 
-        it "doesn't care about the actual Hamming distance, only about the number of pos/neg literals" $ do
+        it "checks the Hamming distance, not just the number of relevant literals" $ do
             let termMap = groupByRelevantLiterals $ Or [And _1pos2neg, And _2pos1neg_2diff]
-            neighbourTerms termMap `shouldBe` [(And _1pos2neg, And _2pos1neg_2diff)]
+            neighbourTerms termMap `shouldBe` []
+
+        it "is one pair if the hamming distance is correct" $ do
+            let termMap = groupByRelevantLiterals $ And [Or _1pos2neg, Or _2pos1neg_1diff]
+            neighbourTerms termMap `shouldBe` [(Or _2pos1neg_1diff, Or _1pos2neg)]
+
+        it "is two pairs if there are two neighbours" $ do
+            let termMap = groupByRelevantLiterals $ Or [And _0pos3neg, And _1pos2neg, And _2pos1neg_1diff, And _2pos1neg_2diff, And _3pos0neg]
+            let expected = [
+                    (And _0pos3neg, And _1pos2neg),
+                    (And _1pos2neg, And _2pos1neg_1diff),
+                    (And _2pos1neg_1diff, And _3pos0neg),
+                    (And _2pos1neg_2diff, And _3pos0neg)
+                    ]
+            neighbourTerms termMap `shouldBe` expected

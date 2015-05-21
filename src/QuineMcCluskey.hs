@@ -7,6 +7,7 @@ module QuineMcCluskey (numRelevantLiterals,
 import Formula (Formula(..))
 import NormalForm
 import qualified Data.Map.Lazy as Map
+import qualified Data.Set as Set
 import Data.List(groupBy, sortBy)
 import Data.Ord(comparing)
 
@@ -40,7 +41,16 @@ partitionTerms termMap = (primeTerms, mergedTerms)
           
 
 neighbourTerms :: Map.Map Int [Formula] -> [(Formula, Formula)]
-neighbourTerms termMap = concatMap allTermPairsForKeyPair neighbourKeyPairs
+neighbourTerms termMap = filter ((== 1) . hammingDistance) $ concatMap allTermPairsForKeyPair neighbourKeyPairs
     where neighbourKeyPairs = neighbourKeys $ Map.keys termMap :: [(Int, Int)]
           allTermPairsForKeyPair (key1,key2) = [(term1,term2) | term1 <- lookupOrEmptyList key1, term2 <- lookupOrEmptyList key2]
           lookupOrEmptyList key = maybe [] id (Map.lookup key termMap)
+
+-- | The terms have to be min/maxterms.
+hammingDistance :: (Formula, Formula) -> Int
+hammingDistance (term1, term2) = Set.size diff
+    where diff = Set.difference (literals term1) (literals term2)
+          literals term = Set.fromList $ case term of
+                (And ls) -> ls
+                (Or ls) -> ls
+                _ -> error $ "Can't calculate hammingDistance with term: " ++ show term

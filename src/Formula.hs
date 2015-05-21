@@ -21,7 +21,7 @@ data Formula = Atom     Variable -- ^ A positive literal
              | Implies  Formula Formula -- ^ Implication
              | Xor     [Formula] -- ^ Exclusive Or
              | Equiv   [Formula] -- ^ Equivalence
-    deriving (Eq)
+    deriving (Eq, Ord)
 
 instance Show Formula where
     show f = case f of
