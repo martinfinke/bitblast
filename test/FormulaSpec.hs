@@ -170,13 +170,6 @@ spec = do
         it "works for nestedFormula" $ do
             variableSet nestedFormula `shouldBe` Set.fromList (map var [1, 2, 3, 15, 27])
 
-    describe "numVariablesInFormula" $ do
-        it "is 0 for an empty Formula" $ do
-            numVariablesInFormula (And []) `shouldBe` 0
-
-        it "is 5 for nestedFormula" $ do
-            numVariablesInFormula nestedFormula `shouldBe` 5
-
     describe "allBoolCombinations" $ do
         it "is the allFalse assignment for no variables" $ do
             allBoolCombinations (Set.fromList []) `shouldBe` [allFalse]

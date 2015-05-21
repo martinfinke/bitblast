@@ -1,23 +1,26 @@
+{-|
+'Formula' type representing a boolean function in propositional logic, and functions to evaluate and convert to a 'TruthTable.TruthTable'.
+-}
 module Formula (Formula(..),
                 eval,
                 variableSet,
-                numVariablesInFormula,
-                allBoolCombinations,
+                toTruthTable,
                 possibleAssignments,
-                toTruthTable
+                allBoolCombinations
                 ) where
 
 import TruthTable (Variable, getVariable, setVariable, Assignment, allFalse, OutputValue(..), TruthTable, emptyTable, setOutputs, boolToOutputValue)
 import Data.List (intercalate)
 import qualified Data.Set as Set
 
-data Formula = Atom     Variable
-             | Not      Formula
-             | And     [Formula]
-             | Or      [Formula]
-             | Implies  Formula Formula
-             | Xor     [Formula]
-             | Equiv   [Formula]
+-- | A boolean 'Formula' in propositional logic.
+data Formula = Atom     Variable -- ^ A positive literal
+             | Not      Formula -- ^ Negation
+             | And     [Formula] -- ^ Conjunction
+             | Or      [Formula] -- ^ Disjunction
+             | Implies  Formula Formula -- ^ Implication
+             | Xor     [Formula] -- ^ Exclusive Or
+             | Equiv   [Formula] -- ^ Equivalence
     deriving (Eq)
 
 instance Show Formula where
@@ -38,7 +41,10 @@ instance Show Formula where
               parens = surround ("(", ")")
               parensJoin delimiter fs = parens $ intercalate delimiter $ map show fs
 
-eval :: Assignment -> Formula -> Bool
+-- | Evaluates a 'Formula' under a given 'Assignment' to 'True' or 'False'.
+eval :: Assignment -- ^ Assigns a value to each 'Variable'
+     -> Formula -- ^ The 'Formula' to evaluate
+     -> Bool -- ^ The value of the 'Formula' under the given 'Assignment'
 eval assignment formula = case formula of
     Atom v -> getVariable v assignment
     Not f -> not $ eval assignment f
@@ -49,6 +55,7 @@ eval assignment formula = case formula of
     Equiv [] -> True
     Equiv (f:fs) -> all (== eval assignment f) (map (eval assignment) fs)
 
+-- | The 'Set.Set' of all 'Variable's that appear in a given 'Formula'.
 variableSet :: Formula -> Set.Set Variable
 variableSet formula = case formula of
     Atom v -> Set.fromList [v]
@@ -60,18 +67,18 @@ variableSet formula = case formula of
     Equiv fs -> foldList fs
     where foldList = foldr (Set.union . variableSet) Set.empty
 
-numVariablesInFormula :: Formula -> Int
-numVariablesInFormula = Set.size . variableSet
+-- | Generates a 'TruthTable' from a given 'Formula'
+toTruthTable :: Formula -> TruthTable
+toTruthTable formula = setOutputs outputs (emptyTable tableSize)
+    where assignments = possibleAssignments formula
+          tableSize = highestVariableIndex formula + 1
+          outputs = map (\assignment -> (assignment, boolToOutputValue $ eval assignment formula)) assignments
 
-highestVariableIndex :: Formula -> Int
-highestVariableIndex formula = case Set.toList variables of
-    [] -> -1
-    _ -> fromEnum $ Set.findMax variables
-    where variables = variableSet formula
-
+-- | All possible 'Assignment's for a given 'Formula', i.e. all combinations of true/false values for its 'variableSet'.
 possibleAssignments :: Formula -> [Assignment]
 possibleAssignments = allBoolCombinations . variableSet
 
+-- | All possible 'Assignment's for a 'Set.Set' of 'Variable's.
 allBoolCombinations :: Set.Set Variable -> [Assignment]
 allBoolCombinations variables
     | Set.null variables = [allFalse]
@@ -79,8 +86,8 @@ allBoolCombinations variables
     where variable = Set.elemAt (Set.size variables - 1) variables
           rest = allBoolCombinations (Set.delete variable variables)
 
-toTruthTable :: Formula -> TruthTable
-toTruthTable formula = setOutputs outputs (emptyTable tableSize)
-    where assignments = possibleAssignments formula
-          tableSize = highestVariableIndex formula + 1
-          outputs = map (\assignment -> (assignment, boolToOutputValue $ eval assignment formula)) assignments
+highestVariableIndex :: Formula -> Int
+highestVariableIndex formula = case Set.toList variables of
+    [] -> -1
+    _ -> fromEnum $ Set.findMax variables
+    where variables = variableSet formula
