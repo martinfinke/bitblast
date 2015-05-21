@@ -1,10 +1,10 @@
 module QuineMcCluskey where
 
-import Formula
+import Formula (Formula(..))
+import NormalForm
 import qualified Data.Map.Lazy as Map
 import Data.List(groupBy, sortBy)
 import Data.Ord(comparing)
-import Debug.Trace(traceShow)
 
 numRelevantLiterals :: Formula -> Int
 numRelevantLiterals formula

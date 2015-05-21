@@ -31,11 +31,11 @@ spec = do
 
 
     describe "Assignment" $ do
-        it "sets and gets a Variable value correctly" $ do
+        it "sets and gets any Variable value correctly" $ do
             property $ \assignment variable bool -> getVariable variable (setVariable variable bool assignment) == bool
             
     describe "TruthTable emptyTable" $ do
-        it "can create an empty table with a valid size" $ do
+        it "can create an empty table with any valid size" $ do
             property $ \(TenOrLess numVariables) -> numVariablesInTable (emptyTable numVariables) == numVariables
 
         it "doesn't allow creating a table that's too large" $ do
@@ -46,7 +46,7 @@ spec = do
             let table = emptyTable 3
             evaluate (setOutput (toEnum 8) F table) `shouldThrow` anyErrorCall
 
-        it "sets a valid assignment correctly" $ do
+        it "sets any valid assignment correctly" $ do
             let randomAssignment table i = toEnum $ max 0 $ min (i-1) (numVariablesInTable table - 1)
             property $ \table (TenOrLess i) outputValue ->
                 getOutput (randomAssignment table i) (setOutput (randomAssignment table i) outputValue table) == outputValue

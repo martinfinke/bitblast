@@ -3,7 +3,9 @@ module SpecHelper
       module Test.QuickCheck,
       OneHundredOrLess(..),
       TenOrLess(..),
-      shouldBeOneOf
+      shouldBeOneOf,
+      nestedFormula,
+      smallNestedFormula
     ) where
 
 import Test.Hspec
@@ -75,3 +77,11 @@ randomFormula variables depth = do
 
 shouldBeOneOf :: (Eq a, Show a) => a -> [a] -> Expectation
 shouldBeOneOf x xs = x `shouldSatisfy` (`elem` xs)
+
+nestedFormula :: Formula
+nestedFormula = Not $ And [Not x3, x1, Implies (Xor [x15, Not x27, Equiv [x3, x2, Or [Not x3], x27]]) (Or [x3, x2])]
+    where [x1, x2, x3, x15, x27] = map (Atom . var) [1, 2, 3, 15, 27]
+
+smallNestedFormula :: Formula
+smallNestedFormula = Equiv [Xor [Not $ Atom (var 1), Atom (var 0)], Not $ And [Atom (var 1), Or [Not $ Atom (var 0), Atom (var 3)]]]
+
