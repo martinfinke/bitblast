@@ -1,4 +1,6 @@
-module QuineMcCluskey where
+module QuineMcCluskey (numRelevantLiterals,
+                       groupByRelevantLiterals
+                       ) where
 
 import Formula (Formula(..))
 import NormalForm
@@ -17,9 +19,11 @@ numRelevantLiterals formula
 groupByRelevantLiterals :: Formula -> Map.Map Int [Formula]
 groupByRelevantLiterals formula
     | not (isCanonical formula) = groupByRelevantLiterals (ensureCanonical formula)
-    | isCnf formula = let (And maxterms) = formula in toMap maxterms
-    | isDnf formula = let (Or minterms) = formula in toMap minterms
+    | isCnf formula = let (And maxterms) = formula in groupTerms maxterms
+    | isDnf formula = let (Or minterms) = formula in groupTerms minterms
     | otherwise = error $ "Not a CNF or DNF: " ++ show formula
+    
+groupTerms :: [Formula] -> Map.Map Int [Formula]
+groupTerms = Map.fromList . withNumber . group . sortBy (comparing numRelevantLiterals)
     where group terms = groupBy (\t1 t2 -> numRelevantLiterals t1 == numRelevantLiterals t2) terms :: [[Formula]]
           withNumber = map (\terms@(term:_) -> (numRelevantLiterals term, terms))
-          toMap = Map.fromList . withNumber . group . sortBy (comparing numRelevantLiterals)
