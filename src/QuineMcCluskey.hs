@@ -1,7 +1,8 @@
 module QuineMcCluskey (numRelevantLiterals,
                        groupByRelevantLiterals,
                        neighbourKeys,
-                       neighbourTerms
+                       neighbourTerms,
+                       mergeTerms
                        ) where
 
 import Formula (Formula(..))
@@ -35,8 +36,9 @@ neighbourKeys ints = [(i,i+1) | i <- ints, (i+1) `elem` ints]
 
 partitionTerms :: Map.Map Int [Formula] -> ([Formula], [Formula])
 partitionTerms termMap = (primeTerms, mergedTerms)
-    where primeTerms = undefined
-          mergedTerms = undefined
+    where neighbours = neighbourTerms termMap
+          primeTerms = undefined
+          mergedTerms = map mergeTerms neighbours
           
 
 neighbourTerms :: Map.Map Int [Formula] -> [(Formula, Formula)]
@@ -48,5 +50,12 @@ neighbourTerms termMap = filter ((== 1) . hammingDistance) $ concatMap allTermPa
 -- | The terms have to be min/maxterms.
 hammingDistance :: (Formula, Formula) -> Int
 hammingDistance (term1, term2) = Set.size diff
-    where diff = Set.difference (literals term1) (literals term2)
-          literals = Set.fromList . normalFormChildren
+    where diff = Set.difference (termLiterals term1) (termLiterals term2)
+          
+
+mergeTerms :: (Formula, Formula) -> Formula
+mergeTerms termPair = case termPair of
+    (Or lits1, Or lits2) -> merge Or lits1 lits2
+    (And lits1, And lits2) -> merge And lits1 lits2
+    invalidTerms -> error $ "Invalid term format: " ++ show invalidTerms
+    where merge op t1 t2 = op . Set.toAscList $ Set.intersection (Set.fromList t1) (Set.fromList t2)

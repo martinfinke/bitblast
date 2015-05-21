@@ -13,7 +13,8 @@ module NormalForm (toCanonicalCnf,
                    assignmentToMinterm,
                    assignmentToMaxterm,
                    ensureCanonical,
-                   normalFormChildren) where
+                   normalFormChildren,
+                   termLiterals) where
 
 import Formula
 import TruthTable (Variable, Assignment, getVariable, OutputValue(..), getOutput)
@@ -103,7 +104,12 @@ ensureCanonical formula
     | isDnf formula = toCanonicalDnf formula
     | otherwise = toCanonicalCnf formula
 
+-- | Extract the conjunctions/disjunctions of a DNF/CNF, or the literals of a conjunction/disjunction.
 normalFormChildren :: Formula -> [Formula]
 normalFormChildren (And children) = children
 normalFormChildren (Or children) = children
 normalFormChildren invalidFormula = error $ "Not a normal form: " ++ show invalidFormula
+
+-- | The 'Set' of literals of a term
+termLiterals :: Formula -> Set.Set Formula
+termLiterals = Set.fromList . normalFormChildren

@@ -9,6 +9,12 @@ import qualified Data.Map.Lazy as Map
 
 spec :: Spec
 spec = do
+    let [x0,x1,x2] = map (Atom . var) [0,1,2]
+    let _0pos3neg = [Not x0, Not x1, Not x2]
+    let _1pos2neg = [x0, Not x1, Not x2]
+    let _2pos1neg_1diff = [x0, Not x1, x2]
+    let _2pos1neg_2diff = [Not x0, x1, x2]
+    let _3pos0neg = [x0, x1, x2]
     describe "numRelevantLiterals" $ do
         it "is 0 for a disjunction without negative literals" $ do
             numRelevantLiterals (Or [Atom (var 1), Atom (var 2)]) `shouldBe` 0
@@ -62,13 +68,6 @@ spec = do
             neighbourKeys [3,4, 7,8] `shouldBe` [(3,4), (7,8)]
 
     describe "neighbourTerms" $ do
-        let [x0,x1,x2] = map (Atom . var) [0,1,2]
-        let _0pos3neg = [Not x0, Not x1, Not x2]
-        let _1pos2neg = [x0, Not x1, Not x2]
-        let _2pos1neg_1diff = [x0, Not x1, x2]
-        let _2pos1neg_2diff = [Not x0, x1, x2]
-        let _3pos0neg = [x0, x1, x2]
-
         it "is empty for an empty map" $ do
             neighbourTerms Map.empty `shouldBe` []
 
@@ -97,3 +96,15 @@ spec = do
                     (And _2pos1neg_2diff, And _3pos0neg)
                     ]
             neighbourTerms termMap `shouldBe` expected
+
+    describe "mergeTerms" $ do
+        it "merges two identical terms to that same term" $ do
+            mergeTerms (Or _1pos2neg, Or _1pos2neg) `shouldBe` Or _1pos2neg
+
+        it "merges two disjunct terms to an empty term" $ do
+            mergeTerms (And _1pos2neg, And _2pos1neg_2diff) `shouldBe` And []
+
+        it "merges two terms with exactly one difference to a new term with everything they had in common" $ do
+            mergeTerms (Or _1pos2neg, Or _2pos1neg_1diff) `shouldBe` Or [x0, Not x1]
+            mergeTerms (And _3pos0neg, And _2pos1neg_1diff) `shouldBe` And [x0, x2]
+            mergeTerms (Or _3pos0neg, Or _2pos1neg_2diff) `shouldBe` Or [x1, x2]
