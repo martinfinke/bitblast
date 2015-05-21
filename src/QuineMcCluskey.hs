@@ -13,8 +13,8 @@ import Data.Ord(comparing)
 
 numRelevantLiterals :: Formula -> Int
 numRelevantLiterals formula
-    | isConjunctionOfLiterals formula = let (And literals) = formula in countPositive literals
-    | isDisjunctionOfLiterals formula = let (Or literals) = formula in countNegative literals
+    | isConjunctionOfLiterals formula = countPositive $ normalFormChildren formula
+    | isDisjunctionOfLiterals formula = countNegative $ normalFormChildren formula
     | otherwise = error $ "Not a conjunction/disjunction of literals: " ++ show formula
     where countPositive = length . filter isPositiveLiteral
           countNegative = length . filter (not . isPositiveLiteral)
@@ -22,8 +22,7 @@ numRelevantLiterals formula
 groupByRelevantLiterals :: Formula -> Map.Map Int [Formula]
 groupByRelevantLiterals formula
     | not (isCanonical formula) = groupByRelevantLiterals (ensureCanonical formula)
-    | isCnf formula = let (And disjunctions) = formula in groupTerms disjunctions
-    | isDnf formula = let (Or conjunctions) = formula in groupTerms conjunctions
+    | isCnf formula || isDnf formula = groupTerms $ normalFormChildren formula
     | otherwise = error $ "Not a CNF or DNF: " ++ show formula
     
 groupTerms :: [Formula] -> Map.Map Int [Formula]
@@ -50,7 +49,4 @@ neighbourTerms termMap = filter ((== 1) . hammingDistance) $ concatMap allTermPa
 hammingDistance :: (Formula, Formula) -> Int
 hammingDistance (term1, term2) = Set.size diff
     where diff = Set.difference (literals term1) (literals term2)
-          literals term = Set.fromList $ case term of
-                (And ls) -> ls
-                (Or ls) -> ls
-                _ -> error $ "Can't calculate hammingDistance with term: " ++ show term
+          literals = Set.fromList . normalFormChildren

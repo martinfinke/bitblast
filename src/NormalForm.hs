@@ -12,7 +12,8 @@ module NormalForm (toCanonicalCnf,
                    isPositiveLiteral,
                    assignmentToMinterm,
                    assignmentToMaxterm,
-                   ensureCanonical) where
+                   ensureCanonical,
+                   normalFormChildren) where
 
 import Formula
 import TruthTable (Variable, Assignment, getVariable, OutputValue(..), getOutput)
@@ -101,3 +102,8 @@ ensureCanonical formula
     | isCanonical formula = formula
     | isDnf formula = toCanonicalDnf formula
     | otherwise = toCanonicalCnf formula
+
+normalFormChildren :: Formula -> [Formula]
+normalFormChildren (And children) = children
+normalFormChildren (Or children) = children
+normalFormChildren invalidFormula = error $ "Not a normal form: " ++ show invalidFormula
