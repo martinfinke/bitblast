@@ -9,7 +9,13 @@ module QuineMcCluskey (QmcTerm(..),
                        neighbourKeys,
                        dashesLineUp,
                        mergeTerms,
-                       dashWhenDifferent
+                       dashWhenDifferent,
+                       qmcStep,
+                       qmcPrimes,
+                       allPairsOfGroups,
+                       possibleNeighbours,
+                       mergesOrNothing,
+                       termsUsedForMerging
                        ) where
 
 import Formula (Formula(..), highestVariableIndex)
@@ -20,6 +26,8 @@ import qualified Data.Set as Set
 import Data.List(groupBy, sortBy)
 import Data.Ord(comparing)
 import UnboxMaybe
+import Data.Maybe(catMaybes, isNothing)
+import Debug.Trace(traceShow)
 
 import qualified Data.Vector.Unboxed as V
 
@@ -29,7 +37,7 @@ instance DefaultValue Bool where
 type QmcTermElement = Maybe Bool
 
 newtype QmcTerm = QmcTerm (V.Vector QmcTermElement)
-    deriving (Eq)
+    deriving (Eq, Ord)
 
 -- | The lowest 'Variable' index is shown at the right
 instance Show QmcTerm where
@@ -103,9 +111,33 @@ dashWhenDifferent el1 el2 = case (el1,el2) of
     (Just bool1, Just bool2) -> if bool1 /= bool2 then Nothing else Just bool1
     where printError = error $ "dashWhenDifferent error: Dashes don't align. Make sure dashesLineUp was checked before running dashWhenDifferent."
 
-
 neighbourKeys :: [Int] -> [(Int, Int)]
 neighbourKeys ints = [(i,i+1) | i <- ints, (i+1) `elem` ints]
 
+qmcStep :: FormType -> [QmcTerm] -> ([QmcTerm], [QmcTerm])
+qmcStep formType terms = (primes, merges)
+    where primes = Set.toList $ Set.difference (Set.fromList terms) $ termsUsedForMerging (mergesOrNothing neighbours) neighbours
+          merges = catMaybes $ mergesOrNothing neighbours
+          groups = groupTerms formType terms
+          neighbours = possibleNeighbours groups
 
+allPairsOfGroups :: Map.Map Int [QmcTerm] -> (Int,Int) -> [(QmcTerm, QmcTerm)]
+allPairsOfGroups groups (i,j) = [(t1,t2) | t1 <- justOrEmpty i, t2 <- justOrEmpty j]
+    where justOrEmpty key = maybe [] id (Map.lookup key groups)
 
+possibleNeighbours :: Map.Map Int [QmcTerm] -> [(QmcTerm,QmcTerm)]
+possibleNeighbours groups = concatMap (allPairsOfGroups groups) neighbouringGroups
+    where neighbouringGroups = neighbourKeys (Map.keys groups)
+
+mergesOrNothing :: [(QmcTerm,QmcTerm)] -> [Maybe QmcTerm]
+mergesOrNothing = map $ uncurry mergeTerms
+
+termsUsedForMerging :: Ord a => [Maybe a] -> [(a,a)] -> Set.Set a
+termsUsedForMerging maybeMerges neighbours = Set.fromList $ concat $ zipWith (\mergeOrNothing (t1,t2) -> if isNothing mergeOrNothing then [] else [t1,t2]) maybeMerges neighbours
+
+qmcPrimes :: FormType -> [QmcTerm] -> [QmcTerm]
+qmcPrimes _ [] = []
+qmcPrimes formType terms =
+    let (primes, merges) = qmcStep formType terms
+    in primes ++ qmcPrimes formType merges
+  

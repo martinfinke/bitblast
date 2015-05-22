@@ -7,6 +7,7 @@ import Formula(Formula(..))
 import NormalForm(FormType(..))
 import qualified Data.Vector.Unboxed as V
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Data.Maybe(isJust, catMaybes)
 
 
@@ -158,11 +159,14 @@ spec = do
         let terms@[t2,t4,t5,t6,t7] = map fromString ["010", "100", "101", "110", "111"]
         let initialGroups = groupTerms DNFType terms
         let afterFirstStep@[t2_6,t4_5,t4_6,t5_7,t6_7] = catMaybes $ map (uncurry mergeTerms) [(t2,t6), (t4,t5), (t4,t6), (t5,t7), (t6,t7)]
+        let primesAfterFirstStep = fst $ qmcStep DNFType terms
         let groupsAfterFirstStep = groupTerms DNFType afterFirstStep
         let afterSecondStep = catMaybes $ map (uncurry mergeTerms) [(t4_5,t6_7), (t4_6,t5_7)]
+        let primesAfterSecondStep = fst $ qmcStep DNFType afterFirstStep
         let groupsAfterSecondStep = groupTerms DNFType afterSecondStep
 
-        let expectedPrimes = map fromString ["-10", "1--", "1--"] -- not unique
+        let primesAfterThirdStep = fst $ qmcStep DNFType afterSecondStep
+        let expectedPrimes = map fromString ["-10", "1--"]
 
         it "groups the initial terms correctly" $ do
             initialGroups `shouldBe` Map.fromList [
@@ -187,6 +191,18 @@ spec = do
 
         it "merges correctly in the second step" $ do
             afterSecondStep `shouldBe` map fromString ["1--", "1--"]
+
+        it "doesn't find primes in the first step" $ do
+            primesAfterFirstStep `shouldBe` []
+
+        it "finds one prime in the second step" $ do
+            primesAfterSecondStep `shouldBe` [fromString "-10"]
+
+        it "finds one prime (actually, two identical ones) in the third step" $ do
+            primesAfterThirdStep `shouldBe` [fromString "1--"]
+
+        it "finds the expected primes in the end" $ do
+            qmcPrimes DNFType terms `shouldBe` expectedPrimes
 
     describe "Example Terms 2" $ do
         -- Youtube: pQ3MfzqGlrc
@@ -228,6 +244,9 @@ spec = do
         it "merges correctly in the second step" $ do
             afterSecondStep `shouldBe` map fromString ["00--", "00--", "-0-0", "-0-0", "0--1", "0--1"]
 
+        it "finds the correct primes" $ do
+            Set.fromList (qmcPrimes DNFType terms) `shouldBe` Set.fromList expectedPrimes
+
     describe "neighbourKeys" $ do
         it "is the empty list for an empty input list" $ do
             neighbourKeys [] `shouldBe` []
@@ -260,5 +279,47 @@ spec = do
             let terms@[t1,t2,t3,t4] = map fromString ["1-1111-", "1-1101-", "100101-", "0-1-110"]
             groupTerms CNFType terms `shouldBe` Map.fromList [(0,[t1]), (1,[t2]), (2,[t4]), (3,[t3])]
             groupTerms DNFType terms `shouldBe` Map.fromList [(3,[t3,t4]), (4,[t2]), (5,[t1])]
+
+    describe "allPairsOfGroups" $ do
+        it "is the empty list if there are no groups" $ do
+            allPairsOfGroups (Map.fromList []) (0,1) `shouldBe` []
+
+        it "is the empty list if there are groups, but the indices don't use them" $ do
+            allPairsOfGroups testGroups (0,1) `shouldBe` []
+            allPairsOfGroups testGroups (3,4) `shouldBe` []
     
+        it "finds the correct neighbour pairs" $ do
+            allPairsOfGroups testGroups (1,2) `shouldBe` [(fromString "-100", fromString "-110")]
+            allPairsOfGroups testGroups (2,3) `shouldBe` [(fromString "-110", fromString "1110"), (fromString "-110", fromString "-111")]
+
+    describe "possibleNeighbours" $ do
+        it "determines the correct possible neighbours" $ do
+            possibleNeighbours testGroups `shouldBe` [
+                (fromString "-100", fromString "-110"),
+                (fromString "-110", fromString "1110"),
+                (fromString "-110", fromString "-111")
+                ]
+
+    describe "mergesOrNothing" $ do
+        it "does the correct merges" $ do
+            let neighbours = possibleNeighbours testGroups
+            mergesOrNothing neighbours `shouldBe` map (fmap fromString) [Just "-1-0", Nothing, Just "-11-"]
+
+    describe "termsUsedForMerging" $ do
+        it "adds anything from the second list in positions where the first list is not Nothing" $ do
+            let maybeMerges = [Just 1, Nothing, Nothing, Just 1, Just 1, Nothing] :: [Maybe Int]
+            let neighbours = [(1,2), (-1,-2), (-10,-20), (10,20), (100,200), (-100,-200)]
+            termsUsedForMerging maybeMerges neighbours `shouldBe` Set.fromList [1,2,10,20,100,200]
+
+        it "works for testGroups" $ do
+            let neighbours = possibleNeighbours testGroups
+            let maybeMerges = mergesOrNothing neighbours
+            termsUsedForMerging maybeMerges neighbours `shouldBe` Set.fromList (map fromString ["-100", "-110", "-110", "-111"])
             
+
+testGroups :: Map.Map Int [QmcTerm]
+testGroups = Map.fromList [
+                (1,[fromString "-100"]),
+                (2,[fromString "-110"]),
+                (3,[fromString "1110", fromString "-111"])
+                ]
