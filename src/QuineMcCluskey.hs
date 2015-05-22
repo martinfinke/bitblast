@@ -5,7 +5,10 @@ module QuineMcCluskey (QmcTerm(..),
                        valueForVariableIndex,
                        numRelevantLiterals',
                        hammingDistance,
-                       neighbourKeys
+                       neighbourKeys,
+                       dashesLineUp,
+                       mergeTerms,
+                       dashWhenDifferent
                        ) where
 
 import Formula (Formula(..), highestVariableIndex)
@@ -22,7 +25,9 @@ import qualified Data.Vector.Unboxed as V
 instance DefaultValue Bool where
     defaultValue = False
 
-newtype QmcTerm = QmcTerm (V.Vector (Maybe Bool))
+type QmcTermElement = Maybe Bool
+
+newtype QmcTerm = QmcTerm (V.Vector QmcTermElement)
     deriving (Eq)
 
 -- | The lowest 'Variable' index is shown at the right
@@ -50,7 +55,7 @@ formulaToQmcTerms formula
 termToQmcTerm :: Int -> Formula -> QmcTerm
 termToQmcTerm qmcTermLength term = QmcTerm (V.generate qmcTermLength $ valueForVariableIndex term)
 
-valueForVariableIndex :: Formula -> Int -> Maybe Bool
+valueForVariableIndex :: Formula -> Int -> QmcTermElement
 valueForVariableIndex term i
     | Atom (var i) `elem` literals = Just True
     | Not (Atom (var i)) `elem` literals = Just False
@@ -76,6 +81,26 @@ hammingDistance :: (QmcTerm, QmcTerm) -> Int
 hammingDistance (QmcTerm v1, QmcTerm v2) = V.sum $ V.zipWith oneIfDifferent v1 v2
     where oneIfDifferent x y = if x /= y then 1 else 0
 
+dashesLineUp :: QmcTerm -> QmcTerm -> Bool
+dashesLineUp (QmcTerm v1) (QmcTerm v2) = v1Dashes == v2Dashes
+    where [v1Dashes,v2Dashes] = map (V.elemIndices Nothing) [v1,v2]
+
+mergeTerms :: QmcTerm -> QmcTerm -> Maybe QmcTerm
+mergeTerms term1@(QmcTerm v1) term2@(QmcTerm v2)
+    | len1 /= len2 = error "mergeTerms error: Terms have different lengths."
+    | not $ dashesLineUp term1 term2 = Nothing
+    | otherwise = if distance == 1 then Just (QmcTerm merge) else Nothing
+    where [len1,len2] = map V.length [v1,v2]
+          distance = hammingDistance (term1, term2)
+          merge = V.zipWith dashWhenDifferent v1 v2
+
+dashWhenDifferent :: QmcTermElement -> QmcTermElement -> QmcTermElement
+dashWhenDifferent el1 el2 = case (el1,el2) of
+    (Nothing,Nothing) -> Nothing
+    (Nothing,_) -> printError
+    (_,Nothing) -> printError
+    (Just bool1, Just bool2) -> if bool1 /= bool2 then Nothing else Just bool1
+    where printError = error $ "dashWhenDifferent error: Dashes don't align. Make sure dashesLineUp was checked before running dashWhenDifferent."
 
 
 neighbourKeys :: [Int] -> [(Int, Int)]

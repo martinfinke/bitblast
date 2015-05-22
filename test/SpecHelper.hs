@@ -3,12 +3,13 @@ module SpecHelper
       module Test.QuickCheck,
       OneHundredOrLess(..),
       TenOrLess(..),
-      shouldBeOneOf
+      shouldBeOneOf,
+      evaluate
     ) where
 
 import Test.Hspec
 import Test.QuickCheck
-
+import Control.Exception(evaluate)
 
 data OneHundredOrLess = OneHundredOrLess Int
     deriving (Show)

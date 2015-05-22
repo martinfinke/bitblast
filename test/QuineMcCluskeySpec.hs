@@ -95,7 +95,6 @@ spec = do
             hammingDistance (fromString "-", fromString "1") `shouldBe` 1
             hammingDistance (fromString "1", fromString "-") `shouldBe` 1
 
-
         it "is 2 for an empty term and one with 2 literals" $ do
             hammingDistance (fromString "--", fromString "01") `shouldBe` 2
             hammingDistance (fromString "00", fromString "--") `shouldBe` 2
@@ -105,6 +104,53 @@ spec = do
 
         it "is 1 for a pair of terms with one different literal" $ do
             hammingDistance (fromString "000--01--", fromString "010--01--") `shouldBe` 1
+
+    describe "dashesLineUp" $ do
+        it "is False if dashes don't line up" $ do
+            dashesLineUp (fromString "-1--") (fromString "----") `shouldBe` False
+
+        it "is True if dashes line up" $ do
+            dashesLineUp (fromString "-0---") (fromString "-1---") `shouldBe` True
+
+        it "is True for empty terms" $ do
+            dashesLineUp (fromString "") (fromString "") `shouldBe` True
+
+    describe "dashWhenDifferent" $ do
+        it "outputs a dash (Nothing) if elements are different" $ do
+            dashWhenDifferent (Just True) (Just False) `shouldBe` Nothing
+            dashWhenDifferent (Just False) (Just True) `shouldBe` Nothing
+
+        it "outputs the Bool value if elements are the same" $ do
+            dashWhenDifferent (Just True) (Just True) `shouldBe` Just True
+            dashWhenDifferent (Just False) (Just False) `shouldBe` Just False
+
+        it "throws an error when dashes don't align" $ do
+            evaluate (dashWhenDifferent Nothing (Just True)) `shouldThrow` anyErrorCall
+            evaluate (dashWhenDifferent (Just False) Nothing) `shouldThrow` anyErrorCall
+
+    describe "mergeTerms" $ do
+        it "doesn't merge two terms that are equal" $ do
+            mergeTerms (fromString "101") (fromString "101") `shouldBe` Nothing
+
+        it "doesn't merge two terms where the dashes don't line up" $ do
+            mergeTerms (fromString "--1") (fromString "-11") `shouldBe` Nothing
+            mergeTerms (fromString "01-") (fromString "-0-") `shouldBe` Nothing
+
+        it "throws an error for terms with different lengths" $ do
+            evaluate (mergeTerms (fromString "-") (fromString "-1")) `shouldThrow` anyErrorCall
+
+        it "doesn't merge two terms that are different in 2 positions" $ do
+            mergeTerms (fromString "-10") (fromString "-01") `shouldBe` Nothing
+
+        it "doesn't merge two terms that are different in 3 positions" $ do
+            mergeTerms (fromString "-100") (fromString "-011") `shouldBe` Nothing
+
+        it "merges two terms that have exactly 1 difference" $ do
+            mergeTerms (fromString "1") (fromString "0") `shouldBe` Just (fromString "-")
+            mergeTerms (fromString "10") (fromString "11") `shouldBe` Just (fromString "1-")
+            mergeTerms (fromString "1-0") (fromString "1-1") `shouldBe` Just (fromString "1--")
+            mergeTerms (fromString "--10-110-1") (fromString "--10-100-1") `shouldBe` Just (fromString "--10-1-0-1")
+            
 
     describe "neighbourKeys" $ do
         it "is the empty list for an empty input list" $ do
