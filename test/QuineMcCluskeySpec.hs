@@ -1,13 +1,10 @@
 module QuineMcCluskeySpec where
 
 import SpecHelper
-import Control.Exception (evaluate)
 import QuineMcCluskey
-import TruthTable(var, fromTermNumber)
+import TruthTable(var)
 import Formula(Formula(..))
-import NormalForm(assignmentToMinterm, termLiterals, FormType(..))
-import qualified Data.Map.Lazy as Map
-import qualified Data.Set as Set
+import NormalForm(FormType(..))
 import qualified Data.Vector.Unboxed as V
 
 
@@ -16,8 +13,6 @@ instance Arbitrary QmcTerm where
         (TenOrLess len) <- arbitrary
         str <- vectorOf len $ elements "10-"
         return $ fromString str
-
-
 
 spec :: Spec
 spec = do
@@ -110,11 +105,6 @@ spec = do
 
         it "is 1 for a pair of terms with one different literal" $ do
             hammingDistance (fromString "000--01--", fromString "010--01--") `shouldBe` 1
-
-
-
-
-
 
     describe "neighbourKeys" $ do
         it "is the empty list for an empty input list" $ do

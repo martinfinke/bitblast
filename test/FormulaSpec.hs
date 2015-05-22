@@ -3,6 +3,7 @@ module FormulaSpec where
 import SpecHelper
 import Formula
 import TruthTable
+import TruthTableSpec
 import qualified Data.Set as Set
 
 instance Arbitrary Formula where
