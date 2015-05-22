@@ -10,6 +10,15 @@ import qualified Data.Map.Lazy as Map
 import qualified Data.Set as Set
 import qualified Data.Vector.Unboxed as V
 
+
+instance Arbitrary QmcTerm where
+    arbitrary = do
+        (TenOrLess len) <- arbitrary
+        str <- vectorOf len $ elements "10-"
+        return $ fromString str
+
+
+
 spec :: Spec
 spec = do
     let [x0,x1,x2,x3] = map (Atom . var) [0,1,2,3]

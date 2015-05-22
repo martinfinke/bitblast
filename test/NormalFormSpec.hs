@@ -5,6 +5,7 @@ import TruthTable(var, allFalse, allTrue)
 import Formula(Formula(..), eval)
 import NormalForm
 import qualified Data.Set as Set
+import FormulaSpec
 
 spec :: Spec
 spec = do

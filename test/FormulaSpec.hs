@@ -5,6 +5,39 @@ import Formula
 import TruthTable
 import qualified Data.Set as Set
 
+instance Arbitrary Formula where
+    arbitrary = do
+        (TenOrLess tenOrLess) <- arbitrary
+        let numVariables = max 2 tenOrLess
+        let variables = map var [0..numVariables-1]
+        depth <- choose (1,5::Int)
+        randomFormula variables depth
+
+randomFormula :: [Variable] -> Int -> Gen Formula
+randomFormula variables 0 = do
+    variable <- elements variables
+    return $ Atom variable
+randomFormula variables depth = do
+    breadth <- choose (2,5::Int)
+    subFormulas <- vectorOf breadth $ randomFormula variables (depth-1)
+    operator <- elements [
+        Not . head,
+        And,
+        Or,
+        \(f1:f2:_) -> Implies f1 f2,
+        Xor,
+        Equiv
+        ]
+    return $ operator subFormulas
+
+nestedFormula :: Formula
+nestedFormula = Not $ And [Not x3, x1, Implies (Xor [x15, Not x27, Equiv [x3, x2, Or [Not x3], x27]]) (Or [x3, x2])]
+    where [x1, x2, x3, x15, x27] = map (Atom . var) [1, 2, 3, 15, 27]
+
+smallNestedFormula :: Formula
+smallNestedFormula = Equiv [Xor [Not $ Atom (var 1), Atom (var 0)], Not $ And [Atom (var 1), Or [Not $ Atom (var 0), Atom (var 3)]]]
+
+
 spec :: Spec
 spec = do
     describe "eval for literals" $ do
