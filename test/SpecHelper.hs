@@ -13,6 +13,7 @@ import Test.QuickCheck
 
 import TruthTable
 import Formula
+import QuineMcCluskey(QmcTerm(..), fromString)
 
 
 data OneHundredOrLess = OneHundredOrLess Int
@@ -73,6 +74,13 @@ randomFormula variables depth = do
         Equiv
         ]
     return $ operator subFormulas
+
+instance Arbitrary QmcTerm where
+    arbitrary = do
+        (TenOrLess len) <- arbitrary
+        str <- vectorOf len $ elements "10-"
+        return $ fromString str
+
 
 
 shouldBeOneOf :: (Eq a, Show a) => a -> [a] -> Expectation

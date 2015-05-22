@@ -3,6 +3,7 @@ Functions to convert 'Formula'e to canonical CNF/DNF.
 -}
 module NormalForm (toCanonicalCnf,
                    toCanonicalDnf,
+                   FormType(..),
                    isCnf,
                    isDnf,
                    isCanonical,

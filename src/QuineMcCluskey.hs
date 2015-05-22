@@ -1,9 +1,11 @@
 module QuineMcCluskey (QmcTerm(..),
+                       fromString,
                        formulaToQmcTerms,
                        termToQmcTerm,
                        valueForVariableIndex,
                        quineMinterms,
                        quineMaxterms,
+                       numRelevantLiterals',
                        numRelevantLiterals,
                        groupByRelevantLiterals,
                        hammingDistance,
@@ -32,11 +34,18 @@ newtype QmcTerm = QmcTerm (V.Vector (Maybe Bool))
 
 -- | The lowest 'Variable' index is shown at the right
 instance Show QmcTerm where
-    show (QmcTerm vector) = reverse $ V.foldr showMaybeBool "" vector
-        where showMaybeBool maybeBool rest = case maybeBool of
-                Just True -> '1':rest
-                Just False -> '0':rest
-                Nothing -> '-':rest
+    show (QmcTerm vector) = reverse $ map showMaybeBool $ V.toList vector
+        where showMaybeBool maybeBool = case maybeBool of
+                Just True -> '1'
+                Just False -> '0'
+                Nothing -> '-'
+
+fromString :: String -> QmcTerm
+fromString str = QmcTerm $ V.fromList $ map readMaybeBool $ reverse str
+    where readMaybeBool chr = case chr of
+                '1' -> Just True
+                '0' -> Just False
+                _ -> Nothing
 
 formulaToQmcTerms :: Formula -> [QmcTerm]
 formulaToQmcTerms formula
@@ -54,6 +63,20 @@ valueForVariableIndex term i
     | Not (Atom (var i)) `elem` literals = Just False
     | otherwise = Nothing
     where literals = normalFormChildren term
+
+numRelevantLiterals' :: FormType -> QmcTerm -> Int
+numRelevantLiterals' formType (QmcTerm vector) = V.foldr countIfRelevant 0 vector
+    where countIfRelevant value accum = if valueIsRelevant value then succ accum else accum
+          valueIsRelevant value = case (formType, value) of
+                (CNFType, Just False) -> True
+                (DNFType, Just True) -> True
+                _ -> False
+
+
+
+
+
+
 
 
 quineMinterms, quineMaxterms :: Int -> [Formula]

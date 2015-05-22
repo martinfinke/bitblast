@@ -5,7 +5,7 @@ import Control.Exception (evaluate)
 import QuineMcCluskey
 import TruthTable(var, fromTermNumber)
 import Formula(Formula(..))
-import NormalForm(assignmentToMinterm, termLiterals)
+import NormalForm(assignmentToMinterm, termLiterals, FormType(..))
 import qualified Data.Map.Lazy as Map
 import qualified Data.Set as Set
 import qualified Data.Vector.Unboxed as V
@@ -18,6 +18,13 @@ spec = do
     let _2pos1neg_1diff = [x0, Not x1, x2]
     let _2pos1neg_2diff = [Not x0, x1, x2]
     let _3pos0neg = [x0, x1, x2]
+    let testCnf = And [
+            Or _0pos3neg,
+            Or _1pos2neg,
+            Or _2pos1neg_1diff,
+            Or _2pos1neg_2diff,
+            Or _3pos0neg
+            ]
 
     describe "valueForVariableIndex" $ do
         it "is Nothing for an empty Formula" $ do
@@ -48,22 +55,44 @@ spec = do
 
         it "shows a term with length 4 and a Dont-Care as 0-10" $ do
             show (termToQmcTerm 4 (And [Not x3,x1,Not x0])) `shouldBe` "0-10"
+        it "is inverse to fromString" $ do
+            property $ \qmcTerm -> (fromString . show) qmcTerm `shouldBe` qmcTerm
 
     describe "formulaToQmcTerms" $ do
         it "converts an empty Formula to the empty list" $ do
             map show (formulaToQmcTerms (Equiv [])) `shouldBe` []
 
         it "converts a CNF to QmcTerms" $ do
-            let cnf = And [
-                    Or _0pos3neg,
-                    Or _1pos2neg,
-                    Or _2pos1neg_1diff,
-                    Or _2pos1neg_2diff,
-                    Or _3pos0neg
-                    ]
-            map show (formulaToQmcTerms cnf) `shouldBe` [
+            map show (formulaToQmcTerms testCnf) `shouldBe` [
                 "000", "001", "101", "110", "111"
                 ]
+
+    describe "numRelevantLiterals" $ do
+        it "is 0 for an empty QmcTerm" $ do
+            let empty = fromString ""
+            numRelevantLiterals' CNFType empty `shouldBe` 0
+            numRelevantLiterals' DNFType empty `shouldBe` 0
+
+        it "calculates the correct number of literals" $ do
+            let qmcTerms = formulaToQmcTerms testCnf
+            map (numRelevantLiterals' CNFType) qmcTerms `shouldBe` [3,2,1,1,0]
+            map (numRelevantLiterals' DNFType) qmcTerms `shouldBe` [0,1,2,2,3]
+
+        it "works correctly with don't care positions" $ do
+            let qmcTerm = fromString "0-1-110----"
+            numRelevantLiterals' CNFType qmcTerm `shouldBe` 2
+            numRelevantLiterals' DNFType qmcTerm `shouldBe` 3
+
+
+
+
+
+
+
+
+
+
+
 
     describe "numRelevantLiterals" $ do
         it "is 0 for a disjunction without negative literals" $ do
