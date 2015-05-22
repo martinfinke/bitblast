@@ -6,6 +6,7 @@ import TruthTable(var)
 import Formula(Formula(..))
 import NormalForm(FormType(..))
 import qualified Data.Vector.Unboxed as V
+import qualified Data.Map as Map
 import Data.Maybe(isJust, catMaybes)
 
 
@@ -75,18 +76,18 @@ spec = do
     describe "numRelevantLiterals" $ do
         it "is 0 for an empty QmcTerm" $ do
             let empty = fromString ""
-            numRelevantLiterals' CNFType empty `shouldBe` 0
-            numRelevantLiterals' DNFType empty `shouldBe` 0
+            numRelevantLiterals CNFType empty `shouldBe` 0
+            numRelevantLiterals DNFType empty `shouldBe` 0
 
         it "calculates the correct number of literals" $ do
             let qmcTerms = formulaToQmcTerms testCnf
-            map (numRelevantLiterals' CNFType) qmcTerms `shouldBe` [3,2,1,1,0]
-            map (numRelevantLiterals' DNFType) qmcTerms `shouldBe` [0,1,2,2,3]
+            map (numRelevantLiterals CNFType) qmcTerms `shouldBe` [3,2,1,1,0]
+            map (numRelevantLiterals DNFType) qmcTerms `shouldBe` [0,1,2,2,3]
 
         it "works correctly with don't care positions" $ do
             let qmcTerm = fromString "0-1-110----"
-            numRelevantLiterals' CNFType qmcTerm `shouldBe` 2
-            numRelevantLiterals' DNFType qmcTerm `shouldBe` 3
+            numRelevantLiterals CNFType qmcTerm `shouldBe` 2
+            numRelevantLiterals DNFType qmcTerm `shouldBe` 3
 
     describe "hammingDistance" $ do
         it "is zero for two empty terms" $ do
@@ -155,10 +156,31 @@ spec = do
     describe "Example Terms 1" $ do
         -- Youtube: pQ3MfzqGlrc
         let terms@[t2,t4,t5,t6,t7] = map fromString ["010", "100", "101", "110", "111"]
+        let initialGroups = groupTerms DNFType terms
         let afterFirstStep@[t2_6,t4_5,t4_6,t5_7,t6_7] = catMaybes $ map (uncurry mergeTerms) [(t2,t6), (t4,t5), (t4,t6), (t5,t7), (t6,t7)]
+        let groupsAfterFirstStep = groupTerms DNFType afterFirstStep
         let afterSecondStep = catMaybes $ map (uncurry mergeTerms) [(t4_5,t6_7), (t4_6,t5_7)]
+        let groupsAfterSecondStep = groupTerms DNFType afterSecondStep
 
         let expectedPrimes = map fromString ["-10", "1--", "1--"] -- not unique
+
+        it "groups the initial terms correctly" $ do
+            initialGroups `shouldBe` Map.fromList [
+                    (1,[t2,t4]),
+                    (2,[t5,t6]),
+                    (3,[t7])
+                    ]
+
+        it "groups correctly after the first step" $ do
+            groupsAfterFirstStep `shouldBe` Map.fromList [
+                    (1,[t2_6,t4_5,t4_6]),
+                    (2,[t5_7,t6_7])
+                    ]
+
+        it "groups correctly after the second step" $ do
+            groupsAfterSecondStep `shouldBe` Map.fromList [
+                    (1,afterSecondStep)
+                    ]
 
         it "merges the initial terms correctly" $ do
             afterFirstStep `shouldBe` map fromString ["-10", "10-", "1-0", "1-1", "11-"]
@@ -169,10 +191,36 @@ spec = do
     describe "Example Terms 2" $ do
         -- Youtube: pQ3MfzqGlrc
         let terms@[t0,t1,t2,t8,t3,t5,t10,t7,t14,t15] = map fromString ["0000", "0001", "0010", "1000", "0011", "0101", "1010", "0111", "1110", "1111"]
+        let initialGroups = groupTerms DNFType terms
         let afterFirstStep@[t0_1,t0_2,t0_8,t1_3,t1_5,t2_3,t2_10,t8_10,t3_7,t5_7,t10_14,t7_15,t14_15] = catMaybes $ map (uncurry mergeTerms) [(t0,t1), (t0,t2), (t0,t8), (t1,t3), (t1,t5), (t2,t3), (t2,t10), (t8,t10), (t3,t7), (t5,t7), (t10,t14), (t7,t15), (t14,t15)]
+        let groupsAfterFirstStep = groupTerms DNFType afterFirstStep
         let afterSecondStep@[t0_1_2_3,t0_2_1_3,t0_2_8_10,t0_8_2_10,t1_3_5_7,t1_5_3_7] = catMaybes $ map (uncurry mergeTerms) [(t0_1,t2_3), (t0_2,t1_3), (t0_2,t8_10), (t0_8,t2_10), (t1_3,t5_7), (t1_5,t3_7)]
+        let groupsAfterSecondStep = groupTerms DNFType afterSecondStep
 
         let expectedPrimes = [t10_14, t7_15, t14_15, t0_1_2_3, t0_2_1_3, t0_2_8_10, t0_8_2_10, t1_3_5_7, t1_5_3_7] -- not unique
+
+        it "groups the initial terms correctly" $ do
+            initialGroups `shouldBe` Map.fromList [
+                    (0,[t0]),
+                    (1,[t1,t2,t8]),
+                    (2,[t3,t5,t10]),
+                    (3,[t7,t14]),
+                    (4,[t15])
+                    ]
+
+        it "groups correctly after the first step" $ do
+            groupsAfterFirstStep `shouldBe` Map.fromList [
+                    (0,[t0_1,t0_2,t0_8]),
+                    (1,[t1_3,t1_5,t2_3,t2_10,t8_10]),
+                    (2,[t3_7,t5_7,t10_14]),
+                    (3,[t7_15,t14_15])
+                    ]
+
+        it "groups correctly after the second step" $ do
+            groupsAfterSecondStep `shouldBe` Map.fromList [
+                    (0,[t0_1_2_3,t0_2_1_3,t0_2_8_10,t0_8_2_10]),
+                    (1,[t1_3_5_7,t1_5_3_7])
+                    ]
 
         it "merges the initial terms correctly" $ do
             afterFirstStep `shouldBe` map fromString ["000-", "00-0", "-000", "00-1", "0-01", "001-", "-010", "10-0", "0-11", "01-1", "1-10", "-111", "111-"]
@@ -199,5 +247,18 @@ spec = do
         it "is two pairs for a list with two neighbouring pairs which are apart from each other" $ do
             neighbourKeys [3,4, 7,8] `shouldBe` [(3,4), (7,8)]
 
+    describe "groupTerms" $ do
+        it "is an empty group if there are no terms" $ do
+            groupTerms CNFType [] `shouldBe` Map.fromList []
+
+        it "groups one term into its number of literals" $ do
+            let term = fromString "--100-101-001-"
+            groupTerms CNFType [term] `shouldBe` Map.fromList [(5, [term])]
+            groupTerms DNFType [term] `shouldBe` Map.fromList [(4, [term])]
+
+        it "groups multiple terms correctly" $ do
+            let terms@[t1,t2,t3,t4] = map fromString ["1-1111-", "1-1101-", "100101-", "0-1-110"]
+            groupTerms CNFType terms `shouldBe` Map.fromList [(0,[t1]), (1,[t2]), (2,[t4]), (3,[t3])]
+            groupTerms DNFType terms `shouldBe` Map.fromList [(3,[t3,t4]), (4,[t2]), (5,[t1])]
     
             

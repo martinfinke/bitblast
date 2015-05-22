@@ -3,8 +3,9 @@ module QuineMcCluskey (QmcTerm(..),
                        formulaToQmcTerms,
                        termToQmcTerm,
                        valueForVariableIndex,
-                       numRelevantLiterals',
+                       numRelevantLiterals,
                        hammingDistance,
+                       groupTerms,
                        neighbourKeys,
                        dashesLineUp,
                        mergeTerms,
@@ -62,17 +63,17 @@ valueForVariableIndex term i
     | otherwise = Nothing
     where literals = normalFormChildren term
 
-numRelevantLiterals' :: FormType -> QmcTerm -> Int
-numRelevantLiterals' formType (QmcTerm vector) = V.foldr countIfRelevant 0 vector
+numRelevantLiterals :: FormType -> QmcTerm -> Int
+numRelevantLiterals formType (QmcTerm vector) = V.foldr countIfRelevant 0 vector
     where countIfRelevant value accum = if valueIsRelevant value then succ accum else accum
           valueIsRelevant value = case (formType, value) of
                 (CNFType, Just False) -> True
                 (DNFType, Just True) -> True
                 _ -> False
 
-groupTerms' :: FormType -> [QmcTerm] -> Map.Map Int [QmcTerm]
-groupTerms' formType = Map.fromList . withNumber . group . sortBy (comparing numLiterals)
-    where numLiterals = numRelevantLiterals' formType
+groupTerms :: FormType -> [QmcTerm] -> Map.Map Int [QmcTerm]
+groupTerms formType = Map.fromList . withNumber . group . sortBy (comparing numLiterals)
+    where numLiterals = numRelevantLiterals formType
           group terms = groupBy equalNumRelevantLiterals terms
           equalNumRelevantLiterals t1 t2 = numLiterals t1 == numLiterals t2
           withNumber = map (\terms@(term:_) -> (numLiterals term, terms))
