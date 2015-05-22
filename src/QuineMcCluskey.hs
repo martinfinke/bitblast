@@ -72,6 +72,18 @@ numRelevantLiterals' formType (QmcTerm vector) = V.foldr countIfRelevant 0 vecto
                 (DNFType, Just True) -> True
                 _ -> False
 
+groupTerms' :: FormType -> [QmcTerm] -> Map.Map Int [QmcTerm]
+groupTerms' formType = Map.fromList . withNumber . group . sortBy (comparing numLiterals)
+    where numLiterals = numRelevantLiterals' formType
+          group terms = groupBy equalNumRelevantLiterals terms
+          equalNumRelevantLiterals t1 t2 = numLiterals t1 == numLiterals t2
+          withNumber = map (\terms@(term:_) -> (numLiterals term, terms))
+
+hammingDistance :: (QmcTerm, QmcTerm) -> Int
+hammingDistance (QmcTerm v1, QmcTerm v2) = V.sum $ V.zipWith oneIfDifferent v1 v2
+    where oneIfDifferent x y = if x /= y then 1 else 0
+
+
 
 
 
@@ -121,14 +133,11 @@ partitionTerms termMap = (primeTerms, mergedTerms)
           
 
 neighbourTerms :: Map.Map Int [Formula] -> [(Formula, Formula)]
-neighbourTerms termMap = filter ((== 1) . hammingDistance) $ concatMap allTermPairsForKeyPair neighbourKeyPairs
+neighbourTerms termMap = concatMap allTermPairsForKeyPair neighbourKeyPairs
     where neighbourKeyPairs = neighbourKeys $ Map.keys termMap :: [(Int, Int)]
           allTermPairsForKeyPair (key1,key2) = [(term1,term2) | term1 <- lookupOrEmptyList key1, term2 <- lookupOrEmptyList key2]
           lookupOrEmptyList key = maybe [] id (Map.lookup key termMap)
 
-
-hammingDistance :: (Formula, Formula) -> Int
-hammingDistance (term1, term2) = undefined -- TODO: broken
           
 
 mergeTerms :: (Formula, Formula) -> Formula

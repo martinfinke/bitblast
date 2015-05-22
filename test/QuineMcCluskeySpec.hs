@@ -83,6 +83,24 @@ spec = do
             numRelevantLiterals' CNFType qmcTerm `shouldBe` 2
             numRelevantLiterals' DNFType qmcTerm `shouldBe` 3
 
+    describe "hammingDistance" $ do
+        it "is zero for two empty terms" $ do
+            hammingDistance (fromString "", fromString "") `shouldBe` 0
+
+        it "is 1 for an empty term and one with 1 literal" $ do
+            hammingDistance (fromString "-", fromString "1") `shouldBe` 1
+            hammingDistance (fromString "1", fromString "-") `shouldBe` 1
+
+
+        it "is 2 for an empty term and one with 2 literals" $ do
+            hammingDistance (fromString "--", fromString "01") `shouldBe` 2
+            hammingDistance (fromString "00", fromString "--") `shouldBe` 2
+
+        it "is 2 for a term with 1 literal and another with 3 literals" $ do
+            hammingDistance (fromString "-1-", fromString "110") `shouldBe` 2
+
+        it "is 1 for a pair of terms with one different literal" $ do
+            hammingDistance (fromString "000--01--", fromString "010--01--") `shouldBe` 1
 
 
 
@@ -90,19 +108,6 @@ spec = do
 
 
 
-
-
-
-
-    describe "numRelevantLiterals" $ do
-        it "is 0 for a disjunction without negative literals" $ do
-            numRelevantLiterals (Or [Atom (var 1), Atom (var 2)]) `shouldBe` 0
-
-        it "is 2 for a conjunction with 2 positive literals" $ do
-            numRelevantLiterals (And [Atom (var 2), Atom (var 1), Not $ Atom (var 1)]) `shouldBe` 2
-
-        it "throws an error for a Formula that isn't a conjunction/disjunction of literals" $ do
-            evaluate (numRelevantLiterals (Equiv [Atom (var 1)])) `shouldThrow` anyException
 
     describe "groupByRelevantLiterals" $ do
         it "groups a CNF by number of negative literals" $ do
@@ -146,25 +151,7 @@ spec = do
         it "is two pairs for a list with two neighbouring pairs which are apart from each other" $ do
             neighbourKeys [3,4, 7,8] `shouldBe` [(3,4), (7,8)]
 
-    --describe "hammingDistance" $ do
-    --    it "is zero for two empty terms" $ do
-    --        hammingDistance (Or [], Or []) `shouldBe` 0
-
-    --    it "is 1 for an empty term and one with 1 literal" $ do
-    --        hammingDistance (And [], And [Atom (var 0)]) `shouldBe` 1
-    --        hammingDistance (And [Atom (var 0)], And []) `shouldBe` 1
-
-
-    --    it "is 2 for an empty term and one with 1 literal" $ do
-    --        hammingDistance (And [], And [Atom (var 0), Not $ Atom (var 1)]) `shouldBe` 2
-    --        hammingDistance (And [Not $ Atom (var 0), Atom (var 0)], And []) `shouldBe` 2
-
-    --    it "is 2 for a term with 1 literal and another with 3 literals" $ do
-    --        hammingDistance (And [Atom (var 0)], And [Atom (var 0), Atom (var 1), Not $ Atom (var 0)]) `shouldBe` 2
-
-    --    it "is 1 for a pair of terms with one different literal" $ do
-    --        hammingDistance (And _1pos2neg, And _2pos1neg_1diff) `shouldBe` 1
-    --        hammingDistance (And _1pos2neg, And _2pos1neg_2diff) `shouldBe` 2
+    
             
 
     --describe "neighbourTerms" $ do
