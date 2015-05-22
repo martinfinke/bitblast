@@ -1,4 +1,8 @@
-module QuineMcCluskey (quineMinterms,
+module QuineMcCluskey (QmcTerm(..),
+                       formulaToQmcTerms,
+                       termToQmcTerm,
+                       valueForVariableIndex,
+                       quineMinterms,
                        quineMaxterms,
                        numRelevantLiterals,
                        groupByRelevantLiterals,
@@ -9,17 +13,47 @@ module QuineMcCluskey (quineMinterms,
                        mergeTerms
                        ) where
 
-import Formula (Formula(..))
+import Formula (Formula(..), highestVariableIndex)
 import NormalForm
 import TruthTable(var, fromTermNumber, Variable, Assignment)
 import qualified Data.Map.Lazy as Map
 import qualified Data.Set as Set
 import Data.List(groupBy, sortBy)
 import Data.Ord(comparing)
+import UnboxMaybe
 
 import qualified Data.Vector.Unboxed as V
 
-newtype QMCTerm = QMCTerm (V.Vector (Maybe Bool))
+instance DefaultValue Bool where
+    defaultValue = False
+
+newtype QmcTerm = QmcTerm (V.Vector (Maybe Bool))
+    deriving (Eq)
+
+-- | The lowest 'Variable' index is shown at the right
+instance Show QmcTerm where
+    show (QmcTerm vector) = reverse $ V.foldr showMaybeBool "" vector
+        where showMaybeBool maybeBool rest = case maybeBool of
+                Just True -> '1':rest
+                Just False -> '0':rest
+                Nothing -> '-':rest
+
+formulaToQmcTerms :: Formula -> [QmcTerm]
+formulaToQmcTerms formula
+    | not (isCanonical formula) = formulaToQmcTerms (ensureCanonical formula)
+    | otherwise = map (termToQmcTerm qmcTermLength) terms
+    where terms = normalFormChildren formula
+          qmcTermLength = highestVariableIndex formula + 1
+
+termToQmcTerm :: Int -> Formula -> QmcTerm
+termToQmcTerm qmcTermLength term = QmcTerm (V.generate qmcTermLength $ valueForVariableIndex term)
+
+valueForVariableIndex :: Formula -> Int -> Maybe Bool
+valueForVariableIndex term i
+    | Atom (var i) `elem` literals = Just True
+    | Not (Atom (var i)) `elem` literals = Just False
+    | otherwise = Nothing
+    where literals = normalFormChildren term
 
 
 quineMinterms, quineMaxterms :: Int -> [Formula]

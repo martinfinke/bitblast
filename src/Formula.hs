@@ -6,7 +6,8 @@ module Formula (Formula(..),
                 variableSet,
                 toTruthTable,
                 possibleAssignments,
-                allBoolCombinations
+                allBoolCombinations,
+                highestVariableIndex
                 ) where
 
 import TruthTable (Variable, getVariable, setVariable, Assignment, allFalse, OutputValue(..), TruthTable, emptyTable, setOutputs, boolToOutputValue)

@@ -8,6 +8,7 @@ import Formula(Formula(..))
 import NormalForm(assignmentToMinterm, termLiterals)
 import qualified Data.Map.Lazy as Map
 import qualified Data.Set as Set
+import qualified Data.Vector.Unboxed as V
 
 spec :: Spec
 spec = do
@@ -17,6 +18,52 @@ spec = do
     let _2pos1neg_1diff = [x0, Not x1, x2]
     let _2pos1neg_2diff = [Not x0, x1, x2]
     let _3pos0neg = [x0, x1, x2]
+
+    describe "valueForVariableIndex" $ do
+        it "is Nothing for an empty Formula" $ do
+            property $ \variableIndex -> valueForVariableIndex (And []) variableIndex `shouldBe` Nothing
+
+        it "is Nothing for a Variable that doesn't appear in the Formula" $ do
+            valueForVariableIndex (And _0pos3neg) 3 `shouldBe` Nothing
+
+        it "is True for a Variable that appears as a positive literal" $ do
+            valueForVariableIndex (Or _2pos1neg_1diff) 0 `shouldBe` Just True
+        it "is False for a Variable that appears as a negative literal" $ do
+            valueForVariableIndex (And _1pos2neg) 1 `shouldBe` Just False
+            valueForVariableIndex (And _1pos2neg) 2 `shouldBe` Just False
+
+    describe "termToQmcTerm" $ do
+        it "creates an empty QmcTerm when the length is 0" $ do
+            termToQmcTerm 0 (And []) `shouldBe` QmcTerm V.empty
+
+    describe "QmcTerm Show instance" $ do
+        it "shows a term with length 0 as the empty string" $ do
+            show (termToQmcTerm 0 (And [])) `shouldBe` ""
+
+        it "shows a term with length 1 as 1" $ do
+            show (termToQmcTerm 1 (And [x0])) `shouldBe` "1"
+
+        it "shows a term with length 2 as 10" $ do
+            show (termToQmcTerm 2 (And [x1,Not x0])) `shouldBe` "10"
+
+        it "shows a term with length 4 and a Dont-Care as 0-10" $ do
+            show (termToQmcTerm 4 (And [Not x3,x1,Not x0])) `shouldBe` "0-10"
+
+    describe "formulaToQmcTerms" $ do
+        it "converts an empty Formula to the empty list" $ do
+            map show (formulaToQmcTerms (Equiv [])) `shouldBe` []
+
+        it "converts a CNF to QmcTerms" $ do
+            let cnf = And [
+                    Or _0pos3neg,
+                    Or _1pos2neg,
+                    Or _2pos1neg_1diff,
+                    Or _2pos1neg_2diff,
+                    Or _3pos0neg
+                    ]
+            map show (formulaToQmcTerms cnf) `shouldBe` [
+                "000", "001", "101", "110", "111"
+                ]
 
     describe "numRelevantLiterals" $ do
         it "is 0 for a disjunction without negative literals" $ do
