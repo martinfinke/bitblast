@@ -36,22 +36,22 @@ spec = do
             Or _3pos0neg
             ]
 
-    describe "valueForVariableIndex" $ do
+    describe "valueForVariable" $ do
         it "is Nothing for an empty Formula" $ do
-            property $ \variableIndex -> valueForVariableIndex (And []) variableIndex `shouldBe` Nothing
+            property $ \variable -> valueForVariable (And []) variable `shouldBe` Nothing
 
         it "is Nothing for a Variable that doesn't appear in the Formula" $ do
-            valueForVariableIndex (And _0pos3neg) 3 `shouldBe` Nothing
+            valueForVariable (And _0pos3neg) (var 3) `shouldBe` Nothing
 
         it "is True for a Variable that appears as a positive literal" $ do
-            valueForVariableIndex (Or _2pos1neg_1diff) 0 `shouldBe` Just True
+            valueForVariable (Or _2pos1neg_1diff) (var 0) `shouldBe` Just True
         it "is False for a Variable that appears as a negative literal" $ do
-            valueForVariableIndex (And _1pos2neg) 1 `shouldBe` Just False
-            valueForVariableIndex (And _1pos2neg) 2 `shouldBe` Just False
+            valueForVariable (And _1pos2neg) (var 1) `shouldBe` Just False
+            valueForVariable (And _1pos2neg) (var 2) `shouldBe` Just False
 
     describe "termToQmcTerm" $ do
         it "creates an empty QmcTerm when the length is 0" $ do
-            termToQmcTerm 0 (And []) `shouldBe` QmcTerm V.empty
+            show (termToQmcTerm 0 (And [])) `shouldBe` ""
 
     describe "QmcTerm Show instance" $ do
         it "shows a term with length 0 as the empty string" $ do
@@ -68,9 +68,9 @@ spec = do
         it "is inverse to fromString" $ do
             property $ \qmcTerm -> (fromString . show) qmcTerm `shouldBe` qmcTerm
 
-    describe "formulaToQmcTerms" $ do
+    describe "canonicalToQmcTerms" $ do
         it "converts a CNF to QmcTerms" $ do
-            formulaToQmcTerms testCnf `shouldBe` map fromString [
+            canonicalToQmcTerms testCnf `shouldBe` map fromString [
                 "000", "001", "101", "110", "111"
                 ]
 
@@ -81,7 +81,7 @@ spec = do
             numRelevantLiterals DNFType empty `shouldBe` 0
 
         it "calculates the correct number of literals" $ do
-            let qmcTerms = formulaToQmcTerms testCnf
+            let qmcTerms = canonicalToQmcTerms testCnf
             map (numRelevantLiterals CNFType) qmcTerms `shouldBe` [3,2,1,1,0]
             map (numRelevantLiterals DNFType) qmcTerms `shouldBe` [0,1,2,2,3]
 

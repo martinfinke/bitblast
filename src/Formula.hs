@@ -87,6 +87,7 @@ allBoolCombinations variables
     where variable = Set.elemAt (Set.size variables - 1) variables
           rest = allBoolCombinations (Set.delete variable variables)
 
+-- | The index of the highest 'Variable' appearing in a 'Formula'. This is used to create 'QmcTerm's (min/maxterms) of the right length.
 highestVariableIndex :: Formula -> Int
 highestVariableIndex formula = case Set.toList variables of
     [] -> -1

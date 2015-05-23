@@ -1,11 +1,12 @@
 {-|
 Functions to convert 'Formula'e to canonical CNF/DNF.
 -}
-module NormalForm (toCanonicalCnf,
+module NormalForm (Canonical,
+                   getFormula,
+                   ensureCanonical,
+                   toCanonicalCnf,
                    toCanonicalDnf,
                    FormType(..),
-                   Canonical,
-                   getFormula,
                    getType,
                    isCnf,
                    isDnf,
@@ -14,7 +15,6 @@ module NormalForm (toCanonicalCnf,
                    isDisjunctionOfLiterals,
                    isLiteral,
                    isPositiveLiteral,
-                   ensureCanonical,
                    normalFormChildren,
                    termLiterals) where
 
@@ -22,25 +22,29 @@ import Formula
 import TruthTable (Variable, Assignment, getVariable, getOutput)
 import qualified Data.Set as Set
 
-
+-- | This type wraps a 'Formula' that is in (or has been converted to) a canonical CNF or DNF. The only way to create a 'Canonical' value is through the 'ensureCanonical' \/ 'toCanonicalCnf' \/ 'toCanonicalDnf' functions.
 data Canonical = CNF Formula
                | DNF Formula
 
 instance Show Canonical where
     show = show . getFormula
 
+-- | Extract a 'Formula' that has been wrapped
 getFormula :: Canonical -> Formula
 getFormula (CNF formula) = formula
 getFormula (DNF formula) = formula
 
-getType :: Canonical -> FormType
-getType (CNF _) = CNFType
-getType (DNF _) = DNFType
+-- | Checks whether a 'Formula' is already in canonical form, and if not, converts it to a 'Canonical'. If it is already a DNF, it will become a 'Canonical' DNF. Otherwise, it will become a 'Canonical' CNF.
+ensureCanonical :: Formula -> Canonical
+ensureCanonical formula
+    | isCanonical formula = if isCnf formula then CNF formula else DNF formula
+    | isDnf formula = toCanonicalDnf formula
+    | otherwise = toCanonicalCnf formula
 
 toCanonicalCnf, toCanonicalDnf :: Formula -> Canonical
--- | Converts a 'Formula' to canonical CNF by creating a 'TruthTable.TruthTable' and reading all rows where the 'OutputValue' is 'F'.
+-- | Converts a 'Formula' to 'Canonical' CNF by creating a 'TruthTable.TruthTable' and reading all rows where the 'OutputValue' is 'F'.
 toCanonicalCnf = toNormalForm CNFType
--- | Converts a 'Formula' to canonical DNF by creating a 'TruthTable.TruthTable' and reading all rows where the 'OutputValue' is 'T'.
+-- | Converts a 'Formula' to 'Canonical' DNF by creating a 'TruthTable.TruthTable' and reading all rows where the 'OutputValue' is 'T'.
 toCanonicalDnf = toNormalForm DNFType
 
 toNormalForm :: FormType -> Formula -> Canonical
@@ -52,6 +56,12 @@ toNormalForm formType formula = operator terms
           operator = if formType == CNFType then CNF . And else DNF . Or
           onlyRelevantOutput = filter (\assignment -> getOutput assignment truthTable == relevantOutput) assignments
 
+-- | Extract the type of a 'Canonical' formula.
+getType :: Canonical -> FormType
+getType (CNF _) = CNFType
+getType (DNF _) = DNFType
+
+-- | The type of a ('Canonical') formula: Either CNF or DNF.
 data FormType = CNFType | DNFType
     deriving(Eq, Show)
 
@@ -106,13 +116,6 @@ isLiteral _ = False
 isPositiveLiteral :: Formula -> Bool
 isPositiveLiteral (Atom _) = True
 isPositiveLiteral _ = False
-
--- | Checks whether a 'Formula' is canonical, and if not, converts it to canonical form. If it is already a DNF, it will become a canonical DNF. Otherwise, it will become a canonical CNF.
-ensureCanonical :: Formula -> Canonical
-ensureCanonical formula
-    | isCanonical formula = if isCnf formula then CNF formula else DNF formula
-    | isDnf formula = toCanonicalDnf formula
-    | otherwise = toCanonicalCnf formula
 
 -- | Extract the conjunctions/disjunctions of a DNF/CNF, or the literals of a conjunction/disjunction.
 normalFormChildren :: Formula -> [Formula]
