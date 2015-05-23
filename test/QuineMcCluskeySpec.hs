@@ -6,7 +6,7 @@ import TruthTable(var)
 import Formula(Formula(..))
 import NormalForm(FormType(..))
 import qualified Data.Vector.Unboxed as V
-import qualified Data.Map as Map
+import qualified Data.IntMap.Lazy as IntMap
 import qualified Data.Set as Set
 import Data.Maybe(isJust, catMaybes)
 
@@ -169,20 +169,20 @@ spec = do
         let expectedPrimes = map fromString ["-10", "1--"]
 
         it "groups the initial terms correctly" $ do
-            initialGroups `shouldBe` Map.fromList [
+            initialGroups `shouldBe` IntMap.fromList [
                     (1,[t2,t4]),
                     (2,[t5,t6]),
                     (3,[t7])
                     ]
 
         it "groups correctly after the first step" $ do
-            groupsAfterFirstStep `shouldBe` Map.fromList [
+            groupsAfterFirstStep `shouldBe` IntMap.fromList [
                     (1,[t2_6,t4_5,t4_6]),
                     (2,[t5_7,t6_7])
                     ]
 
         it "groups correctly after the second step" $ do
-            groupsAfterSecondStep `shouldBe` Map.fromList [
+            groupsAfterSecondStep `shouldBe` IntMap.fromList [
                     (1,afterSecondStep)
                     ]
 
@@ -216,7 +216,7 @@ spec = do
         let expectedPrimes = [t10_14, t7_15, t14_15, t0_1_2_3, t0_2_1_3, t0_2_8_10, t0_8_2_10, t1_3_5_7, t1_5_3_7] -- not unique
 
         it "groups the initial terms correctly" $ do
-            initialGroups `shouldBe` Map.fromList [
+            initialGroups `shouldBe` IntMap.fromList [
                     (0,[t0]),
                     (1,[t1,t2,t8]),
                     (2,[t3,t5,t10]),
@@ -225,7 +225,7 @@ spec = do
                     ]
 
         it "groups correctly after the first step" $ do
-            groupsAfterFirstStep `shouldBe` Map.fromList [
+            groupsAfterFirstStep `shouldBe` IntMap.fromList [
                     (0,[t0_1,t0_2,t0_8]),
                     (1,[t1_3,t1_5,t2_3,t2_10,t8_10]),
                     (2,[t3_7,t5_7,t10_14]),
@@ -233,7 +233,7 @@ spec = do
                     ]
 
         it "groups correctly after the second step" $ do
-            groupsAfterSecondStep `shouldBe` Map.fromList [
+            groupsAfterSecondStep `shouldBe` IntMap.fromList [
                     (0,[t0_1_2_3,t0_2_1_3,t0_2_8_10,t0_8_2_10]),
                     (1,[t1_3_5_7,t1_5_3_7])
                     ]
@@ -268,21 +268,21 @@ spec = do
 
     describe "groupTerms" $ do
         it "is an empty group if there are no terms" $ do
-            groupTerms CNFType [] `shouldBe` Map.fromList []
+            groupTerms CNFType [] `shouldBe` IntMap.fromList []
 
         it "groups one term into its number of literals" $ do
             let term = fromString "--100-101-001-"
-            groupTerms CNFType [term] `shouldBe` Map.fromList [(5, [term])]
-            groupTerms DNFType [term] `shouldBe` Map.fromList [(4, [term])]
+            groupTerms CNFType [term] `shouldBe` IntMap.fromList [(5, [term])]
+            groupTerms DNFType [term] `shouldBe` IntMap.fromList [(4, [term])]
 
         it "groups multiple terms correctly" $ do
             let terms@[t1,t2,t3,t4] = map fromString ["1-1111-", "1-1101-", "100101-", "0-1-110"]
-            groupTerms CNFType terms `shouldBe` Map.fromList [(0,[t1]), (1,[t2]), (2,[t4]), (3,[t3])]
-            groupTerms DNFType terms `shouldBe` Map.fromList [(3,[t3,t4]), (4,[t2]), (5,[t1])]
+            groupTerms CNFType terms `shouldBe` IntMap.fromList [(0,[t1]), (1,[t2]), (2,[t4]), (3,[t3])]
+            groupTerms DNFType terms `shouldBe` IntMap.fromList [(3,[t3,t4]), (4,[t2]), (5,[t1])]
 
     describe "allPairsOfGroups" $ do
         it "is the empty list if there are no groups" $ do
-            allPairsOfGroups (Map.fromList []) (0,1) `shouldBe` []
+            allPairsOfGroups (IntMap.fromList []) (0,1) `shouldBe` []
 
         it "is the empty list if there are groups, but the indices don't use them" $ do
             allPairsOfGroups testGroups (0,1) `shouldBe` []
@@ -317,8 +317,8 @@ spec = do
             termsUsedForMerging maybeMerges neighbours `shouldBe` Set.fromList (map fromString ["-100", "-110", "-110", "-111"])
             
 
-testGroups :: Map.Map Int [QmcTerm]
-testGroups = Map.fromList [
+testGroups :: IntMap.IntMap [QmcTerm]
+testGroups = IntMap.fromList [
                 (1,[fromString "-100"]),
                 (2,[fromString "-110"]),
                 (3,[fromString "1110", fromString "-111"])

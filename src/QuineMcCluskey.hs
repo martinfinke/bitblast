@@ -21,7 +21,7 @@ module QuineMcCluskey (QmcTerm(..),
 import Formula (Formula(..), highestVariableIndex)
 import NormalForm
 import TruthTable(var, fromTermNumber, Variable, Assignment)
-import qualified Data.Map.Lazy as Map
+import qualified Data.IntMap.Lazy as IntMap
 import qualified Data.Set as Set
 import Data.List(groupBy, sortBy)
 import Data.Ord(comparing)
@@ -76,8 +76,8 @@ numRelevantLiterals formType (QmcTerm vector) = V.foldr countIfRelevant 0 vector
                 (DNFType, Just True) -> True
                 _ -> False
 
-groupTerms :: FormType -> [QmcTerm] -> Map.Map Int [QmcTerm]
-groupTerms formType = Map.fromList . withNumber . group . sortBy (comparing numLiterals)
+groupTerms :: FormType -> [QmcTerm] -> IntMap.IntMap [QmcTerm]
+groupTerms formType = IntMap.fromList . withNumber . group . sortBy (comparing numLiterals)
     where numLiterals = numRelevantLiterals formType
           group terms = groupBy equalNumRelevantLiterals terms
           equalNumRelevantLiterals t1 t2 = numLiterals t1 == numLiterals t2
@@ -118,13 +118,13 @@ qmcStep formType terms = (primes, merges)
           groups = groupTerms formType terms
           neighbours = possibleNeighbours groups
 
-allPairsOfGroups :: Map.Map Int [QmcTerm] -> (Int,Int) -> [(QmcTerm, QmcTerm)]
+allPairsOfGroups :: IntMap.IntMap [QmcTerm] -> (Int,Int) -> [(QmcTerm, QmcTerm)]
 allPairsOfGroups groups (i,j) = [(t1,t2) | t1 <- justOrEmpty i, t2 <- justOrEmpty j]
-    where justOrEmpty key = maybe [] id (Map.lookup key groups)
+    where justOrEmpty key = maybe [] id (IntMap.lookup key groups)
 
-possibleNeighbours :: Map.Map Int [QmcTerm] -> [(QmcTerm,QmcTerm)]
+possibleNeighbours :: IntMap.IntMap [QmcTerm] -> [(QmcTerm,QmcTerm)]
 possibleNeighbours groups = concatMap (allPairsOfGroups groups) neighbouringGroups
-    where neighbouringGroups = neighbourKeys (Map.keys groups)
+    where neighbouringGroups = neighbourKeys (IntMap.keys groups)
 
 mergesOrNothing :: [(QmcTerm,QmcTerm)] -> [Maybe QmcTerm]
 mergesOrNothing = map $ uncurry mergeTerms
