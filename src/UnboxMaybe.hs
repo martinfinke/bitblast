@@ -1,4 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeFamilies #-}
+{-|
+Allows putting 'Maybe' 'Foo' into an unboxed 'Data.Vector.Unboxed.Vector', as long as the type 'Foo' is an instance of 'U.Unbox'.
+-}
 module UnboxMaybe(DefaultValue(..)) where
 
 import qualified Data.Vector.Unboxed as U
@@ -7,12 +10,13 @@ import qualified Data.Vector.Generic.Base as B
 import qualified Data.Vector.Generic.Mutable as M
 import Control.Monad (liftM)
 
+-- | Any type used with 'Maybe' must be a member of this type class. This is very easy: Just set 'defaultValue' to an arbitrary value. It is never read.
 class DefaultValue a where
+    -- | This value is written to the 'Data.Vector.Unboxed.Vector' when 'Nothing' is stored. Thus, it is never read and can be any arbitrary value.
     defaultValue :: a
 
 instance {-# OVERLAPPABLE #-} DefaultValue Bool where
     defaultValue = False
-
 
 newtype instance U.MVector s (Maybe a) = MV_Maybe (U.MVector s (Bool,a))
 newtype instance U.Vector    (Maybe a) = V_Maybe  (U.Vector    (Bool,a))
