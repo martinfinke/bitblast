@@ -260,6 +260,10 @@ spec = do
             let primesFormula = formulaToPrimesFormula smallNestedFormula
             property $ \assignment -> eval assignment smallNestedFormula `shouldBe` eval assignment primesFormula
 
+        it "generates prime formulae that have the same value (for a random assignment) as the original CNF/DNF" $ do
+            property $ \(CanonicalNormalForm formula) assignment -> eval assignment formula `shouldBe` eval assignment (formulaToPrimesFormula formula)
+
+
     describe "qmcTermToTerm" $ do
         it "creates an empty term for an empty qmcTerm" $ do
             qmcTermToTerm CNFType (fromString "") `shouldBe` Or []

@@ -10,6 +10,23 @@ import FormulaSpec
 instance Arbitrary FormType where
     arbitrary = elements [CNFType, DNFType]
 
+
+newtype CanonicalNormalForm = CanonicalNormalForm Formula
+
+instance Show CanonicalNormalForm where
+    show (CanonicalNormalForm formula) = show formula
+
+instance Arbitrary CanonicalNormalForm where
+    arbitrary = do
+        numVariables <- choose (1,4)
+        let variables = map var [0..numVariables-1]
+        rndFormula <- randomFormula variables 2
+        formType <- arbitrary
+        return $ CanonicalNormalForm $ case formType of
+            CNFType -> toCanonicalCnf rndFormula
+            DNFType -> toCanonicalDnf rndFormula
+
+
 spec :: Spec
 spec = do
     describe "toCanonicalCnf" $ do
