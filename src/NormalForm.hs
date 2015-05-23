@@ -12,8 +12,6 @@ module NormalForm (toCanonicalCnf,
                    isDisjunctionOfLiterals,
                    isLiteral,
                    isPositiveLiteral,
-                   assignmentToMinterm,
-                   assignmentToMaxterm,
                    ensureCanonical,
                    normalFormChildren,
                    termLiterals) where
@@ -45,12 +43,6 @@ checkCanonical formula
     | isCanonical formula = Just $ if isCnf formula then CNFType else DNFType
     | otherwise = Nothing
 
-assignmentToMinterm, assignmentToMaxterm :: Set.Set Variable -> Assignment -> Formula
--- | Converts an 'Assignment' (i.e. a row in a 'TruthTable.TruthTable') to a minterm for a canonical DNF. The 'Formula.variableSet' has to be passed as well.
-assignmentToMinterm = assignmentToTerm DNFType
--- | Converts an 'Assignment' (i.e. a row in a 'TruthTable.TruthTable') to a maxterm (clause) for a canonical CNF. The 'Formula.variableSet' has to be passed as well.
-assignmentToMaxterm = assignmentToTerm CNFType
-
 assignmentToTerm :: FormType -> Set.Set Variable -> Assignment -> Formula
 assignmentToTerm formType variables assignment = operator $ Set.foldr addLiteral [] variables
     where operator = if formType == CNFType then Or else And
@@ -73,8 +65,7 @@ isDnf _ = False
 -- | Checks whether a 'Formula' is canonical. This is true iff (1) it is CNF or DNF, and (2) each 'Variable' in the 'Formula.variableSet' appears exactly once in every clause/term.
 isCanonical :: Formula -> Bool
 isCanonical formula
-    | isCnf formula = let (And disjunctions) = formula in all canonical disjunctions
-    | isDnf formula = let (Or conjunctions) = formula in all canonical conjunctions
+    | isCnf formula || isDnf formula = all canonical (normalFormChildren formula)
     | otherwise = False
     where canonical term = variableSet term == variables && termLength term == Set.size variables
           variables = variableSet formula

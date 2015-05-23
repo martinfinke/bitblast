@@ -73,13 +73,6 @@ spec = do
                 let dnf = toCanonicalDnf formula
                 in eval assignment dnf `shouldBe` eval assignment formula
 
-    describe "assignmentToMaxterm" $ do
-        it "creates a disjunct of a single literal for a singleton set of variables" $ do
-            assignmentToMaxterm (Set.fromList [var 3]) allFalse `shouldBe` Or [Atom $ var 3]
-
-        it "creates a disjunct of two literals for a set of two variables" $ do
-            assignmentToMaxterm (Set.fromList [var 1, var 3]) allTrue `shouldBe` Or [Not $ Atom (var 1), Not $ Atom (var 3)]
-
     describe "isCnf" $ do
         it "is True for a CNF" $ do
             let cnf = toCanonicalCnf smallNestedFormula
