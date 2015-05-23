@@ -28,8 +28,7 @@ module QuineMcCluskey (formulaToPrimesFormula,
                        emptyState,
                        removeRow,
                        removeColumn,
-                       dropMatrixRow,
-                       dropMatrixColumn
+                       essentialColumns
                        ) where
 
 import Formula (Formula(..), highestVariableIndex)
@@ -44,6 +43,7 @@ import Data.Maybe(catMaybes, isNothing)
 import MatrixUtils
 import qualified Data.Vector.Unboxed as V
 import qualified Data.Matrix as M
+import qualified Data.Vector as Vec
 
 
 -- | Converts any 'Formula' into a CNF\/DNF consisting of all prime terms. If the input is a 'Canonical' DNF, the output is a DNF. Otherwise, the output is a CNF.
@@ -212,7 +212,6 @@ isCoveredBy (QmcTerm termVec) (QmcTerm primeVec) = V.all id $ V.zipWith isCovere
             Nothing -> True
             _ -> termEl == primeEl
 
--- | Index is 0-based, so 0 is the first row in the matrix.
 removeRow :: Int -> MinimizationState -> MinimizationState
 removeRow rowIndex (terms, primes, matrix) =
     (dropElement rowIndex terms, primes, dropMatrixRow matrix rowIndex)
@@ -224,3 +223,13 @@ removeColumn columnIndex (terms, primes, matrix) =
 dropElement :: Int -> [a] -> [a]
 dropElement i list = before ++ tail remainder
     where (before, remainder) = splitAt i list
+
+essentialColumns :: M.Matrix Bool -> [Int]
+essentialColumns matrix = catMaybes $ map checkRow [1..M.nrows matrix]
+    where checkRow i = isCoveredByOnlyOneColumn (M.getRow i matrix)
+
+isCoveredByOnlyOneColumn :: Vec.Vector Bool -> Maybe Int
+isCoveredByOnlyOneColumn row
+    | numMarks == 1 = Vec.elemIndex True row
+    | otherwise = Nothing
+    where numMarks = Vec.foldr (\el rest -> if el then rest + 1 else rest) 0 row

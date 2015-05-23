@@ -149,3 +149,7 @@ spec = do
                     [o,l,o,o,o,l],
                     [o,o,o,o,o,l]
                     ]
+
+        it "finds the correct essential columns" $ do
+            let (_,_,matrix) = initialState
+            essentialColumns matrix `shouldBe` [3, 1]
