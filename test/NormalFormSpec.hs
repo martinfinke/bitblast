@@ -7,6 +7,9 @@ import NormalForm
 import qualified Data.Set as Set
 import FormulaSpec
 
+instance Arbitrary FormType where
+    arbitrary = elements [CNFType, DNFType]
+
 spec :: Spec
 spec = do
     describe "toCanonicalCnf" $ do

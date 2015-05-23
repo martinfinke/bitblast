@@ -2,6 +2,7 @@ module QuineMcCluskey (QmcTerm(..),
                        fromString,
                        formulaToQmcTerms,
                        termToQmcTerm,
+                       qmcTermToTerm,
                        valueForVariableIndex,
                        numRelevantLiterals,
                        hammingDistance,
@@ -15,7 +16,8 @@ module QuineMcCluskey (QmcTerm(..),
                        allPairsOfGroups,
                        possibleNeighbours,
                        mergesOrNothing,
-                       termsUsedForMerging
+                       termsUsedForMerging,
+                       formulaToPrimesFormula
                        ) where
 
 import Formula (Formula(..), highestVariableIndex)
@@ -27,11 +29,11 @@ import Data.List(groupBy, sortBy)
 import Data.Ord(comparing)
 import UnboxMaybe
 import Data.Maybe(catMaybes, isNothing)
-import Debug.Trace(traceShow)
 
 import qualified Data.Vector.Unboxed as V
 
 type QmcTermElement = Maybe Bool
+type GroupedTerms = IntMap.IntMap [QmcTerm]
 
 newtype QmcTerm = QmcTerm (V.Vector QmcTermElement)
     deriving (Eq, Ord)
@@ -61,6 +63,14 @@ formulaToQmcTerms formula
 termToQmcTerm :: Int -> Formula -> QmcTerm
 termToQmcTerm qmcTermLength term = QmcTerm (V.generate qmcTermLength $ valueForVariableIndex term)
 
+qmcTermToTerm :: FormType -> QmcTerm -> Formula
+qmcTermToTerm formType (QmcTerm vector) = op $ V.ifoldr translate [] vector
+    where op = if formType == CNFType then Or else And
+          translate i qmcTermElement rest = case qmcTermElement of
+                Just True -> Atom (var i) : rest
+                Just False -> Not (Atom (var i)) : rest
+                Nothing -> rest
+
 valueForVariableIndex :: Formula -> Int -> QmcTermElement
 valueForVariableIndex term i
     | Atom (var i) `elem` literals = Just True
@@ -76,7 +86,7 @@ numRelevantLiterals formType (QmcTerm vector) = V.foldr countIfRelevant 0 vector
                 (DNFType, Just True) -> True
                 _ -> False
 
-groupTerms :: FormType -> [QmcTerm] -> IntMap.IntMap [QmcTerm]
+groupTerms :: FormType -> [QmcTerm] -> GroupedTerms
 groupTerms formType = IntMap.fromList . withNumber . group . sortBy (comparing numLiterals)
     where numLiterals = numRelevantLiterals formType
           group terms = groupBy equalNumRelevantLiterals terms
@@ -118,11 +128,11 @@ qmcStep formType terms = (primes, merges)
           groups = groupTerms formType terms
           neighbours = possibleNeighbours groups
 
-allPairsOfGroups :: IntMap.IntMap [QmcTerm] -> (Int,Int) -> [(QmcTerm, QmcTerm)]
+allPairsOfGroups :: GroupedTerms -> (Int,Int) -> [(QmcTerm, QmcTerm)]
 allPairsOfGroups groups (i,j) = [(t1,t2) | t1 <- justOrEmpty i, t2 <- justOrEmpty j]
     where justOrEmpty key = maybe [] id (IntMap.lookup key groups)
 
-possibleNeighbours :: IntMap.IntMap [QmcTerm] -> [(QmcTerm,QmcTerm)]
+possibleNeighbours :: GroupedTerms -> [(QmcTerm,QmcTerm)]
 possibleNeighbours groups = concatMap (allPairsOfGroups groups) neighbouringGroups
     where neighbouringGroups = neighbourKeys (IntMap.keys groups)
 
@@ -138,3 +148,10 @@ qmcPrimes formType terms =
     let (primes, merges) = qmcStep formType terms
     in primes ++ qmcPrimes formType merges
   
+
+formulaToPrimesFormula :: FormType -> Formula -> Formula
+formulaToPrimesFormula formType formula =
+    let qmcTerms = formulaToQmcTerms formula
+        primes = qmcPrimes formType qmcTerms
+        (rootOp, childOp) = if formType == CNFType then (And, Or) else (Or, And)
+    in  undefined

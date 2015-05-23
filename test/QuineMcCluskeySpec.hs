@@ -3,12 +3,11 @@ module QuineMcCluskeySpec where
 import SpecHelper
 import QuineMcCluskey
 import TruthTable(var)
-import Formula(Formula(..))
+import Formula(Formula(..), eval)
 import NormalForm(FormType(..))
 import qualified Data.Vector.Unboxed as V
 import qualified Data.IntMap.Lazy as IntMap
 import qualified Data.Set as Set
-import Data.Maybe(isJust, catMaybes)
 
 
 instance Arbitrary QmcTerm where
@@ -222,6 +221,20 @@ spec = do
             let neighbours = possibleNeighbours testGroups
             let maybeMerges = mergesOrNothing neighbours
             termsUsedForMerging maybeMerges neighbours `shouldBe` Set.fromList (map fromString ["-100", "-110", "-110", "-111"])
+            
+
+    describe "qmcTermToTerm" $ do
+        it "creates an empty term for an empty qmcTerm" $ do
+            qmcTermToTerm CNFType (fromString "") `shouldBe` Or []
+
+        it "creates a term with one element for a qmcTerm with one element" $ do
+            qmcTermToTerm DNFType (fromString "0") `shouldBe` And [Not $ Atom (var 0)]
+            qmcTermToTerm DNFType (fromString "1") `shouldBe` And [Atom (var 0)]
+
+
+        it "creates a term with two elements for a qmcTerm with two elements" $ do
+            qmcTermToTerm CNFType (fromString "01") `shouldBe` Or [Atom (var 0), Not $ Atom (var 1)]
+            qmcTermToTerm CNFType (fromString "11") `shouldBe` Or [Atom (var 0), Atom (var 1)]
             
 
 testGroups :: IntMap.IntMap [QmcTerm]
