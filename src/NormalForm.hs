@@ -37,7 +37,7 @@ toNormalForm formType formula = operator terms
           onlyRelevantOutput = filter (\assignment -> getOutput assignment truthTable == relevantOutput) assignments
 
 data FormType = CNFType | DNFType
-    deriving(Eq)
+    deriving(Eq, Show)
 
 assignmentToMinterm, assignmentToMaxterm :: Set.Set Variable -> Assignment -> Formula
 -- | Converts an 'Assignment' (i.e. a row in a 'TruthTable.TruthTable') to a minterm for a canonical DNF. The 'Formula.variableSet' has to be passed as well.

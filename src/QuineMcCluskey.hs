@@ -17,7 +17,8 @@ module QuineMcCluskey (QmcTerm(..),
                        possibleNeighbours,
                        mergesOrNothing,
                        termsUsedForMerging,
-                       formulaToPrimesFormula
+                       formulaToPrimesFormula,
+                       invertQmc
                        ) where
 
 import Formula (Formula(..), highestVariableIndex)
@@ -37,6 +38,7 @@ type GroupedTerms = IntMap.IntMap [QmcTerm]
 
 newtype QmcTerm = QmcTerm (V.Vector QmcTermElement)
     deriving (Eq, Ord)
+
 
 -- | The lowest 'Variable' index is shown at the right
 instance Show QmcTerm where
@@ -153,5 +155,11 @@ formulaToPrimesFormula :: FormType -> Formula -> Formula
 formulaToPrimesFormula formType formula =
     let qmcTerms = formulaToQmcTerms formula
         primes = qmcPrimes formType qmcTerms
-        (rootOp, childOp) = if formType == CNFType then (And, Or) else (Or, And)
-    in  undefined
+        translatedTerms = map (qmcTermToTerm formType) primes
+        rootOp = if formType == CNFType then And else Or
+    in rootOp translatedTerms
+
+-- TODO: probably not needed anymore
+invertQmc :: QmcTerm -> QmcTerm
+invertQmc (QmcTerm vector) = QmcTerm $ V.map invertElement vector
+    where invertElement = fmap not
