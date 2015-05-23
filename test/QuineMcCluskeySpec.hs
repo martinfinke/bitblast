@@ -277,17 +277,6 @@ spec = do
             qmcTermToTerm CNFType (fromString "01") `shouldBe` Or [Atom (var 0), Not $ Atom (var 1)]
             qmcTermToTerm CNFType (fromString "11") `shouldBe` Or [Atom (var 0), Atom (var 1)]
 
-    describe "invertQmc" $ do
-        it "inverts an empty QmcTerm to an empty QmcTerm" $ do
-            invertQmc (fromString "") `shouldBe` (fromString "")
-
-        it "inverts True to False and vice versa" $ do
-            invertQmc (fromString "0101101") `shouldBe` (fromString "1010010")
-
-        it "doesn't invert dashes" $ do
-            invertQmc (fromString "010-10-") `shouldBe` (fromString "101-01-")
-            
-
 testGroups :: IntMap.IntMap [QmcTerm]
 testGroups = IntMap.fromList [
                 (1,[fromString "-100"]),

@@ -17,8 +17,7 @@ module QuineMcCluskey (QmcTerm(..),
                        possibleNeighbours,
                        mergesOrNothing,
                        termsUsedForMerging,
-                       formulaToPrimesFormula,
-                       invertQmc
+                       formulaToPrimesFormula
                        ) where
 
 import Formula (Formula(..), highestVariableIndex)
@@ -164,8 +163,3 @@ formulaToPrimesFormula formula =
         translatedTerms = map (qmcTermToTerm formType) primes
         rootOp = if formType == CNFType then And else Or
     in rootOp translatedTerms
-
--- TODO: probably not needed anymore
-invertQmc :: QmcTerm -> QmcTerm
-invertQmc (QmcTerm vector) = QmcTerm $ V.map invertElement vector
-    where invertElement = fmap not
