@@ -18,7 +18,7 @@ module NormalForm (toCanonicalCnf,
                    termLiterals) where
 
 import Formula
-import TruthTable (Variable, Assignment, getVariable, OutputValue(..), getOutput)
+import TruthTable (Variable, Assignment, getVariable, getOutput)
 import qualified Data.Set as Set
 
 toCanonicalCnf, toCanonicalDnf :: Formula -> Formula
@@ -32,7 +32,7 @@ toNormalForm formType formula = operator terms
     where truthTable = toTruthTable formula
           assignments = possibleAssignments formula
           terms = map (assignmentToTerm formType $ variableSet formula) onlyRelevantOutput
-          relevantOutput = if formType == CNFType then F else T
+          relevantOutput = if formType == CNFType then Just False else Just True
           operator = if formType == CNFType then And else Or
           onlyRelevantOutput = filter (\assignment -> getOutput assignment truthTable == relevantOutput) assignments
 

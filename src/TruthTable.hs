@@ -12,15 +12,13 @@ module TruthTable (
     setVariable,
     setVariables,
     getVariable,
-    OutputValue(..),
     TruthTable,
     emptyTable,
     numVariablesInTable,
     getOutput,
     setOutput,
     setOutputs,
-    isValidAssignment,
-    boolToOutputValue
+    isValidAssignment
 ) where
 
 import qualified Data.Vector.Unboxed as V
@@ -28,6 +26,7 @@ import qualified Data.Bits as B
 import Numeric (showIntAtBase)
 import Data.Char (intToDigit)
 import Text.Printf (printf)
+import UnboxMaybe
 
 -- | A boolean variable. Indexed using 'Int's ranging from 0 to ('maxNumVariables'-1).
 newtype Variable = Variable Int
@@ -101,21 +100,8 @@ getVariable :: Variable
             -> Bool
 getVariable (Variable index) (Assignment bits) = B.testBit bits index
 
--- | Represents a single cell value in the output column of a 'TruthTable'.
-data OutputValue = T -- ^ True
-                 | F -- ^ False
-                 | DC -- ^ Don't Care
-    deriving(Eq)
-
-instance Show OutputValue where
-    show T = "1"
-    show F = "0"
-    show DC = "-"
-
-type InternalOutputValue = (Bool, Bool)
-
--- | A 'TruthTable' is a mapping from 'Assignment's to 'OutputValue's.
-newtype TruthTable = TruthTable (V.Vector InternalOutputValue)
+-- | A 'TruthTable' is a mapping from 'Assignment's to a 'Bool', or 'Nothing' (don't care).
+newtype TruthTable = TruthTable (V.Vector (Maybe Bool))
     deriving (Eq)
 
 instance Show TruthTable where
@@ -124,15 +110,19 @@ instance Show TruthTable where
               numVariables = numVariablesInTable table
               trim = drop (maxNumVariables-numVariables)
 
-renderRow :: Int -> InternalOutputValue -> String
-renderRow rowIndex outputValue = show (assignments!!rowIndex) ++ " " ++ show (fromInternal outputValue)
+renderRow :: Int -> Maybe Bool -> String
+renderRow rowIndex outputValue = show (assignments!!rowIndex) ++ " " ++ renderOutputValue outputValue
     where assignments = [minBound..maxBound::Assignment]
+          renderOutputValue v = case v of
+            Just True -> "1"
+            Just False -> "0"
+            Nothing -> "-"
 
--- | Creates a 'TruthTable' for a given number of 'Variable's. All 'OutputValue's are initially set to 'DC'.
+-- | Creates a 'TruthTable' for a given number of 'Variable's. All outputs are initially set to 'Nothing' (don't care).
 emptyTable :: Int -- ^ The number of 'Variable's used as input for the table. Has to be <= 'maxNumVariables'. The table size will be 2^thisValue.
            -> TruthTable
 emptyTable numVariables
-    | numVariables <= maxNumVariables = TruthTable $ V.replicate (2^numVariables) (toInternal DC)
+    | numVariables <= maxNumVariables = TruthTable $ V.replicate (2^numVariables) Nothing
     | otherwise = error $ "Can't create TruthTable with too many variables (" ++ show numVariables ++ ")"
 
 -- | The number of variables a given 'TruthTable' can hold.
@@ -142,20 +132,20 @@ numVariablesInTable (TruthTable outputColumn)
     | otherwise = B.popCount (len-1)
     where len = V.length outputColumn
 
--- | Gets the 'OutputValue' of a given 'Assignment' (i.e. row) in a 'TruthTable'.
-getOutput :: Assignment -> TruthTable -> OutputValue
+-- | Gets the output of a given 'Assignment' (i.e. row) in a 'TruthTable'.
+getOutput :: Assignment -> TruthTable -> Maybe Bool
 getOutput (Assignment index) (TruthTable outputColumn) = case outputColumn V.!? index of
     Nothing -> error $ printIndexError index (V.length outputColumn)
-    Just internal -> fromInternal internal
+    Just internal -> internal
 
--- | Sets the 'OutputValue' of a given 'Assignment' (i.e. row) in a 'TruthTable'.
-setOutput :: Assignment -> OutputValue -> TruthTable -> TruthTable
+-- | Sets the output of a given 'Assignment' (i.e. row) in a 'TruthTable'.
+setOutput :: Assignment -> Maybe Bool -> TruthTable -> TruthTable
 setOutput (Assignment index) newValue (TruthTable outputColumn)
     | index >= (V.length outputColumn) = error $ printIndexError index (V.length outputColumn)
-    | otherwise = TruthTable (outputColumn V.// [(index, toInternal newValue)])
+    | otherwise = TruthTable (outputColumn V.// [(index, newValue)])
 
--- | Sets multiple 'OutputValue's at once.
-setOutputs :: [(Assignment, OutputValue)] -> TruthTable -> TruthTable
+-- | Sets multiple outputs at once.
+setOutputs :: [(Assignment, Maybe Bool)] -> TruthTable -> TruthTable
 setOutputs outputValues truthTable = foldr (\(assignment, outputValue) table -> setOutput assignment outputValue table) truthTable outputValues
 
 -- | Checks whether an 'Assignment' is valid (i.e. not out of bounds) for a given 'TruthTable'. This is true iff all its true variables' indices are <= the value that was passed to 'emptyTable'.
@@ -164,18 +154,3 @@ isValidAssignment (Assignment index) (TruthTable outputColumn) = index < V.lengt
 
 printIndexError :: Int -> Int -> String
 printIndexError index len = printf "Index out of range: %d >= %d" index len
-
--- | Converts a 'Bool' ('True' \/ 'False') to its corresponding 'OutputValue' ('T' \/ 'F').
-boolToOutputValue :: Bool -> OutputValue
-boolToOutputValue True = T
-boolToOutputValue False = F
-
-toInternal :: OutputValue -> InternalOutputValue
-toInternal T = (True, True)
-toInternal F = (True, False)
-toInternal DC = (False, False)
-
-fromInternal :: InternalOutputValue -> OutputValue
-fromInternal (True, True) = T
-fromInternal (True, False) = F
-fromInternal (False, _) = DC

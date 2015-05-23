@@ -10,7 +10,7 @@ module Formula (Formula(..),
                 highestVariableIndex
                 ) where
 
-import TruthTable (Variable, getVariable, setVariable, Assignment, allFalse, OutputValue(..), TruthTable, emptyTable, setOutputs, boolToOutputValue)
+import TruthTable (Variable, getVariable, setVariable, Assignment, allFalse, TruthTable, emptyTable, setOutputs)
 import Data.List (intercalate)
 import qualified Data.Set as Set
 
@@ -73,7 +73,7 @@ toTruthTable :: Formula -> TruthTable
 toTruthTable formula = setOutputs outputs (emptyTable tableSize)
     where assignments = possibleAssignments formula
           tableSize = highestVariableIndex formula + 1
-          outputs = map (\assignment -> (assignment, boolToOutputValue $ eval assignment formula)) assignments
+          outputs = map (\assignment -> (assignment, Just $ eval assignment formula)) assignments
 
 -- | All possible 'Assignment's for a given 'Formula', i.e. all combinations of true/false values for its 'variableSet'.
 possibleAssignments :: Formula -> [Assignment]

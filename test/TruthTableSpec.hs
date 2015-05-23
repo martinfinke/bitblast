@@ -13,9 +13,6 @@ instance Arbitrary Assignment where
         trueVariables <- listOf1 arbitrary :: Gen [Variable]
         return $ setVariables (zip trueVariables (repeat True)) allFalse
 
-instance Arbitrary OutputValue where
-    arbitrary = elements [T,F,DC]
-
 instance Arbitrary TruthTable where
     arbitrary = resize 20 $ do
         (TenOrLess tenOrLess) <- arbitrary
@@ -23,7 +20,7 @@ instance Arbitrary TruthTable where
         let empty = emptyTable numVariables
         let boundedAssignmentsGen = elements [minBound..toEnum (numVariables-1)] :: Gen Assignment
         randomAssignments <- listOf1 boundedAssignmentsGen
-        randomOutputs <- vector (length randomAssignments) :: Gen [OutputValue]
+        randomOutputs <- vector (length randomAssignments) :: Gen [Maybe Bool]
         let rows = zip randomAssignments randomOutputs
         return $ setOutputs rows empty
 
@@ -67,7 +64,7 @@ spec = do
     describe "TruthTable setOutput" $ do
         it "doesn't allow setting an output value that's out of bounds" $ do
             let table = emptyTable 3
-            evaluate (setOutput (toEnum 8) F table) `shouldThrow` anyErrorCall
+            evaluate (setOutput (toEnum 8) (Just False) table) `shouldThrow` anyErrorCall
 
         it "sets any valid assignment correctly" $ do
             let randomAssignment table i = toEnum $ max 0 $ min (i-1) (numVariablesInTable table - 1)
@@ -77,10 +74,10 @@ spec = do
     describe "TruthTable setOutputs" $ do
         it "sets multiple outputs correctly" $ do
             let outputValues = [
-                    (allFalse, T)
-                    , (setVariable (var 0) True allFalse, F)
+                    (allFalse, Just True)
+                    , (setVariable (var 0) True allFalse, Just False)
                     ]
             let empty = emptyTable 3
             let t1 = setOutputs outputValues empty
-            getOutput allFalse t1 `shouldBe` T
-            getOutput (setVariable (var 0) True allFalse) t1 `shouldBe` F
+            getOutput allFalse t1 `shouldBe` Just True
+            getOutput (setVariable (var 0) True allFalse) t1 `shouldBe` Just False

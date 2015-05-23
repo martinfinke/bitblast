@@ -10,6 +10,10 @@ import Control.Monad (liftM)
 class DefaultValue a where
     defaultValue :: a
 
+instance {-# OVERLAPPABLE #-} DefaultValue Bool where
+    defaultValue = False
+
+
 newtype instance U.MVector s (Maybe a) = MV_Maybe (U.MVector s (Bool,a))
 newtype instance U.Vector    (Maybe a) = V_Maybe  (U.Vector    (Bool,a))
 

@@ -31,9 +31,6 @@ import Debug.Trace(traceShow)
 
 import qualified Data.Vector.Unboxed as V
 
-instance DefaultValue Bool where
-    defaultValue = False
-
 type QmcTermElement = Maybe Bool
 
 newtype QmcTerm = QmcTerm (V.Vector QmcTermElement)

@@ -232,11 +232,11 @@ spec = do
     describe "toTruthTable" $ do
         it "creates a TruthTable for a single Atom" $ do
             let variable = var 0
-            let expectedTable = setOutput (setVariable variable True allFalse) T $ setOutput allFalse F $ emptyTable 1
+            let expectedTable = setOutput (setVariable variable True allFalse) (Just True) $ setOutput allFalse (Just False) $ emptyTable 1
             toTruthTable (Atom variable) `shouldBe` expectedTable
 
         it "creates a TruthTable for a negated Atom" $ do
             let variable = var 1
-            let expectedTable = setOutput (setVariable variable True allFalse) F $ setOutput allFalse T $ emptyTable 2
+            let expectedTable = setOutput (setVariable variable True allFalse) (Just False) $ setOutput allFalse (Just True) $ emptyTable 2
             toTruthTable (Not $ Atom variable) `shouldBe` expectedTable
 
