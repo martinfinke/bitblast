@@ -25,7 +25,11 @@ module QuineMcCluskey (formulaToPrimesFormula,
                        termsUsedForMerging,
                        isCoveredBy,
                        dropElement,
-                       emptyState
+                       emptyState,
+                       removeRow,
+                       removeColumn,
+                       dropMatrixRow,
+                       dropMatrixColumn
                        ) where
 
 import Formula (Formula(..), highestVariableIndex)
@@ -210,11 +214,27 @@ isCoveredBy (QmcTerm termVec) (QmcTerm primeVec) = V.all id $ V.zipWith isCovere
 -- | Index is 0-based, so 0 is the first row in the matrix.
 removeRow :: Int -> MinimizationState -> MinimizationState
 removeRow rowIndex (terms, primes, matrix) =
-    (dropElement rowIndex terms, primes, M.minorMatrix (rowIndex+1) 0 matrix)
+    (dropElement rowIndex terms, primes, dropMatrixRow matrix rowIndex)
+
+dropMatrixRow :: M.Matrix a -> Int -> M.Matrix a
+dropMatrixRow matrix rowIndex
+    | rowIndex == 0 = bottom
+    | rowIndex+1 == (M.nrows matrix) = top
+    | otherwise = top M.<-> bottom
+    where top = M.submatrix 1 rowIndex 1 (M.ncols matrix) matrix
+          bottom = M.submatrix (rowIndex+2) (M.nrows matrix) 1 (M.ncols matrix) matrix
+
+dropMatrixColumn :: M.Matrix a -> Int -> M.Matrix a
+dropMatrixColumn matrix columnIndex
+    | columnIndex == 0 = right
+    | columnIndex+1 == (M.ncols matrix) = left
+    | otherwise = left M.<|> right
+    where left = M.submatrix 1 (M.nrows matrix) 1 columnIndex matrix
+          right = M.submatrix 1 (M.nrows matrix) (columnIndex+2) (M.ncols matrix) matrix
 
 removeColumn :: Int -> MinimizationState -> MinimizationState
 removeColumn columnIndex (terms, primes, matrix) =
-    (terms, dropElement columnIndex primes, M.minorMatrix 0 (columnIndex+1) matrix)
+    (terms, dropElement columnIndex primes, dropMatrixColumn matrix columnIndex)
 
 dropElement :: Int -> [a] -> [a]
 dropElement i list = before ++ tail remainder

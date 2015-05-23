@@ -105,14 +105,14 @@ spec = do
 
     describe "Minimization from Video" $ do
         -- Youtube: bkH0T3fArUI
+        let l = True
+        let o = False
         let primes = map fromString ["0--0", "-1-0", "001-", "010-", "-011", "1-11", "111-"]
         let terms = map fromString ["0010", "0101", "0110", "1011", "1100", "1110", "1111"]
         let initialState = emptyState terms primes
 
         it "creates the correct initial state" $ do
             let (_,_,matrix) = initialState
-            let l = True
-            let o = False
             matrix `shouldBe` M.fromLists [
                     [l,o,l,o,o,o,o],
                     [o,o,o,l,o,o,o],
@@ -121,4 +121,31 @@ spec = do
                     [o,l,o,o,o,o,o],
                     [o,l,o,o,o,o,l],
                     [o,o,o,o,o,l,l]
+                    ]
+
+        it "removes a row correctly" $ do
+            let (newTerms, newPrimes, newMatrix) = removeRow 3 initialState
+            newPrimes `shouldBe` primes
+            newTerms `shouldBe` map fromString ["0010", "0101", "0110", "1100", "1110", "1111"]
+            newMatrix `shouldBe` M.fromLists [
+                    [l,o,l,o,o,o,o],
+                    [o,o,o,l,o,o,o],
+                    [l,l,o,o,o,o,o],
+                    [o,l,o,o,o,o,o],
+                    [o,l,o,o,o,o,l],
+                    [o,o,o,o,o,l,l]
+                    ]
+
+        it "removes a column correctly" $ do
+            let (newTerms, newPrimes, newMatrix) = removeColumn 5 initialState
+            newPrimes `shouldBe` map fromString ["0--0", "-1-0", "001-", "010-", "-011", "111-"]
+            newTerms `shouldBe` terms
+            newMatrix `shouldBe` M.fromLists [
+                    [l,o,l,o,o,o],
+                    [o,o,o,l,o,o],
+                    [l,l,o,o,o,o],
+                    [o,o,o,o,l,o],
+                    [o,l,o,o,o,o],
+                    [o,l,o,o,o,l],
+                    [o,o,o,o,o,l]
                     ]
