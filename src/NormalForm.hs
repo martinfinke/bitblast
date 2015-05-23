@@ -4,7 +4,9 @@ Functions to convert 'Formula'e to canonical CNF/DNF.
 module NormalForm (toCanonicalCnf,
                    toCanonicalDnf,
                    FormType(..),
-                   checkCanonical,
+                   Canonical,
+                   getFormula,
+                   getType,
                    isCnf,
                    isDnf,
                    isCanonical,
@@ -20,28 +22,38 @@ import Formula
 import TruthTable (Variable, Assignment, getVariable, getOutput)
 import qualified Data.Set as Set
 
-toCanonicalCnf, toCanonicalDnf :: Formula -> Formula
+
+data Canonical = CNF Formula
+               | DNF Formula
+
+instance Show Canonical where
+    show = show . getFormula
+
+getFormula :: Canonical -> Formula
+getFormula (CNF formula) = formula
+getFormula (DNF formula) = formula
+
+getType :: Canonical -> FormType
+getType (CNF _) = CNFType
+getType (DNF _) = DNFType
+
+toCanonicalCnf, toCanonicalDnf :: Formula -> Canonical
 -- | Converts a 'Formula' to canonical CNF by creating a 'TruthTable.TruthTable' and reading all rows where the 'OutputValue' is 'F'.
 toCanonicalCnf = toNormalForm CNFType
 -- | Converts a 'Formula' to canonical DNF by creating a 'TruthTable.TruthTable' and reading all rows where the 'OutputValue' is 'T'.
 toCanonicalDnf = toNormalForm DNFType
 
-toNormalForm :: FormType -> Formula -> Formula
+toNormalForm :: FormType -> Formula -> Canonical
 toNormalForm formType formula = operator terms
     where truthTable = toTruthTable formula
           assignments = possibleAssignments formula
           terms = map (assignmentToTerm formType $ variableSet formula) onlyRelevantOutput
           relevantOutput = if formType == CNFType then Just False else Just True
-          operator = if formType == CNFType then And else Or
+          operator = if formType == CNFType then CNF . And else DNF . Or
           onlyRelevantOutput = filter (\assignment -> getOutput assignment truthTable == relevantOutput) assignments
 
 data FormType = CNFType | DNFType
     deriving(Eq, Show)
-
-checkCanonical :: Formula -> Maybe FormType
-checkCanonical formula
-    | isCanonical formula = Just $ if isCnf formula then CNFType else DNFType
-    | otherwise = Nothing
 
 assignmentToTerm :: FormType -> Set.Set Variable -> Assignment -> Formula
 assignmentToTerm formType variables assignment = operator $ Set.foldr addLiteral [] variables
@@ -96,9 +108,9 @@ isPositiveLiteral (Atom _) = True
 isPositiveLiteral _ = False
 
 -- | Checks whether a 'Formula' is canonical, and if not, converts it to canonical form. If it is already a DNF, it will become a canonical DNF. Otherwise, it will become a canonical CNF.
-ensureCanonical :: Formula -> Formula
+ensureCanonical :: Formula -> Canonical
 ensureCanonical formula
-    | isCanonical formula = formula
+    | isCanonical formula = if isCnf formula then CNF formula else DNF formula
     | isDnf formula = toCanonicalDnf formula
     | otherwise = toCanonicalCnf formula
 

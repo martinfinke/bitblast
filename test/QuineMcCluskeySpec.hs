@@ -6,11 +6,12 @@ import TruthTable(var)
 import TruthTableSpec
 import Formula(Formula(..), eval)
 import FormulaSpec
-import NormalForm(FormType(..))
+import NormalForm(FormType(..), getFormula, ensureCanonical)
 import NormalFormSpec
 import qualified Data.Vector.Unboxed as V
 import qualified Data.IntMap.Lazy as IntMap
 import qualified Data.Set as Set
+
 
 
 instance Arbitrary QmcTerm where
@@ -27,7 +28,7 @@ spec = do
     let _2pos1neg_1diff = [x0, Not x1, x2]
     let _2pos1neg_2diff = [Not x0, x1, x2]
     let _3pos0neg = [x0, x1, x2]
-    let testCnf = And [
+    let testCnf = ensureCanonical $ And [
             Or _0pos3neg,
             Or _1pos2neg,
             Or _2pos1neg_1diff,
@@ -68,9 +69,6 @@ spec = do
             property $ \qmcTerm -> (fromString . show) qmcTerm `shouldBe` qmcTerm
 
     describe "formulaToQmcTerms" $ do
-        it "throws an error if a formula isn't a CNF/DNF" $ do
-            evaluate (formulaToQmcTerms (Equiv [])) `shouldThrow` anyErrorCall
-
         it "converts a CNF to QmcTerms" $ do
             formulaToQmcTerms testCnf `shouldBe` map fromString [
                 "000", "001", "101", "110", "111"
@@ -261,7 +259,7 @@ spec = do
             property $ \assignment -> eval assignment smallNestedFormula `shouldBe` eval assignment primesFormula
 
         it "generates prime formulae that have the same value (for a random assignment) as the original CNF/DNF" $ do
-            property $ \(CanonicalNormalForm formula) assignment -> eval assignment formula `shouldBe` eval assignment (formulaToPrimesFormula formula)
+            property $ \canonical assignment -> eval assignment (getFormula canonical) `shouldBe` eval assignment (formulaToPrimesFormula $ getFormula canonical)
 
 
     describe "qmcTermToTerm" $ do

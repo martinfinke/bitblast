@@ -55,13 +55,11 @@ fromString str = QmcTerm $ V.fromList $ map readMaybeBool $ reverse str
                 '0' -> Just False
                 _ -> Nothing
 
-formulaToQmcTerms :: Formula -> [QmcTerm]
-formulaToQmcTerms formula
-    | isValid = map (termToQmcTerm qmcTermLength) terms
-    | otherwise = error $ "Formula isn't in canonical CNF/DNF format: " ++ show formula
+formulaToQmcTerms :: Canonical -> [QmcTerm]
+formulaToQmcTerms canonical = map (termToQmcTerm qmcTermLength) terms
     where terms = normalFormChildren formula
           qmcTermLength = highestVariableIndex formula + 1
-          isValid = (isCnf formula || isDnf formula) && isCanonical formula
+          formula = getFormula canonical
 
 termToQmcTerm :: Int -> Formula -> QmcTerm
 termToQmcTerm qmcTermLength term = QmcTerm (V.generate qmcTermLength $ valueForVariableIndex term)
@@ -151,14 +149,11 @@ qmcPrimes formType terms =
     let (primes, merges) = qmcStep formType terms
     in primes ++ qmcPrimes formType merges
   
-
 formulaToPrimesFormula :: Formula -> Formula
 formulaToPrimesFormula formula =
-    let (canonicalFormula, formType) = case checkCanonical formula of
-            Nothing -> (toCanonicalCnf formula, CNFType)
-            Just CNFType -> (formula, CNFType)
-            Just DNFType -> (formula, DNFType)
-        qmcTerms = formulaToQmcTerms canonicalFormula
+    let canonical = ensureCanonical formula
+        formType = getType canonical
+        qmcTerms = formulaToQmcTerms canonical
         primes = qmcPrimes formType qmcTerms
         translatedTerms = map (qmcTermToTerm formType) primes
         rootOp = if formType == CNFType then And else Or
