@@ -275,6 +275,27 @@ spec = do
             qmcTermToTerm CNFType (fromString "01") `shouldBe` Or [Atom (var 0), Not $ Atom (var 1)]
             qmcTermToTerm CNFType (fromString "11") `shouldBe` Or [Atom (var 0), Atom (var 1)]
 
+    describe "dropElement" $ do
+        it "drops the first element" $ do
+            dropElement 0 [0,1,2,3] `shouldBe` [1,2,3]
+
+        it "drops an element in the middle" $ do
+            dropElement 3 [0,1,2,3,4,5] `shouldBe` [0,1,2,4,5]
+
+        it "drops the last element" $ do
+            dropElement 3 [0,1,2,3] `shouldBe` [0,1,2]
+
+    describe "isCoveredBy" $ do
+        it "is True for terms that are covered" $ do
+            (fromString "101" `isCoveredBy` fromString "101") `shouldBe` True
+            (fromString "101" `isCoveredBy` fromString "10-") `shouldBe` True
+            (fromString "101" `isCoveredBy` fromString "-0-") `shouldBe` True
+            (fromString "101" `isCoveredBy` fromString "---") `shouldBe` True
+
+        it "is False for terms that aren't covered" $ do
+            (fromString "101" `isCoveredBy` fromString "00-") `shouldBe` False
+            (fromString "101" `isCoveredBy` fromString "-1-") `shouldBe` False
+
 testGroups :: IntMap.IntMap [QmcTerm]
 testGroups = IntMap.fromList [
                 (1,[fromString "-100"]),

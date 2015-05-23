@@ -5,6 +5,7 @@ import QuineMcCluskey
 import Data.Maybe(isJust, catMaybes)
 import qualified Data.IntMap.Lazy as IntMap
 import qualified Data.Set as Set
+import qualified Data.Matrix as M
 import NormalForm(FormType(..))
 
 spec :: Spec
@@ -102,3 +103,22 @@ spec = do
         it "finds the correct primes" $ do
             Set.fromList (qmcPrimes DNFType terms) `shouldBe` Set.fromList expectedPrimes
 
+    describe "Minimization from Video" $ do
+        -- Youtube: bkH0T3fArUI
+        let primes = map fromString ["0--0", "-1-0", "001-", "010-", "-011", "1-11", "111-"]
+        let terms = map fromString ["0010", "0101", "0110", "1011", "1100", "1110", "1111"]
+        let initialState = emptyState terms primes
+
+        it "creates the correct initial state" $ do
+            let (_,_,matrix) = initialState
+            let l = True
+            let o = False
+            matrix `shouldBe` M.fromLists [
+                    [l,o,l,o,o,o,o],
+                    [o,o,o,l,o,o,o],
+                    [l,l,o,o,o,o,o],
+                    [o,o,o,o,l,l,o],
+                    [o,l,o,o,o,o,o],
+                    [o,l,o,o,o,o,l],
+                    [o,o,o,o,o,l,l]
+                    ]

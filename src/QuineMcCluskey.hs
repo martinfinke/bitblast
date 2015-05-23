@@ -22,7 +22,10 @@ module QuineMcCluskey (formulaToPrimesFormula,
                        allPairsOfGroups,
                        possibleNeighbours,
                        mergesOrNothing,
-                       termsUsedForMerging
+                       termsUsedForMerging,
+                       isCoveredBy,
+                       dropElement,
+                       emptyState
                        ) where
 
 import Formula (Formula(..), highestVariableIndex)
@@ -35,6 +38,7 @@ import Data.Ord(comparing)
 import UnboxMaybe
 import Data.Maybe(catMaybes, isNothing)
 import qualified Data.Vector.Unboxed as V
+import qualified Data.Matrix as M
 
 
 -- | Converts any 'Formula' into a CNF\/DNF consisting of all prime terms. If the input is a 'Canonical' DNF, the output is a DNF. Otherwise, the output is a CNF.
@@ -50,7 +54,7 @@ formulaToPrimesFormula formula =
 
 -- | Converts a list of 'QmcTerm's into the list of its prime terms.
 qmcPrimes :: FormType -> [QmcTerm] -> [QmcTerm]
-qmcPrimes _ [] = []
+qmcPrimes _ [] = [] -- No merges were possible, so now it would be the time to find the minimal cover.
 qmcPrimes formType terms =
     let (primes, merges) = qmcStep formType terms
     in primes ++ qmcPrimes formType merges
@@ -183,3 +187,35 @@ mergesOrNothing = map $ uncurry mergeTerms
 
 termsUsedForMerging :: Ord a => [Maybe a] -> [(a,a)] -> Set.Set a
 termsUsedForMerging maybeMerges neighbours = Set.fromList $ concat $ zipWith (\mergeOrNothing (t1,t2) -> if isNothing mergeOrNothing then [] else [t1,t2]) maybeMerges neighbours
+
+
+
+
+
+
+
+type MinimizationState = ([QmcTerm], [QmcTerm], M.Matrix Bool)
+
+emptyState :: [QmcTerm] -> [QmcTerm] -> MinimizationState
+emptyState terms primes = (terms, primes, matrix)
+    where matrix = M.matrix (length terms) (length primes) termIsCovered
+          termIsCovered (i,j) = (terms!!(i-1)) `isCoveredBy` (primes!!(j-1))
+
+isCoveredBy :: QmcTerm -> QmcTerm -> Bool
+isCoveredBy (QmcTerm termVec) (QmcTerm primeVec) = V.all id $ V.zipWith isCovered termVec primeVec
+    where isCovered termEl primeEl = case primeEl of
+            Nothing -> True
+            _ -> termEl == primeEl
+
+-- | Index is 0-based, so 0 is the first row in the matrix.
+removeRow :: Int -> MinimizationState -> MinimizationState
+removeRow rowIndex (terms, primes, matrix) =
+    (dropElement rowIndex terms, primes, M.minorMatrix (rowIndex+1) 0 matrix)
+
+removeColumn :: Int -> MinimizationState -> MinimizationState
+removeColumn columnIndex (terms, primes, matrix) =
+    (terms, dropElement columnIndex primes, M.minorMatrix 0 (columnIndex+1) matrix)
+
+dropElement :: Int -> [a] -> [a]
+dropElement i list = before ++ tail remainder
+    where (before, remainder) = splitAt i list
