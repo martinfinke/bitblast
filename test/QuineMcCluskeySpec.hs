@@ -68,11 +68,11 @@ spec = do
             property $ \qmcTerm -> (fromString . show) qmcTerm `shouldBe` qmcTerm
 
     describe "formulaToQmcTerms" $ do
-        it "converts an empty Formula to the empty list" $ do
-            map show (formulaToQmcTerms (Equiv [])) `shouldBe` []
+        it "throws an error if a formula isn't a CNF/DNF" $ do
+            evaluate (formulaToQmcTerms (Equiv [])) `shouldThrow` anyErrorCall
 
         it "converts a CNF to QmcTerms" $ do
-            map show (formulaToQmcTerms testCnf) `shouldBe` [
+            formulaToQmcTerms testCnf `shouldBe` map fromString [
                 "000", "001", "101", "110", "111"
                 ]
 
@@ -234,33 +234,31 @@ spec = do
                     Or [a, Not b, c],
                     Or [a, b, Not c]
                     ]
-            formulaToPrimesFormula CNFType cnfXor `shouldBe` cnfXor
+            formulaToPrimesFormula cnfXor `shouldBe` cnfXor
 
         it "simplifies a formula with two identical terms" $ do
             let term = Or [Not a, b, Not c]
             let cnf = And [term, term]
             let expected = And [term]
-            formulaToPrimesFormula CNFType cnf `shouldBe` expected
+            formulaToPrimesFormula cnf `shouldBe` expected
 
         it "simplifies a formula with two terms that have redundancy" $ do
             let term1 = Or [Not a, b, Not c]
             let term2 = Or [a, b, Not c]
             let cnf = And [term1, term2]
             let expected = And [Or [b, Not c]]
-            formulaToPrimesFormula CNFType cnf `shouldBe` expected
+            formulaToPrimesFormula cnf `shouldBe` expected
 
         it "produces a formula that, for a random assignment, has the same value as the original" $ do
             let term1 = Or [Not a, b, Not c]
             let term2 = Or [a, b, Not c]
             let formula = And [term1, term2]
-            let qmcTerms = formulaToQmcTerms formula
-            let primesFormula = formulaToPrimesFormula CNFType formula
+            let primesFormula = formulaToPrimesFormula formula
             property $ \assignment -> eval assignment formula `shouldBe` eval assignment primesFormula
 
-        --it "produces formulae that (for a random assignment) have the same value as the input formula" $ do
-        --    property $ \formula assignment formType ->
-        --        let primesFormula = formulaToPrimesFormula formType formula
-        --        in  eval assignment formula `shouldBe` eval assignment primesFormula
+        it "the primesFormula of smallNestedFormula has the same values (for a random assignment) as the original" $ do
+            let primesFormula = formulaToPrimesFormula smallNestedFormula
+            property $ \assignment -> eval assignment smallNestedFormula `shouldBe` eval assignment primesFormula
 
     describe "qmcTermToTerm" $ do
         it "creates an empty term for an empty qmcTerm" $ do

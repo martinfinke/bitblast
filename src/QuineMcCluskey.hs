@@ -30,6 +30,7 @@ import Data.List(groupBy, sortBy)
 import Data.Ord(comparing)
 import UnboxMaybe
 import Data.Maybe(catMaybes, isNothing)
+import Debug.Trace(traceShow)
 
 import qualified Data.Vector.Unboxed as V
 
@@ -57,10 +58,11 @@ fromString str = QmcTerm $ V.fromList $ map readMaybeBool $ reverse str
 
 formulaToQmcTerms :: Formula -> [QmcTerm]
 formulaToQmcTerms formula
-    | not (isCanonical formula) = formulaToQmcTerms (ensureCanonical formula)
-    | otherwise = map (termToQmcTerm qmcTermLength) terms
+    | isValid = map (termToQmcTerm qmcTermLength) terms
+    | otherwise = error $ "Formula isn't in canonical CNF/DNF format: " ++ show formula
     where terms = normalFormChildren formula
           qmcTermLength = highestVariableIndex formula + 1
+          isValid = (isCnf formula || isDnf formula) && isCanonical formula
 
 termToQmcTerm :: Int -> Formula -> QmcTerm
 termToQmcTerm qmcTermLength term = QmcTerm (V.generate qmcTermLength $ valueForVariableIndex term)
@@ -151,9 +153,13 @@ qmcPrimes formType terms =
     in primes ++ qmcPrimes formType merges
   
 
-formulaToPrimesFormula :: FormType -> Formula -> Formula
-formulaToPrimesFormula formType formula =
-    let qmcTerms = formulaToQmcTerms formula
+formulaToPrimesFormula :: Formula -> Formula
+formulaToPrimesFormula formula =
+    let (canonicalFormula, formType) = case checkCanonical formula of
+            Nothing -> (toCanonicalCnf formula, CNFType)
+            Just CNFType -> (formula, CNFType)
+            Just DNFType -> (formula, DNFType)
+        qmcTerms = formulaToQmcTerms canonicalFormula
         primes = qmcPrimes formType qmcTerms
         translatedTerms = map (qmcTermToTerm formType) primes
         rootOp = if formType == CNFType then And else Or

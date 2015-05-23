@@ -4,6 +4,7 @@ Functions to convert 'Formula'e to canonical CNF/DNF.
 module NormalForm (toCanonicalCnf,
                    toCanonicalDnf,
                    FormType(..),
+                   checkCanonical,
                    isCnf,
                    isDnf,
                    isCanonical,
@@ -38,6 +39,11 @@ toNormalForm formType formula = operator terms
 
 data FormType = CNFType | DNFType
     deriving(Eq, Show)
+
+checkCanonical :: Formula -> Maybe FormType
+checkCanonical formula
+    | isCanonical formula = Just $ if isCnf formula then CNFType else DNFType
+    | otherwise = Nothing
 
 assignmentToMinterm, assignmentToMaxterm :: Set.Set Variable -> Assignment -> Formula
 -- | Converts an 'Assignment' (i.e. a row in a 'TruthTable.TruthTable') to a minterm for a canonical DNF. The 'Formula.variableSet' has to be passed as well.
