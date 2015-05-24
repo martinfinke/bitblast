@@ -157,7 +157,5 @@ spec = do
         it "removes the correct essential columns (and covered rows)" $ do
             let (terms, primes, matrix, essentialPrimes) = removeEssentialColumns initialState
             terms `shouldBe` map fromString ["0010", "1011", "1111"]
-            --primes `shouldBe` map fromString ["0--0", "001-", "-011", "1-11", "111-"]
-            --essentialPrimes `shouldBe` map fromString ["-1-0", "010-"]
-            -- Problem: Beim foldr wird die Matrix verändert, d.h. die Indices werden ungültig.
-            -- Mögliche Lösung: essentialCols und coveredRs so sortieren, dass zuerst Spalten/Zeilen mit höchstem Index entfernt werden. Dann werden kleinere Indices nicht ungültig.
+            primes `shouldBe` map fromString ["0--0", "001-", "-011", "1-11", "111-"]
+            essentialPrimes `shouldBe` map fromString ["010-", "-1-0"]

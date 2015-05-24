@@ -250,7 +250,7 @@ coveredRows :: Vec.Vector Bool -> [Int]
 coveredRows = Vec.toList . Vec.elemIndices True
 
 removeEssentialColumns :: MinimizationState -> MinimizationState
-removeEssentialColumns state@(terms, primes, matrix, essentialPrimes) =
+removeEssentialColumns state@(_, primes, matrix, _) =
     let essentialCols = essentialColumns matrix :: [Int]
         coveredRs = concatMap (\j -> coveredRows $ M.getCol (j+1) matrix) essentialCols
         withoutRowsAndCols = removeRows coveredRs . removeColumns essentialCols
