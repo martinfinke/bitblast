@@ -112,7 +112,7 @@ spec = do
         let initialState = emptyState terms primes
 
         it "creates the correct initial state" $ do
-            let (_,_,matrix) = initialState
+            let (_,_,matrix,_) = initialState
             matrix `shouldBe` M.fromLists [
                     [l,o,l,o,o,o,o],
                     [o,o,o,l,o,o,o],
@@ -124,7 +124,7 @@ spec = do
                     ]
 
         it "removes a row correctly" $ do
-            let (newTerms, newPrimes, newMatrix) = removeRow 3 initialState
+            let (newTerms, newPrimes, newMatrix,_) = removeRow 3 initialState
             newPrimes `shouldBe` primes
             newTerms `shouldBe` map fromString ["0010", "0101", "0110", "1100", "1110", "1111"]
             newMatrix `shouldBe` M.fromLists [
@@ -137,7 +137,7 @@ spec = do
                     ]
 
         it "removes a column correctly" $ do
-            let (newTerms, newPrimes, newMatrix) = removeColumn 5 initialState
+            let (newTerms, newPrimes, newMatrix,_) = removeColumn 5 initialState
             newPrimes `shouldBe` map fromString ["0--0", "-1-0", "001-", "010-", "-011", "111-"]
             newTerms `shouldBe` terms
             newMatrix `shouldBe` M.fromLists [
@@ -151,5 +151,13 @@ spec = do
                     ]
 
         it "finds the correct essential columns" $ do
-            let (_,_,matrix) = initialState
+            let (_,_,matrix,_) = initialState
             essentialColumns matrix `shouldBe` [3, 1]
+
+        it "removes the correct essential columns (and covered rows)" $ do
+            let (terms, primes, matrix, essentialPrimes) = removeEssentialColumns initialState
+            terms `shouldBe` map fromString ["0010", "1011", "1111"]
+            --primes `shouldBe` map fromString ["0--0", "001-", "-011", "1-11", "111-"]
+            --essentialPrimes `shouldBe` map fromString ["-1-0", "010-"]
+            -- Problem: Beim foldr wird die Matrix verändert, d.h. die Indices werden ungültig.
+            -- Mögliche Lösung: essentialCols und coveredRs so sortieren, dass zuerst Spalten/Zeilen mit höchstem Index entfernt werden. Dann werden kleinere Indices nicht ungültig.

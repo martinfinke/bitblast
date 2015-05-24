@@ -28,7 +28,8 @@ module QuineMcCluskey (formulaToPrimesFormula,
                        emptyState,
                        removeRow,
                        removeColumn,
-                       essentialColumns
+                       essentialColumns,
+                       removeEssentialColumns
                        ) where
 
 import Formula (Formula(..), highestVariableIndex)
@@ -36,7 +37,7 @@ import NormalForm
 import TruthTable(var, Variable)
 import qualified Data.IntMap.Lazy as IntMap
 import qualified Data.Set as Set
-import Data.List(groupBy, sortBy)
+import Data.List(groupBy, sortBy, nub)
 import Data.Ord(comparing)
 import UnboxMaybe
 import Data.Maybe(catMaybes, isNothing)
@@ -199,10 +200,10 @@ termsUsedForMerging maybeMerges neighbours = Set.fromList $ concat $ zipWith (\m
 
 
 
-type MinimizationState = ([QmcTerm], [QmcTerm], M.Matrix Bool)
+type MinimizationState = ([QmcTerm], [QmcTerm], M.Matrix Bool, [QmcTerm])
 
 emptyState :: [QmcTerm] -> [QmcTerm] -> MinimizationState
-emptyState terms primes = (terms, primes, matrix)
+emptyState terms primes = (terms, primes, matrix, [])
     where matrix = M.matrix (length terms) (length primes) termIsCovered
           termIsCovered (i,j) = (terms!!(i-1)) `isCoveredBy` (primes!!(j-1))
 
@@ -213,12 +214,12 @@ isCoveredBy (QmcTerm termVec) (QmcTerm primeVec) = V.all id $ V.zipWith isCovere
             _ -> termEl == primeEl
 
 removeRow :: Int -> MinimizationState -> MinimizationState
-removeRow rowIndex (terms, primes, matrix) =
-    (dropElement rowIndex terms, primes, dropMatrixRow matrix rowIndex)
+removeRow rowIndex (terms, primes, matrix, essentialPrimes) =
+    (dropElement rowIndex terms, primes, dropMatrixRow matrix rowIndex, essentialPrimes)
 
 removeColumn :: Int -> MinimizationState -> MinimizationState
-removeColumn columnIndex (terms, primes, matrix) =
-    (terms, dropElement columnIndex primes, dropMatrixColumn matrix columnIndex)
+removeColumn columnIndex (terms, primes, matrix, essentialPrimes) =
+    (terms, dropElement columnIndex primes, dropMatrixColumn matrix columnIndex, essentialPrimes)
 
 dropElement :: Int -> [a] -> [a]
 dropElement i list = before ++ tail remainder
@@ -233,3 +234,18 @@ isCoveredByOnlyOneColumn row
     | numMarks == 1 = Vec.elemIndex True row
     | otherwise = Nothing
     where numMarks = Vec.foldr (\el rest -> if el then rest + 1 else rest) 0 row
+
+coveredRows :: Vec.Vector Bool -> [Int]
+coveredRows = Vec.toList . Vec.elemIndices True
+
+removeEssentialColumns :: MinimizationState -> MinimizationState
+removeEssentialColumns state@(terms, primes, matrix, essentialPrimes) =
+    let essentialCols = essentialColumns matrix :: [Int]
+        coveredRs = concatMap (\j -> coveredRows $ M.getCol (j+1) matrix) essentialCols
+        withoutRowsAndCols = foldr removeRow (foldr removeColumn state essentialCols) coveredRs
+        newEssentialPrimes = map (primes!!) essentialCols
+    in  addEssentialPrimes newEssentialPrimes withoutRowsAndCols
+
+addEssentialPrimes :: [QmcTerm] -> MinimizationState -> MinimizationState
+addEssentialPrimes newPrimes (terms, primes, matrix, essentialPrimes) =
+    (terms, primes, matrix, essentialPrimes ++ newPrimes)

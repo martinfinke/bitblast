@@ -8,12 +8,12 @@ import qualified Data.Matrix as M
 
 spec :: Spec
 spec = do
+    let testMatrix = M.fromLists [
+            [0,1,0,0,0],
+            [1,0,1,0,1],
+            [0,1,0,1,1]
+            ]
     describe "dropMatrixRow" $ do
-        let testMatrix = M.fromLists [
-                [0,1,0,0,0],
-                [1,0,1,0,1],
-                [0,1,0,1,1]
-                ]
         it "drops the first row correctly" $ do
             dropMatrixRow testMatrix 0 `shouldBe` M.fromLists [
                 [1,0,1,0,1],
@@ -33,11 +33,6 @@ spec = do
                 ]
 
     describe "dropMatrixColumn" $ do
-        let testMatrix = M.fromLists [
-                [0,1,0,0,0],
-                [1,0,1,0,1],
-                [0,1,0,1,1]
-                ]
         it "drops the first column correctly" $ do
             dropMatrixColumn testMatrix 0 `shouldBe` M.fromLists [
                 [1,0,0,0],
@@ -59,3 +54,6 @@ spec = do
                 [0,1,1,1]
                 ]
             
+    describe "dropMatrixColumns" $ do
+        it "does" $ do
+            pending
