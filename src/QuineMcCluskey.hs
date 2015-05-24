@@ -215,11 +215,11 @@ isCoveredBy (QmcTerm termVec) (QmcTerm primeVec) = V.all id $ V.zipWith isCovere
 
 removeRow :: Int -> MinimizationState -> MinimizationState
 removeRow rowIndex (terms, primes, matrix, essentialPrimes) =
-    (dropElement rowIndex terms, primes, dropMatrixRow matrix rowIndex, essentialPrimes)
+    (dropElement rowIndex terms, primes, dropMatrixRow rowIndex matrix, essentialPrimes)
 
 removeColumn :: Int -> MinimizationState -> MinimizationState
 removeColumn columnIndex (terms, primes, matrix, essentialPrimes) =
-    (terms, dropElement columnIndex primes, dropMatrixColumn matrix columnIndex, essentialPrimes)
+    (terms, dropElement columnIndex primes, dropMatrixColumn columnIndex matrix, essentialPrimes)
 
 dropElement :: Int -> [a] -> [a]
 dropElement i list = before ++ tail remainder
