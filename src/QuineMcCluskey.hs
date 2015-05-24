@@ -37,7 +37,7 @@ import NormalForm
 import TruthTable(var, Variable)
 import qualified Data.IntMap.Lazy as IntMap
 import qualified Data.Set as Set
-import Data.List(groupBy, sortBy, nub)
+import Data.List(groupBy, sortBy, sort, nub)
 import Data.Ord(comparing)
 import UnboxMaybe
 import Data.Maybe(catMaybes, isNothing)
@@ -221,9 +221,20 @@ removeColumn :: Int -> MinimizationState -> MinimizationState
 removeColumn columnIndex (terms, primes, matrix, essentialPrimes) =
     (terms, dropElement columnIndex primes, dropMatrixColumn columnIndex matrix, essentialPrimes)
 
+removeRows :: [Int] -> MinimizationState -> MinimizationState
+removeRows rowIndices (terms, primes, matrix, essentialPrimes) =
+    (dropElements rowIndices terms, primes, dropMatrixRows rowIndices matrix, essentialPrimes)
+
+removeColumns :: [Int] -> MinimizationState -> MinimizationState
+removeColumns columnIndices (terms, primes, matrix, essentialPrimes) =
+    (terms, dropElements columnIndices primes, dropMatrixColumns columnIndices matrix, essentialPrimes)
+
 dropElement :: Int -> [a] -> [a]
 dropElement i list = before ++ tail remainder
     where (before, remainder) = splitAt i list
+
+dropElements :: [Int] -> [a] -> [a]
+dropElements indices list = foldr dropElement list (sort indices)
 
 essentialColumns :: M.Matrix Bool -> [Int]
 essentialColumns matrix = catMaybes $ map checkRow [1..M.nrows matrix]
@@ -242,9 +253,9 @@ removeEssentialColumns :: MinimizationState -> MinimizationState
 removeEssentialColumns state@(terms, primes, matrix, essentialPrimes) =
     let essentialCols = essentialColumns matrix :: [Int]
         coveredRs = concatMap (\j -> coveredRows $ M.getCol (j+1) matrix) essentialCols
-        withoutRowsAndCols = foldr removeRow (foldr removeColumn state essentialCols) coveredRs
+        withoutRowsAndCols = removeRows coveredRs . removeColumns essentialCols
         newEssentialPrimes = map (primes!!) essentialCols
-    in  addEssentialPrimes newEssentialPrimes withoutRowsAndCols
+    in  addEssentialPrimes newEssentialPrimes $ withoutRowsAndCols state
 
 addEssentialPrimes :: [QmcTerm] -> MinimizationState -> MinimizationState
 addEssentialPrimes newPrimes (terms, primes, matrix, essentialPrimes) =
