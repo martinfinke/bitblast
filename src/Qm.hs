@@ -62,7 +62,7 @@ qm ones zeros dc = -- TODO: Verify that either (or both) the ones and zeros are 
         dc'' = setOr [dc', Set.difference (Set.difference all' ones'') zeros'']
         doAssert = assert $ Set.size dc'' + Set.size zeros'' + Set.size ones'' == elts' && Set.size (Set.unions [dc'', zeros'', ones'']) == elts'
         primes = doAssert $ compute_primes (Set.union ones'' dc'') numvars
-    in  unate_cover primes ones''
+    in  traceShow primes $ unate_cover primes ones''
 
 unate_cover :: Set.Set B.ByteString -> Set.Set B.ByteString -> [B.ByteString]
 unate_cover primes ones =
@@ -82,7 +82,7 @@ is_cover prime one = minimum $ True : [p == dash || p == o | (p, o) <- B.zip pri
 compute_primes :: Set.Set B.ByteString -> Int -> Set.Set B.ByteString
 compute_primes cubes vars = primes
     where sigma = [Set.fromList [i | i <- Set.toList cubes, bitcount i == v] | v <- [0..vars]]
-          primes = Set.empty
+          (_, primes) = whileSigma (sigma, Set.empty)
           -- [:-1] is "safeInit"
           -- [1:] is "safeTail"
 
@@ -95,9 +95,9 @@ whileSigma (sigma, primes) =
         (nsigma', redundant') = forC1C2 (zip (safeInit sigma) (safeTail sigma))
         primes' = Set.union primes $ Set.difference (Set.fromList [c | cubes <- sigma, c <- Set.toList cubes]) redundant'
         sigma' = nsigma'
-    in  (sigma', primes')
+    in whileSigma (sigma', primes')
 
-forC1C2 :: [(Set.Set B.ByteString, Set.Set B.ByteString)] -> ([Set.Set B.ByteString], Set.Set B.ByteString) -- TODO: What is a?
+forC1C2 :: [(Set.Set B.ByteString, Set.Set B.ByteString)] -> ([Set.Set B.ByteString], Set.Set B.ByteString)
 forC1C2 [] = ([], Set.empty)
 forC1C2 ((c1,c2):rest) =
     let (nc, redundant) = forAInC1BInC2 (Set.toList c1) (Set.toList c2)
@@ -106,6 +106,7 @@ forC1C2 ((c1,c2):rest) =
 
 forAInC1BInC2 :: [B.ByteString] -> [B.ByteString] -> (Set.Set B.ByteString, Set.Set B.ByteString)
 forAInC1BInC2 [] _ = (Set.empty, Set.empty)
+forAInC1BInC2 _ [] = (Set.empty, Set.empty)
 forAInC1BInC2 (a:c1Rest) (b:c2Rest) =
     let (nc, redundant) = forAInC1BInC2 c1Rest c2Rest
     in case merge a b of
