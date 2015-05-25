@@ -4,6 +4,12 @@ import SpecHelper
 import QmTerm
 
 
+instance Arbitrary QmTerm where
+    arbitrary = do
+        (TenOrLess len) <- arbitrary
+        str <- vectorOf len $ elements "10-"
+        return $ fromString str
+
 spec :: Spec
 spec = do
     describe "bitcount" $ do
