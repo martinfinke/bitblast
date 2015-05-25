@@ -133,6 +133,18 @@ spec = do
             b2s 3 3 `shouldBe` fromString "011"
             b2s 3 4 `shouldBe` fromString "0011"
 
+    describe "s2b" $ do
+        it "converts 0 to 0 and 1 to 1" $ do
+            s2b (fromString "0") `shouldBe` 0
+            s2b (fromString "1") `shouldBe` 1
+
+        it "converts terms with more than one digit" $ do
+            s2b (fromString "00") `shouldBe` 0
+            s2b (fromString "01") `shouldBe` 1
+            s2b (fromString "10") `shouldBe` 2
+            s2b (fromString "11") `shouldBe` 3
+            s2b (fromString "100") `shouldBe` 4
+
     describe "merge" $ do
         it "behaves as the python version" $ do
             merge (fromString "") (fromString "") `shouldBe` Just (fromString "")
@@ -191,3 +203,40 @@ spec = do
 
         it "finds the correct minimum cover" $ do
             unate_cover primes terms `shouldBe` map fromString ["-1-0", "001-", "010-", "1-11"]
+
+    describe "2-Bit Multiplier" $ do
+        -- http://research.ijcaonline.org/volume42/number4/pxc3877719.pdf
+        let minterms = map s2b $ map fromString [
+            --   a   *   b   =   c
+                "00" ++ "00" ++ "0000",
+                "00" ++ "01" ++ "0000",
+                "00" ++ "10" ++ "0000",
+                "00" ++ "11" ++ "0000",
+                "01" ++ "00" ++ "0000",
+                "01" ++ "01" ++ "0001",
+                "01" ++ "10" ++ "0010",
+                "01" ++ "11" ++ "0011",
+
+                "10" ++ "00" ++ "0000",
+                "10" ++ "01" ++ "0010",
+                "10" ++ "10" ++ "0100",
+                "10" ++ "11" ++ "0110",
+                "11" ++ "00" ++ "0000",
+                "11" ++ "01" ++ "0011",
+                "11" ++ "10" ++ "0110",
+                "11" ++ "11" ++ "1001"
+                ]
+        it "minimizes the DNF" $ do
+            qm minterms [] [] `shouldBe` map fromString [
+                "--000000",
+                "00--0000",
+                "01010001",
+                "01100010",
+                "01110011",
+                "10010010",
+                "10100100",
+                "10110110",
+                "11010011",
+                "11100110",
+                "11111001"
+                ]

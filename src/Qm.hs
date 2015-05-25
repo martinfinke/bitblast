@@ -19,6 +19,7 @@ module Qm(fromString,
           is_full_cover,
           bitcount,
           b2s,
+          s2b,
           merge,
           compute_primes,
           unate_cover) where
@@ -144,6 +145,14 @@ b2s i vars =
     let is = [shift i (-k) | k <- [0..vars-1]] :: [Int]
         s' = reverse $ map (\i' -> ([zero, one]!!(i' .&. 1))) is
     in  QmTerm (U.fromList s')
+
+s2b :: QmTerm -> Int
+s2b (QmTerm vec) = U.sum $ U.imap power vec
+    where numVars = U.length vec
+          power index termEl = case termEl of
+            Just True -> 2^(numVars-1-index)
+            _ -> 0
+
 
 merge :: QmTerm -> QmTerm -> Maybe QmTerm
 merge (QmTerm i) (QmTerm j) =
