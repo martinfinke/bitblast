@@ -6,7 +6,12 @@ import qualified Data.Set as Set
 import qualified Data.ByteString as B
 
 fromString :: String -> B.ByteString
-fromString = B.pack . map read . map (:[])
+fromString = B.pack . map convert
+    where convert c = case c of
+            '0' -> 0
+            '1' -> 1
+            'X' -> -1
+--fromString = B.pack . map read . map (:[])
 
 spec :: Spec
 spec = do
@@ -52,10 +57,10 @@ spec = do
             cover ["0", "1"] ["0"] `shouldBe` True
             cover ["0"] ["0", "1"] `shouldBe` False
             cover ["0", "1"] ["0", "1"] `shouldBe` True
-            cover ["2"] ["0", "1"] `shouldBe` True
-            cover ["021"] ["0", "1"] `shouldBe` False
-            cover ["021"] ["011", "101"] `shouldBe` False
-            cover ["021", "201"] ["011", "101"] `shouldBe` True
+            cover ["X"] ["0", "1"] `shouldBe` True
+            cover ["0X1"] ["0", "1"] `shouldBe` False
+            cover ["0X1"] ["011", "101"] `shouldBe` False
+            cover ["0X1", "X01"] ["011", "101"] `shouldBe` True
 
     describe "is_cover" $ do
         it "behaves as the python version" $ do
@@ -67,13 +72,13 @@ spec = do
             is_cover (fromString "0") (fromString "0") `shouldBe` True
             is_cover (fromString "0") (fromString "1") `shouldBe` False
             is_cover (fromString "1") (fromString "0") `shouldBe` False
-            is_cover (fromString "2") (fromString "0") `shouldBe` True
-            is_cover (fromString "2") (fromString "1") `shouldBe` True
-            is_cover (fromString "2") (fromString "2") `shouldBe` True
-            is_cover (fromString "021") (fromString "011") `shouldBe` True
-            is_cover (fromString "021") (fromString "001") `shouldBe` True
-            is_cover (fromString "021") (fromString "000") `shouldBe` False
-            is_cover (fromString "021") (fromString "101") `shouldBe` False
+            is_cover (fromString "X") (fromString "0") `shouldBe` True
+            is_cover (fromString "X") (fromString "1") `shouldBe` True
+            is_cover (fromString "X") (fromString "X") `shouldBe` True
+            is_cover (fromString "0X1") (fromString "011") `shouldBe` True
+            is_cover (fromString "0X1") (fromString "001") `shouldBe` True
+            is_cover (fromString "0X1") (fromString "000") `shouldBe` False
+            is_cover (fromString "0X1") (fromString "101") `shouldBe` False
 
     describe "compute_primes" $ do
         it "behaves as the python version" $ do
@@ -94,10 +99,10 @@ spec = do
             test ["01", "10"] 0 []
             test ["01", "10"] 1 ["01", "10"]
             test ["01", "10"] 2 ["01", "10"]
-            test ["01", "12"] 0 []
-            test ["01", "12"] 1 ["01", "12"]
-            test ["01", "12"] 2 ["01", "12"]
-            test ["01", "12"] 3 ["01", "12"]
+            test ["01", "1X"] 0 []
+            test ["01", "1X"] 1 ["01", "1X"]
+            test ["01", "1X"] 2 ["01", "1X"]
+            test ["01", "1X"] 3 ["01", "1X"]
 
 
     describe "bitcount" $ do
@@ -144,23 +149,23 @@ spec = do
             merge (fromString "11") (fromString "") `shouldBe` Just (fromString "")
 
             merge (fromString "0") (fromString "0") `shouldBe` Just (fromString "0")
-            merge (fromString "0") (fromString "1") `shouldBe` Just (fromString "2")
-            merge (fromString "0") (fromString "2") `shouldBe` Nothing
-            merge (fromString "00") (fromString "01") `shouldBe` Just (fromString "02")
-            merge (fromString "001") (fromString "011") `shouldBe` Just (fromString "021")
-            merge (fromString "001") (fromString "012") `shouldBe` Nothing
-            merge (fromString "202") (fromString "222") `shouldBe` Nothing
+            merge (fromString "0") (fromString "1") `shouldBe` Just (fromString "X")
+            merge (fromString "0") (fromString "X") `shouldBe` Nothing
+            merge (fromString "00") (fromString "01") `shouldBe` Just (fromString "0X")
+            merge (fromString "001") (fromString "011") `shouldBe` Just (fromString "0X1")
+            merge (fromString "001") (fromString "01X") `shouldBe` Nothing
+            merge (fromString "X0X") (fromString "XXX") `shouldBe` Nothing
 
         it "works for the example value" $ do
-            merge (fromString "000") (fromString "010") `shouldBe` Just (fromString "020")
+            merge (fromString "000") (fromString "010") `shouldBe` Just (fromString "0X0")
 
     describe "qm" $ do
         it "behaves as the python version" $ do
             let test ones zeros dc expected = Set.fromList (qm ones zeros dc) `shouldBe` Set.fromList (map fromString expected)
-            test [1, 2, 5] [] [0, 7] ["201", "020"]
-            test [1, 2, 4, 5, 9, 13, 15, 16, 18] [] [0, 7] ["02201", "20020", "02121", "00202"]
+            test [1, 2, 5] [] [0, 7] ["X01", "0X0"]
+            test [1, 2, 4, 5, 9, 13, 15, 16, 18] [] [0, 7] ["0XX01", "X00X0", "0X1X1", "00X0X"]
             test [] [1] [] ["0"]
-            test [1] [2] [] ["21"]
-            test [1] [2,3,4,5] [] ["002"]
-            test [1,6,9,13] [2,3,4,5] [] ["2112", "2002", "1222"]
-            test [] [2,3,4,5] [7,13] ["2112", "2002", "1222"]
+            test [1] [2] [] ["X1"]
+            test [1] [2,3,4,5] [] ["00X"]
+            test [1,6,9,13] [2,3,4,5] [] ["X11X", "X00X", "1XXX"]
+            test [] [2,3,4,5] [7,13] ["X11X", "X00X", "1XXX"]

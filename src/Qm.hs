@@ -19,13 +19,17 @@ import Data.List(find)
 import Data.Bits(shift)
 import qualified Data.Set as Set
 import qualified Data.ByteString as B
+import qualified Data.Vector.Unboxed as U
 import Data.Word(Word8)
 import Data.Bits((.&.))
 
+type QmTermEl = Maybe Bool
+newtype QmTerm = QmTerm (U.Vector QmTermEl)
+
 zero, one, dash :: Word8
-zero = read "0"
-one = read "1"
-dash = read "2"
+zero = 0
+one = 1
+dash = -1
 
 listOr :: [[a]] -> [a]
 listOr lists = case find (not . null) lists of
