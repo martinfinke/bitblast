@@ -12,19 +12,25 @@ Library usage example:
   import Qm(qm)
   minterms = qm [1, 2, 5] [] [0, 7]
 -}
-module Qm where
+module Qm(fromString,
+          qm,
+          active_primes,
+          is_cover,
+          is_full_cover,
+          bitcount,
+          b2s,
+          merge,
+          compute_primes,
+          unate_cover) where
 
 import Control.Exception(assert)
 import Data.List(find)
 import Data.Bits(shift)
 import qualified Data.Set as Set
-import qualified Data.ByteString as B
 import qualified Data.Vector.Unboxed as U
-import Data.Word(Word8)
 import Data.Bits((.&.))
 import UnboxMaybe
 
-import Debug.Trace(traceShow)
 
 type QmTermEl = Maybe Bool
 newtype QmTerm = QmTerm (U.Vector QmTermEl)
