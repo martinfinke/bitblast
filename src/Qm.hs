@@ -41,14 +41,14 @@ instance Show QmTerm where
         where showMaybeBool maybeBool = case maybeBool of
                 Just True -> '1'
                 Just False -> '0'
-                Nothing -> 'X'
+                Nothing -> '-'
 
 fromString :: String -> QmTerm
 fromString = QmTerm . U.fromList . map convert
     where convert c = case c of
             '0' -> zero
             '1' -> one
-            'X' -> dash
+            '-' -> dash
 
 zero, one, dash :: QmTermEl
 zero = Just False

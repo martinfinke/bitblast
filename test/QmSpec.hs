@@ -50,10 +50,10 @@ spec = do
             cover ["0", "1"] ["0"] `shouldBe` True
             cover ["0"] ["0", "1"] `shouldBe` False
             cover ["0", "1"] ["0", "1"] `shouldBe` True
-            cover ["X"] ["0", "1"] `shouldBe` True
-            cover ["0X1"] ["0", "1"] `shouldBe` False
-            cover ["0X1"] ["011", "101"] `shouldBe` False
-            cover ["0X1", "X01"] ["011", "101"] `shouldBe` True
+            cover ["-"] ["0", "1"] `shouldBe` True
+            cover ["0-1"] ["0", "1"] `shouldBe` False
+            cover ["0-1"] ["011", "101"] `shouldBe` False
+            cover ["0-1", "-01"] ["011", "101"] `shouldBe` True
 
     describe "is_cover" $ do
         it "behaves as the python version" $ do
@@ -65,13 +65,13 @@ spec = do
             is_cover (fromString "0") (fromString "0") `shouldBe` True
             is_cover (fromString "0") (fromString "1") `shouldBe` False
             is_cover (fromString "1") (fromString "0") `shouldBe` False
-            is_cover (fromString "X") (fromString "0") `shouldBe` True
-            is_cover (fromString "X") (fromString "1") `shouldBe` True
-            is_cover (fromString "X") (fromString "X") `shouldBe` True
-            is_cover (fromString "0X1") (fromString "011") `shouldBe` True
-            is_cover (fromString "0X1") (fromString "001") `shouldBe` True
-            is_cover (fromString "0X1") (fromString "000") `shouldBe` False
-            is_cover (fromString "0X1") (fromString "101") `shouldBe` False
+            is_cover (fromString "-") (fromString "0") `shouldBe` True
+            is_cover (fromString "-") (fromString "1") `shouldBe` True
+            is_cover (fromString "-") (fromString "-") `shouldBe` True
+            is_cover (fromString "0-1") (fromString "011") `shouldBe` True
+            is_cover (fromString "0-1") (fromString "001") `shouldBe` True
+            is_cover (fromString "0-1") (fromString "000") `shouldBe` False
+            is_cover (fromString "0-1") (fromString "101") `shouldBe` False
 
     describe "compute_primes" $ do
         it "behaves as the python version" $ do
@@ -92,10 +92,10 @@ spec = do
             test ["01", "10"] 0 []
             test ["01", "10"] 1 ["01", "10"]
             test ["01", "10"] 2 ["01", "10"]
-            test ["01", "1X"] 0 []
-            test ["01", "1X"] 1 ["01", "1X"]
-            test ["01", "1X"] 2 ["01", "1X"]
-            test ["01", "1X"] 3 ["01", "1X"]
+            test ["01", "1-"] 0 []
+            test ["01", "1-"] 1 ["01", "1-"]
+            test ["01", "1-"] 2 ["01", "1-"]
+            test ["01", "1-"] 3 ["01", "1-"]
 
 
     describe "bitcount" $ do
@@ -142,28 +142,28 @@ spec = do
             merge (fromString "11") (fromString "") `shouldBe` Just (fromString "")
 
             merge (fromString "0") (fromString "0") `shouldBe` Just (fromString "0")
-            merge (fromString "0") (fromString "1") `shouldBe` Just (fromString "X")
-            merge (fromString "0") (fromString "X") `shouldBe` Nothing
-            merge (fromString "00") (fromString "01") `shouldBe` Just (fromString "0X")
-            merge (fromString "001") (fromString "011") `shouldBe` Just (fromString "0X1")
-            merge (fromString "001") (fromString "01X") `shouldBe` Nothing
-            merge (fromString "X0X") (fromString "XXX") `shouldBe` Nothing
+            merge (fromString "0") (fromString "1") `shouldBe` Just (fromString "-")
+            merge (fromString "0") (fromString "-") `shouldBe` Nothing
+            merge (fromString "00") (fromString "01") `shouldBe` Just (fromString "0-")
+            merge (fromString "001") (fromString "011") `shouldBe` Just (fromString "0-1")
+            merge (fromString "001") (fromString "01-") `shouldBe` Nothing
+            merge (fromString "-0-") (fromString "---") `shouldBe` Nothing
 
         it "works for the example value" $ do
-            merge (fromString "000") (fromString "010") `shouldBe` Just (fromString "0X0")
+            merge (fromString "000") (fromString "010") `shouldBe` Just (fromString "0-0")
 
     describe "qm" $ do
         it "behaves as the python version" $ do
             let test ones zeros dc expected = Set.fromList (qm ones zeros dc) `shouldBe` Set.fromList (map fromString expected)
-            test [1, 2, 5] [] [0, 7] ["X01", "0X0"]
-            test [1, 2, 4, 5, 9, 13, 15, 16, 18] [] [0, 7] ["0XX01", "X00X0", "0X1X1", "00X0X"]
+            test [1, 2, 5] [] [0, 7] ["-01", "0-0"]
+            test [1, 2, 4, 5, 9, 13, 15, 16, 18] [] [0, 7] ["0--01", "-00-0", "0-1-1", "00-0-"]
             test [] [1] [] ["0"]
-            test [] [2] [] ["0X", "X1"]
-            test [] [2,3] [] ["0X"]
-            test [] [2,3,4] [] ["00X", "11X", "1X1"]
-            test [] [2,3,4,5] [7,13] ["X11X", "X00X", "1XXX"]
-            test [1,6] [2,3,4,5] [] ["00X", "11X"]
-            test [1,6,9,13] [2,3,4,5,11] [] ["X11X", "X00X", "11XX"]
+            test [] [2] [] ["0-", "-1"]
+            test [] [2,3] [] ["0-"]
+            test [] [2,3,4] [] ["00-", "11-", "1-1"]
+            test [] [2,3,4,5] [7,13] ["-11-", "-00-", "1---"]
+            test [1,6] [2,3,4,5] [] ["00-", "11-"]
+            test [1,6,9,13] [2,3,4,5,11] [] ["-11-", "-00-", "11--"]
 
     describe "Example 1" $ do
         -- Youtube: pQ3MfzqGlrc
@@ -171,7 +171,7 @@ spec = do
         let terms = Set.fromList $ map fromString ["010", "100", "101", "110", "111"]
 
         it "finds the correct primes" $ do
-            compute_primes terms numVars `shouldBe` Set.fromList (map fromString ["X10", "1XX"])
+            compute_primes terms numVars `shouldBe` Set.fromList (map fromString ["-10", "1--"])
 
     describe "Example 2" $ do
         -- Youtube: pQ3MfzqGlrc
@@ -179,15 +179,15 @@ spec = do
         let terms = Set.fromList $ map fromString ["0000", "0001", "0010", "1000", "0011", "0101", "1010", "0111", "1110", "1111"]
 
         it "finds the correct primes" $ do
-            compute_primes terms numVars `shouldBe` Set.fromList (map fromString ["1X10", "00XX", "X111", "X0X0", "111X", "0XX1"])
+            compute_primes terms numVars `shouldBe` Set.fromList (map fromString ["1-10", "00--", "-111", "-0-0", "111-", "0--1"])
 
         it "finds the correct minimal subset of primes" $ do
-            qm [0,1,2,3,5,7,8,10,14,15] [] [] `shouldBe` map fromString ["X0X0", "0XX1", "111X"]
+            qm [0,1,2,3,5,7,8,10,14,15] [] [] `shouldBe` map fromString ["-0-0", "0--1", "111-"]
 
     describe "Example 3" $ do
         -- Youtube: bkH0T3fArUI
-        let primes = Set.fromList $ map fromString ["0XX0", "X1X0", "001X", "010X", "X011", "1X11", "111X"]
+        let primes = Set.fromList $ map fromString ["0--0", "-1-0", "001-", "010-", "-011", "1-11", "111-"]
         let terms = Set.fromList $ map fromString ["0010", "0101", "0110", "1011", "1100", "1110", "1111"]
 
         it "finds the correct minimum cover" $ do
-            unate_cover primes terms `shouldBe` map fromString ["X1X0", "001X", "010X", "1X11"]
+            unate_cover primes terms `shouldBe` map fromString ["-1-0", "001-", "010-", "1-11"]
