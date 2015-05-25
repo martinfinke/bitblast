@@ -4,14 +4,14 @@ import SpecHelper
 import Qm
 import qualified Data.Set as Set
 import qualified Data.ByteString as B
+import qualified Data.Vector.Unboxed as U
 
-fromString :: String -> B.ByteString
-fromString = B.pack . map convert
+fromString :: String -> QmTerm
+fromString = QmTerm . U.fromList . map convert
     where convert c = case c of
-            '0' -> 0
-            '1' -> 1
-            'X' -> -1
---fromString = B.pack . map read . map (:[])
+            '0' -> zero
+            '1' -> one
+            'X' -> dash
 
 spec :: Spec
 spec = do
@@ -165,7 +165,9 @@ spec = do
             test [1, 2, 5] [] [0, 7] ["X01", "0X0"]
             test [1, 2, 4, 5, 9, 13, 15, 16, 18] [] [0, 7] ["0XX01", "X00X0", "0X1X1", "00X0X"]
             test [] [1] [] ["0"]
-            test [1] [2] [] ["X1"]
-            test [1] [2,3,4,5] [] ["00X"]
-            test [1,6,9,13] [2,3,4,5] [] ["X11X", "X00X", "1XXX"]
+            test [] [2] [] ["0X", "X1"]
+            test [] [2,3] [] ["0X"]
+            test [] [2,3,4] [] ["00X", "11X", "1X1"]
             test [] [2,3,4,5] [7,13] ["X11X", "X00X", "1XXX"]
+            test [1,6] [2,3,4,5] [] ["00X", "11X"]
+            test [1,6,9,13] [2,3,4,5,11] [] ["X11X", "X00X", "11XX"]
