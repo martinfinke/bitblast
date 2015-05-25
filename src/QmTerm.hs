@@ -1,6 +1,7 @@
 module QmTerm where
 
 import qualified Data.Vector.Unboxed as U
+import qualified Data.Set as Set
 import Data.Bits((.&.), shift)
 import UnboxMaybe
 
@@ -60,3 +61,14 @@ mergeLoop ((a,b):rest)
     | a /= b = (fmap (dash :) maybeS, dif_cnt  + 1)
     | otherwise = (fmap (a :) maybeS, dif_cnt)
     where (maybeS, dif_cnt) = mergeLoop rest
+
+
+flipNormalForm :: [QmTerm] -> [QmTerm]
+flipNormalForm [] = []
+flipNormalForm terms = map invert $ Set.toList $ Set.difference all' (Set.fromList terms)
+    where numVars = let (QmTerm vec) = head terms in U.length vec
+          all' = Set.fromList [b2s i numVars | i <- [0..2^numVars-1]]
+          invert (QmTerm vec) = QmTerm (U.map invertTermEl vec)
+
+invertTermEl :: QmTermEl -> QmTermEl
+invertTermEl = fmap not

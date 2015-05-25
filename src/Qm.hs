@@ -63,7 +63,8 @@ qm ones zeros dc =
         ones'' = setOr [ones', Set.difference (Set.difference all' zeros') dc']
         zeros'' = setOr [zeros', Set.difference (Set.difference all' ones'') dc']
         dc'' = setOr [dc', Set.difference (Set.difference all' ones'') zeros'']
-        doAssert = assert $ Set.size dc'' + Set.size zeros'' + Set.size ones'' == elts' && Set.size (Set.unions [dc'', zeros'', ones'']) == elts'
+        doAssert = assert $ Set.size dc'' + Set.size zeros'' + Set.size ones'' == elts'
+                         && Set.size (Set.unions [dc'', zeros'', ones'']) == elts'
         primes = doAssert $ compute_primes (Set.union ones'' dc'') numvars
     in  unate_cover primes ones''
 
@@ -74,7 +75,7 @@ unate_cover primes ones =
     in  active_primes cs primes'
 
 active_primes :: Int -> [QmTerm] -> [QmTerm]
-active_primes cubesel primes = [prime | (used, prime) <- zip (U.foldr (\termEl rest -> byteToBool termEl : rest) [] $ term) primes, used]
+active_primes cubesel primes = [prime | (used, prime) <- zip (U.toList $ U.map byteToBool term) primes, used]
     where (QmTerm term) = b2s cubesel (length primes)
 
 is_full_cover :: [QmTerm] -> Set.Set QmTerm -> Bool

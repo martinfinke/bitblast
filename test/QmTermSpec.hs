@@ -71,3 +71,13 @@ spec = do
 
         it "works for the example value" $ do
             merge (fromString "000") (fromString "010") `shouldBe` Just (fromString "0-0")
+
+    describe "flipNormalForm" $ do
+        it "changes from CNF to DNF (and back)" $ do
+            let minterms = map fromString ["010", "100", "111"]
+            flipNormalForm minterms `shouldBe` map fromString ["111", "110", "100", "010", "001"]
+
+        it "changes back to original (apart from the fact that the list is reversed) when applied twice" $ do
+            let minterms = map fromString ["010", "100", "111"]
+            (flipNormalForm . flipNormalForm) minterms `shouldBe` reverse minterms
+            
