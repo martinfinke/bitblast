@@ -76,7 +76,7 @@ spec = do
 
     describe "compute_primes" $ do
         it "behaves as the python version" $ do
-            let test cubes vars expected = compute_primes (Set.fromList $ map fromString cubes) vars `shouldBe` (Set.fromList $ map fromString expected)
+            let test cubes vars expected = compute_primes False (Set.fromList $ map fromString cubes) vars `shouldBe` Set.fromList (map fromString expected)
             test [] 0 []
             test ["0"] 0 ["0"]
             test ["0"] 1 ["0"]
@@ -120,7 +120,7 @@ spec = do
         let terms = Set.fromList $ map fromString ["010", "100", "101", "110", "111"]
 
         it "finds the correct primes" $ do
-            compute_primes terms numVars `shouldBe` Set.fromList (map fromString ["-10", "1--"])
+            compute_primes False terms numVars `shouldBe` Set.fromList (map fromString ["-10", "1--"])
 
     describe "Example 2" $ do
         -- Youtube: pQ3MfzqGlrc
@@ -128,7 +128,7 @@ spec = do
         let terms = Set.fromList $ map fromString ["0000", "0001", "0010", "1000", "0011", "0101", "1010", "0111", "1110", "1111"]
 
         it "finds the correct primes" $ do
-            compute_primes terms numVars `shouldBe` Set.fromList (map fromString ["1-10", "00--", "-111", "-0-0", "111-", "0--1"])
+            compute_primes False terms numVars `shouldBe` Set.fromList (map fromString ["1-10", "00--", "-111", "-0-0", "111-", "0--1"])
 
         it "finds the correct minimal subset of primes" $ do
             qm [0,1,2,3,5,7,8,10,14,15] [] [] `shouldBe` map fromString ["-0-0", "0--1", "111-"]
@@ -139,7 +139,7 @@ spec = do
         let terms = Set.fromList $ map fromString ["0010", "0101", "0110", "1011", "1100", "1110", "1111"]
 
         it "finds the correct minimum cover" $ do
-            unate_cover primes terms `shouldBe` map fromString ["-1-0", "001-", "010-", "1-11"]
+            unate_cover False primes terms `shouldBe` map fromString ["-1-0", "001-", "010-", "1-11"]
 
     describe "2-Bit Multiplier" $ do
         -- http://research.ijcaonline.org/volume42/number4/pxc3877719.pdf

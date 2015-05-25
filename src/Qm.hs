@@ -13,6 +13,7 @@ Library usage example:
   minterms = qm [1, 2, 5] [] [0, 7]
 -}
 module Qm(qm,
+          qmCnf,
           active_primes,
           is_cover,
           is_full_cover,
@@ -49,8 +50,14 @@ byteToBool (Just False) = False
 byteToBool _ = True
 
 qm :: [Int] -> [Int] -> [Int] -> [QmTerm]
-qm [] [] _ = error "Must specify either (or both) ones and zeros"
-qm ones zeros dc =
+qm = runQm False
+
+qmCnf :: [Int] -> [Int] -> [Int] -> [QmTerm]
+qmCnf = runQm True
+
+runQm :: Bool -> [Int] -> [Int] -> [Int] -> [QmTerm]
+runQm _ [] [] _ = error "Must specify either (or both) ones and zeros"
+runQm cnfMode ones zeros dc =
     let elts = maximum [maximum (listOr [ones, zeros, dc]),
                         maximum (listOr [zeros, dc, ones]),
                         maximum (listOr [dc, ones, zeros])] + 1
@@ -65,13 +72,13 @@ qm ones zeros dc =
         dc'' = setOr [dc', Set.difference (Set.difference all' ones'') zeros'']
         doAssert = assert $ Set.size dc'' + Set.size zeros'' + Set.size ones'' == elts'
                          && Set.size (Set.unions [dc'', zeros'', ones'']) == elts'
-        primes = doAssert $ compute_primes (Set.union ones'' dc'') numvars
-    in  unate_cover primes ones''
+        primes = doAssert $ compute_primes cnfMode (Set.union ones'' dc'') numvars
+    in  unate_cover cnfMode primes ones''
 
-unate_cover :: Set.Set QmTerm -> Set.Set QmTerm -> [QmTerm]
-unate_cover primes ones =
+unate_cover :: Bool -> Set.Set QmTerm -> Set.Set QmTerm -> [QmTerm]
+unate_cover cnfMode primes ones =
     let primes' = Set.elems primes
-        cs = snd $ minimum [(bitcount (b2s cubesel (length primes')), cubesel) | cubesel <- [0..shift 1 (length primes')], is_full_cover (active_primes cubesel primes') ones]
+        cs = snd $ minimum [(bitcount cnfMode (b2s cubesel (length primes')), cubesel) | cubesel <- [0..shift 1 (length primes')], is_full_cover (active_primes cubesel primes') ones]
     in  active_primes cs primes'
 
 active_primes :: Int -> [QmTerm] -> [QmTerm]
@@ -84,9 +91,9 @@ is_full_cover all_primes ones = minimum (True : [maximum (False:[is_cover p o | 
 is_cover :: QmTerm -> QmTerm -> Bool
 is_cover (QmTerm prime) (QmTerm term) = minimum $ True : [p == dash || p == o | (p, o) <- U.toList $ U.zip prime term]
 
-compute_primes :: Set.Set QmTerm -> Int -> Set.Set QmTerm
-compute_primes cubes vars = primes
-    where termsOrderedByNumRelevantBits = [Set.fromList [i | i <- Set.toList cubes, bitcount i == v] | v <- [0..vars]]
+compute_primes :: Bool -> Set.Set QmTerm -> Int -> Set.Set QmTerm
+compute_primes cnfMode cubes vars = primes
+    where termsOrderedByNumRelevantBits = [Set.fromList [i | i <- Set.toList cubes, bitcount cnfMode i == v] | v <- [0..vars]]
           (_, primes) = whileSigma (termsOrderedByNumRelevantBits, Set.empty)
 
 whileSigma :: ([Set.Set QmTerm], Set.Set QmTerm) -> ([Set.Set QmTerm], Set.Set QmTerm)

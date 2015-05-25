@@ -31,8 +31,9 @@ one = Just True
 dash = Nothing
 
 
-bitcount :: QmTerm -> Int
-bitcount (QmTerm s) = U.length $ U.elemIndices (Just True) s
+bitcount :: Bool -> QmTerm -> Int
+bitcount cnfMode (QmTerm s) = U.length $ U.elemIndices (Just interesting) s
+    where interesting = if cnfMode then False else True
 
 b2s :: Int -> Int -> QmTerm
 b2s i vars =
