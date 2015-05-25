@@ -47,13 +47,14 @@ safeTail [] = []
 safeTail ls = tail ls
 
 qm :: [Int] -> [Int] -> [Int] -> [B.ByteString]
-qm ones zeros dc = -- TODO: Verify that either (or both) the ones and zeros are specified.
+qm [] [] _ = error "Must specify either (or both) ones and zeros"
+qm ones zeros dc =
     let elts = maximum [maximum (listOr [ones, zeros, dc]),
                         maximum (listOr [zeros, dc, ones]),
                         maximum (listOr [dc, ones, zeros])] + 1
         numvars = ceiling $ integralLogBase 2 elts
-        elts' = shift (1::Int) numvars
-        all' = Set.fromList [b2s i numvars | i <- [0..elts-1]]
+        elts' = shift 1 numvars
+        all' = Set.fromList [b2s i numvars | i <- [0..elts'-1]]
         ones' = Set.fromList [b2s i numvars | i <- ones]
         zeros' = Set.fromList [b2s i numvars | i <- zeros]
         dc' = Set.fromList [b2s i numvars | i <- dc]
@@ -62,7 +63,7 @@ qm ones zeros dc = -- TODO: Verify that either (or both) the ones and zeros are 
         dc'' = setOr [dc', Set.difference (Set.difference all' ones'') zeros'']
         doAssert = assert $ Set.size dc'' + Set.size zeros'' + Set.size ones'' == elts' && Set.size (Set.unions [dc'', zeros'', ones'']) == elts'
         primes = doAssert $ compute_primes (Set.union ones'' dc'') numvars
-    in  traceShow primes $ unate_cover primes ones''
+    in  unate_cover primes ones''
 
 unate_cover :: Set.Set B.ByteString -> Set.Set B.ByteString -> [B.ByteString]
 unate_cover primes ones =
@@ -83,16 +84,12 @@ compute_primes :: Set.Set B.ByteString -> Int -> Set.Set B.ByteString
 compute_primes cubes vars = primes
     where sigma = [Set.fromList [i | i <- Set.toList cubes, bitcount i == v] | v <- [0..vars]]
           (_, primes) = whileSigma (sigma, Set.empty)
-          -- [:-1] is "safeInit"
-          -- [1:] is "safeTail"
 
 -- "while sigma" ist ein fold, der mit (sigma,primes) anfängt und diese verändert.
 whileSigma :: ([Set.Set B.ByteString], Set.Set B.ByteString) -> ([Set.Set B.ByteString], Set.Set B.ByteString)
 whileSigma ([], primes) = ([], primes)
 whileSigma (sigma, primes) =
-    let nsigma = []
-        redundant = Set.empty
-        (nsigma', redundant') = forC1C2 (zip (safeInit sigma) (safeTail sigma))
+    let (nsigma', redundant') = forC1C2 $ zip (safeTail sigma) (safeInit sigma)
         primes' = Set.union primes $ Set.difference (Set.fromList [c | cubes <- sigma, c <- Set.toList cubes]) redundant'
         sigma' = nsigma'
     in whileSigma (sigma', primes')
@@ -105,13 +102,13 @@ forC1C2 ((c1,c2):rest) =
     in  (nc:oldNSigma, Set.union oldRedundant redundant)
 
 forAInC1BInC2 :: [B.ByteString] -> [B.ByteString] -> (Set.Set B.ByteString, Set.Set B.ByteString)
-forAInC1BInC2 [] _ = (Set.empty, Set.empty)
-forAInC1BInC2 _ [] = (Set.empty, Set.empty)
-forAInC1BInC2 (a:c1Rest) (b:c2Rest) =
-    let (nc, redundant) = forAInC1BInC2 c1Rest c2Rest
-    in case merge a b of
-        Nothing -> (nc, redundant)
-        Just m -> (Set.insert m nc, foldr Set.insert redundant [a,b])
+forAInC1BInC2 c1 c2 =
+    let allAAndB = [(a,b) | a <- c1, b <- c2]
+        (nc, redundant) = foldr addMerge (Set.empty, Set.empty) allAAndB
+        addMerge (a,b) (nc', redundant') = case merge a b of
+            Nothing -> (nc', redundant')
+            Just m -> (Set.insert m nc', foldr Set.insert redundant' [a,b])
+    in  (nc, redundant)
 
 bitcount :: B.ByteString -> Int
 bitcount s = B.count (read "1") s

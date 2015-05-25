@@ -150,3 +150,17 @@ spec = do
             merge (strToBS "001") (strToBS "011") `shouldBe` Just (strToBS "021")
             merge (strToBS "001") (strToBS "012") `shouldBe` Nothing
             merge (strToBS "202") (strToBS "222") `shouldBe` Nothing
+
+        it "works for the example value" $ do
+            merge (strToBS "000") (strToBS "010") `shouldBe` Just (strToBS "020")
+
+    describe "qm" $ do
+        it "behaves as the python version" $ do
+            let test ones zeros dc expected = Set.fromList (qm ones zeros dc) `shouldBe` Set.fromList (map strToBS expected)
+            test [1, 2, 5] [] [0, 7] ["201", "020"]
+            test [1, 2, 4, 5, 9, 13, 15, 16, 18] [] [0, 7] ["02201", "20020", "02121", "00202"]
+            test [] [1] [] ["0"]
+            test [1] [2] [] ["21"]
+            test [1] [2,3,4,5] [] ["002"]
+            test [1,6,9,13] [2,3,4,5] [] ["2112", "2002", "1222"]
+            test [] [2,3,4,5] [7,13] ["2112", "2002", "1222"]
