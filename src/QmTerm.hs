@@ -38,8 +38,8 @@ bitcount cnfMode (QmTerm s) = U.length $ U.elemIndices (Just interesting) s
 b2s :: Int -> Int -> QmTerm
 b2s i vars =
     let is = [shift i (-k) | k <- [0..vars-1]] :: [Int]
-        s' = reverse $ map (\i' -> ([zero, one]!!(i' .&. 1))) is
-    in  QmTerm (U.fromList s')
+        s = reverse $ map (\i' -> if even i' then zero else one) is
+    in  QmTerm (U.fromList s)
 
 s2b :: QmTerm -> Int
 s2b (QmTerm vec) = U.sum $ U.imap power vec
