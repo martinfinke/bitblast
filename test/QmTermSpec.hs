@@ -53,6 +53,10 @@ spec = do
             s2b (fromString "11") `shouldBe` 3
             s2b (fromString "100") `shouldBe` 4
 
+        it "is inverse to b2s" $ do
+            let numVars = 7 -- enough to hold any random i <= 100
+            property $ \(OneHundredOrLess i) -> s2b (b2s i numVars) `shouldBe` i
+
     describe "merge" $ do
         it "behaves as the python version" $ do
             merge (fromString "") (fromString "") `shouldBe` Just (fromString "")

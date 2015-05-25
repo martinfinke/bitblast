@@ -68,7 +68,4 @@ flipNormalForm [] = []
 flipNormalForm terms = map invert $ Set.toList $ Set.difference all' (Set.fromList terms)
     where numVars = let (QmTerm vec) = head terms in U.length vec
           all' = Set.fromList [b2s i numVars | i <- [0..2^numVars-1]]
-          invert (QmTerm vec) = QmTerm (U.map invertTermEl vec)
-
-invertTermEl :: QmTermEl -> QmTermEl
-invertTermEl = fmap not
+          invert (QmTerm vec) = QmTerm (U.map (fmap not) vec)

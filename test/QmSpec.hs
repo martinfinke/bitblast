@@ -2,7 +2,7 @@ module QmSpec where
 
 import SpecHelper
 import Qm
-import QmTerm(fromString)
+import QmTerm(fromString, flipNormalForm)
 import qualified Data.Set as Set
 import qualified Data.ByteString as B
 import qualified Data.Vector.Unboxed as U
@@ -143,7 +143,7 @@ spec = do
 
     describe "2-Bit Multiplier" $ do
         -- http://research.ijcaonline.org/volume42/number4/pxc3877719.pdf
-        let minterms = map s2b $ map fromString [
+        let minterms = map fromString [
             --   a   *   b   =   c
                 "00" ++ "00" ++ "0000",
                 "00" ++ "01" ++ "0000",
@@ -164,7 +164,7 @@ spec = do
                 "11" ++ "11" ++ "1001"
                 ]
         it "minimizes the DNF" $ do
-            qm minterms [] [] `shouldBe` map fromString [
+            qm (map s2b minterms) [] [] `shouldBe` map fromString [
                 "--000000",
                 "00--0000",
                 "01010001",
@@ -177,3 +177,5 @@ spec = do
                 "11100110",
                 "11111001"
                 ]
+
+        
