@@ -6,13 +6,6 @@ import qualified Data.Set as Set
 import qualified Data.ByteString as B
 import qualified Data.Vector.Unboxed as U
 
-fromString :: String -> QmTerm
-fromString = QmTerm . U.fromList . map convert
-    where convert c = case c of
-            '0' -> zero
-            '1' -> one
-            'X' -> dash
-
 spec :: Spec
 spec = do
     describe "active_primes" $ do
@@ -171,3 +164,30 @@ spec = do
             test [] [2,3,4,5] [7,13] ["X11X", "X00X", "1XXX"]
             test [1,6] [2,3,4,5] [] ["00X", "11X"]
             test [1,6,9,13] [2,3,4,5,11] [] ["X11X", "X00X", "11XX"]
+
+    describe "Example 1" $ do
+        -- Youtube: pQ3MfzqGlrc
+        let numVars = 3
+        let terms = Set.fromList $ map fromString ["010", "100", "101", "110", "111"]
+
+        it "finds the correct primes" $ do
+            compute_primes terms numVars `shouldBe` Set.fromList (map fromString ["X10", "1XX"])
+
+    describe "Example 2" $ do
+        -- Youtube: pQ3MfzqGlrc
+        let numVars = 4
+        let terms = Set.fromList $ map fromString ["0000", "0001", "0010", "1000", "0011", "0101", "1010", "0111", "1110", "1111"]
+
+        it "finds the correct primes" $ do
+            compute_primes terms numVars `shouldBe` Set.fromList (map fromString ["1X10", "00XX", "X111", "X0X0", "111X", "0XX1"])
+
+        it "finds the correct minimal subset of primes" $ do
+            qm [0,1,2,3,5,7,8,10,14,15] [] [] `shouldBe` map fromString ["X0X0", "0XX1", "111X"]
+
+    describe "Example 3" $ do
+        -- Youtube: bkH0T3fArUI
+        let primes = Set.fromList $ map fromString ["0XX0", "X1X0", "001X", "010X", "X011", "1X11", "111X"]
+        let terms = Set.fromList $ map fromString ["0010", "0101", "0110", "1011", "1100", "1110", "1111"]
+
+        it "finds the correct minimum cover" $ do
+            unate_cover primes terms `shouldBe` map fromString ["X1X0", "001X", "010X", "1X11"]

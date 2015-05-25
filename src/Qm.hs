@@ -37,6 +37,13 @@ instance Show QmTerm where
                 Just False -> '0'
                 Nothing -> 'X'
 
+fromString :: String -> QmTerm
+fromString = QmTerm . U.fromList . map convert
+    where convert c = case c of
+            '0' -> zero
+            '1' -> one
+            'X' -> dash
+
 zero, one, dash :: QmTermEl
 zero = Just False
 one = Just True
