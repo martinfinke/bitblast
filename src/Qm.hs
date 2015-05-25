@@ -1,3 +1,17 @@
+{-|
+Quine-McCluskey two-level logic minimization method.
+
+Copyright 2008, Robert Dick <dickrp@eecs.umich.edu> with improvements
+from Pat Maupin <pmaupin@gmail.com>.
+Ported from Python.
+
+Routines to compute the optimal sum of products implementation from sets of don't-care terms, minterms, and maxterms.
+
+
+Library usage example:
+  import Qm(qm)
+  minterms = qm [1, 2, 5] [] [0, 7]
+-}
 module Qm where
 
 import Control.Exception(assert)
@@ -7,8 +21,6 @@ import qualified Data.Set as Set
 import qualified Data.ByteString as B
 import Data.Word(Word8)
 import Data.Bits((.&.))
-
-import Debug.Trace(traceShow)
 
 zero, one, dash :: Word8
 zero = read "0"
@@ -25,26 +37,12 @@ setOr sets = case find (not . Set.null) sets of
     Nothing -> Set.empty
     Just set -> set
 
-listMax :: Ord a => [[a]] -> [a]
-listMax lists = foldr searchMax [] lists
-    where searchMax list currentMax
-            | null currentMax = list
-            | null list = currentMax
-            | otherwise = if maximum list >= maximum currentMax then list else currentMax
-
 integralLogBase :: (Integral a, Fractional b) => Int -> a -> b
 integralLogBase base number = realToFrac $ logBase (fromIntegral base) (fromIntegral number)
 
 byteToBool :: Word8 -> Bool
 byteToBool 0 = False
 byteToBool _ = True
-
-safeInit, safeTail :: [a] -> [a]
-safeInit [] = []
-safeInit ls = init ls
-
-safeTail [] = []
-safeTail ls = tail ls
 
 qm :: [Int] -> [Int] -> [Int] -> [B.ByteString]
 qm [] [] _ = error "Must specify either (or both) ones and zeros"
@@ -78,18 +76,17 @@ is_full_cover :: [B.ByteString] -> Set.Set B.ByteString -> Bool
 is_full_cover all_primes ones = minimum (True : [maximum (False:[is_cover p o | p <- all_primes]) | o <- Set.toList ones])
 
 is_cover :: B.ByteString -> B.ByteString -> Bool
-is_cover prime one = minimum $ True : [p == dash || p == o | (p, o) <- B.zip prime one]
+is_cover prime term = minimum $ True : [p == dash || p == o | (p, o) <- B.zip prime term]
 
 compute_primes :: Set.Set B.ByteString -> Int -> Set.Set B.ByteString
 compute_primes cubes vars = primes
-    where sigma = [Set.fromList [i | i <- Set.toList cubes, bitcount i == v] | v <- [0..vars]]
-          (_, primes) = whileSigma (sigma, Set.empty)
+    where termsOrderedByNumRelevantBits = [Set.fromList [i | i <- Set.toList cubes, bitcount i == v] | v <- [0..vars]]
+          (_, primes) = whileSigma (termsOrderedByNumRelevantBits, Set.empty)
 
--- "while sigma" ist ein fold, der mit (sigma,primes) anfängt und diese verändert.
 whileSigma :: ([Set.Set B.ByteString], Set.Set B.ByteString) -> ([Set.Set B.ByteString], Set.Set B.ByteString)
 whileSigma ([], primes) = ([], primes)
 whileSigma (sigma, primes) =
-    let (nsigma', redundant') = forC1C2 $ zip (safeTail sigma) (safeInit sigma)
+    let (nsigma', redundant') = forC1C2 $ zip (init sigma) (tail sigma)
         primes' = Set.union primes $ Set.difference (Set.fromList [c | cubes <- sigma, c <- Set.toList cubes]) redundant'
         sigma' = nsigma'
     in whileSigma (sigma', primes')
