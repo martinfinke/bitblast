@@ -46,22 +46,6 @@ spec = do
         it "creates an empty QmTerm when the length is 0" $ do
             show (termToQmTerm 0 (And [])) `shouldBe` ""
 
-    describe "QmTerm Show instance" $ do
-        it "shows a term with length 0 as the empty string" $ do
-            show (termToQmTerm 0 (And [])) `shouldBe` ""
-
-        it "shows a term with length 1" $ do
-            show (termToQmTerm 1 (And [x0])) `shouldBe` "1"
-
-        it "shows a term with length 2" $ do
-            show (termToQmTerm 2 (And [Not x0, x1])) `shouldBe` "01"
-
-        it "shows a term with length 4 and a Dont-Care" $ do
-            show (termToQmTerm 4 (And [Not x0, x1, Not x3])) `shouldBe` "01-0"
-
-        it "is inverse to fromString" $ do
-            property $ \qmTerm -> (fromString . show) qmTerm `shouldBe` qmTerm
-
     describe "canonicalToQmTerms" $ do
         it "converts a CNF to QmTerms" $ do
             canonicalToQmTerms testCnf `shouldBe` map fromString [
@@ -80,3 +64,12 @@ spec = do
             qmTermToTerm True (fromString "10") `shouldBe` Or [Atom (var 0), Not $ Atom (var 1)]
             qmTermToTerm True (fromString "11") `shouldBe` Or [Atom (var 0), Atom (var 1)]
 
+    describe "minimizeCanonical" $ do
+        it "doesn't minimize XOR (because it's impossible)" $ do
+            let xor = ensureCanonical $ Xor [x0,x1]
+            let minimized = minimizeCanonical xor
+            property $ \assignment -> eval assignment minimized `shouldBe` eval assignment (getFormula xor)
+
+        it "minimizes a CNF with redundancies" $ do
+            let redundant = ensureCanonical $ And [Or [x0, x1], Or [x0, Not x1]]
+            minimizeCanonical redundant `shouldBe` And [Or [x0]]

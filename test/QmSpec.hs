@@ -98,9 +98,6 @@ spec = do
             test ["01", "1-"] 2 ["01", "1-"]
             test ["01", "1-"] 3 ["01", "1-"]
 
-
-    
-
     describe "qm" $ do
         it "behaves as the python version" $ do
             let test ones zeros dc expected = Set.fromList (qm ones zeros dc) `shouldBe` Set.fromList (map fromString expected)
@@ -113,6 +110,27 @@ spec = do
             test [] [2,3,4,5] [7,13] ["-11-", "-00-", "1---"]
             test [1,6] [2,3,4,5] [] ["00-", "11-"]
             test [1,6,9,13] [2,3,4,5,11] [] ["-11-", "-00-", "11--"]
+
+        it "doesn't simplify XOR (because it's impossible)" $ do
+            let terms = map fromString ["01", "10"]
+            qm (map s2b terms) [] [] `shouldBe` terms
+
+    describe "qmCnf" $ do
+        it "doesn't simplify XOR (because it's impossible)" $ do
+            let terms = map fromString ["11", "00"]
+            qmCnf (map s2b terms) [] [] `shouldBe` reverse terms
+
+        it "simplifies a 1-variable CNF with redundancies" $ do
+            let terms = map fromString ["0", "1"]
+            qmCnf (map s2b terms) [] [] `shouldBe` map fromString ["-"]
+
+        it "simplifies a 2-variable CNF with redundancies" $ do
+            let terms = map fromString ["10", "11"]
+            qmCnf (map s2b terms) [] [] `shouldBe` map fromString ["1-"]
+
+        it "simplifies a 3-variable CNF with redundancies" $ do
+            let terms = map fromString ["1001", "1011"]
+            qmCnf (map s2b terms) [] [] `shouldBe` map fromString ["10-1"]
 
     describe "Example 1" $ do
         -- Youtube: pQ3MfzqGlrc
@@ -131,7 +149,7 @@ spec = do
             compute_primes False terms numVars `shouldBe` Set.fromList (map fromString ["1-10", "00--", "-111", "-0-0", "111-", "0--1"])
 
         it "finds the correct minimal subset of primes" $ do
-            qm [0,1,2,3,5,7,8,10,14,15] [] [] `shouldBe` map fromString ["-0-0", "0--1", "111-"]
+            qm (map s2b $ Set.toList terms) [] [] `shouldBe` map fromString ["-0-0", "0--1", "111-"]
 
     describe "Example 3" $ do
         -- Youtube: bkH0T3fArUI

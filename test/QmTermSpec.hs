@@ -12,6 +12,10 @@ instance Arbitrary QmTerm where
 
 spec :: Spec
 spec = do
+    describe "QmTerm Show instance" $ do
+        it "is inverse to fromString" $ do
+            property $ \qmTerm -> (fromString . show) qmTerm `shouldBe` qmTerm
+
     describe "bitcount" $ do
             it "behaves as the python version" $ do
                 bitcount False (fromString "") `shouldBe` 0
