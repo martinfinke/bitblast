@@ -13,9 +13,6 @@ import QmTermSpec
 import Qm
 import Debug.Trace(traceShow)
 
-
-
-
 spec :: Spec
 spec = do
     let [x0,x1,x2,x3] = map (Atom . var) [0,1,2,3]
@@ -105,13 +102,26 @@ spec = do
             let minimized = minimizeCanonical canonical
             minimized `shouldBe` And [Or [x0, x3], Or [x0, x1]]
 
+        it "creates a correct minimized DNF" $ do
+            -- (0 && 1 && 3) || (0 && -1 && 3) || (0 && 1 && -3)
+            let example = Or [
+                    And [x0, x1, x3],
+                    And [x0, Not x1, x3],
+                    And [x0, x1, Not x3]
+                    ]
+            let canonical = ensureCanonical example
+            getFormula canonical `shouldBe` example
+            let minimized = minimizeCanonical canonical
+            minimized `shouldBe` Or [And [x0, x3], And [x0, x1]]
+
+
         it "minimizes any canonical to a formula that has the same value (for a random assignment)" $ do
             property $ \canonical assignment ->
                 let minimized = minimizeCanonical canonical
-                in traceShow minimized $ eval assignment minimized `shouldBe` eval assignment (getFormula canonical)
+                in eval assignment minimized `shouldBe` eval assignment (getFormula canonical)
 
     describe "termToQmTerm" $ do
-        it "converts dashes into  0 and 1" $ do
+        it "converts dashes to 0 and 1" $ do
             termToQmTerm 1 (Or []) `shouldBe` map fromString ["1", "0"]
             termToQmTerm 2 (And [x0]) `shouldBe` map fromString ["11", "10"]
             termToQmTerm 4 (And [x0, Not x2, x3]) `shouldBe` map fromString ["1101", "1001"]
