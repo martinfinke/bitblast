@@ -65,8 +65,8 @@ spec = do
             qmTermToTerm False (fromString "1") `shouldBe` And [Atom (var 0)]
 
         it "creates a term with two elements for a qmcTerm with two elements" $ do
-            qmTermToTerm True (fromString "10") `shouldBe` Or [Atom (var 0), Not $ Atom (var 1)]
-            qmTermToTerm True (fromString "11") `shouldBe` Or [Atom (var 0), Atom (var 1)]
+            qmTermToTerm True (fromString "10") `shouldBe` Or [Not $ Atom (var 0), Atom (var 1)]
+            qmTermToTerm True (fromString "00") `shouldBe` Or [Atom (var 0), Atom (var 1)]
 
     describe "minimizeCanonical" $ do
         it "doesn't minimize XOR (because it's impossible)" $ do
@@ -75,9 +75,8 @@ spec = do
             property $ \assignment -> eval assignment minimized `shouldBe` eval assignment (getFormula xor)
 
         it "minimizes a CNF with redundancies" $ do
-            pending -- TODO: re-enable
-            --let redundant = ensureCanonical $ And [Or [x0, x1], Or [x0, Not x1]]
-            --minimizeCanonical redundant `shouldBe` And [Or [x0]]
+            let redundant = ensureCanonical $ And [Or [x0, x1], Or [x0, Not x1]]
+            minimizeCanonical redundant `shouldBe` And [Or [x0]]
 
         it "doesn't minimize an empty Or (=False)" $ do
             let emptyOr = ensureCanonical (Or [])
@@ -99,19 +98,17 @@ spec = do
             let canonical = ensureCanonical example
             getFormula canonical `shouldBe` example
 
-            -- [11-1, 10-1, 11-0]
             let canonicalTerms = canonicalToQmTerms canonical
             canonicalTerms `shouldBe` map fromString ["0010", "0000", "0110", "0100", "0011", "0001"]
-            -- [1-01, 110-]
             let minimumCover = qmCnf (map s2b canonicalTerms) [] []
             minimumCover `shouldBe` map fromString ["--0", "0--"]
-            --let minimized = minimizeCanonical canonical
-            --minimized `shouldBe` And [Or [x0, x1], Or [x0, x3]]
+            let minimized = minimizeCanonical canonical
+            minimized `shouldBe` And [Or [x0, x3], Or [x0, x1]]
 
-        --it "minimizes any canonical to a formula that has the same value (for a random assignment)" $ do
-        --    property $ \canonical assignment ->
-        --        let minimized = minimizeCanonical canonical
-        --        in traceShow minimized $ eval assignment minimized `shouldBe` eval assignment (getFormula canonical)
+        it "minimizes any canonical to a formula that has the same value (for a random assignment)" $ do
+            property $ \canonical assignment ->
+                let minimized = minimizeCanonical canonical
+                in traceShow minimized $ eval assignment minimized `shouldBe` eval assignment (getFormula canonical)
 
     describe "termToQmTerm" $ do
         it "converts dashes into  0 and 1" $ do

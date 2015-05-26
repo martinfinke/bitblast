@@ -13,12 +13,13 @@ formulaToPrimesFormula = minimizeCanonical . ensureCanonical
 minimizeCanonical :: Canonical -> Formula
 minimizeCanonical canonical =
     let terms = canonicalToQmTerms canonical
+        qmTermLength = highestVariableIndex (getFormula canonical) + 1
         cnfMode = (getType canonical == CNFType)
         qmFunction = if cnfMode then qmCnf else qm
         minimumCover = qmFunction (map s2b terms) [] []
     in case terms of
         [] -> if cnfMode then And [] else Or []
-        _ -> qmTermsToFormula cnfMode minimumCover
+        _ -> qmTermsToFormula cnfMode qmTermLength minimumCover
 
 -- | Converts a 'Canonical' CNF\/DNF 'Formula' into a list of 'QmTerm's. In a CNF, each clause becomes one 'QmTerm'.
 canonicalToQmTerms :: Canonical -> [QmTerm]
@@ -51,9 +52,9 @@ qmTermToTerm :: Bool -- ^ 'True' for CNF, 'False' for DNF
 qmTermToTerm cnfMode (QmTerm vector) = op $ U.ifoldr translate [] vector
     where op = if cnfMode then Or else And
           translate i qmcTermElement rest = case qmcTermElement of
-                Just True -> Atom (var i) : rest
-                Just False -> Not (Atom (var i)) : rest
+                Just b -> invertIfCnf i b : rest
                 Nothing -> rest
+          invertIfCnf i b = if cnfMode == b then Not (Atom (var i)) else Atom (var i)
 
 -- | Extracts the value of a 'Variable' in a term. Used to convert terms to 'QmcTerm's.
 valueForVariable :: Formula -> Variable -> QmTermEl
@@ -66,8 +67,13 @@ valueForVariable term variable
                 Or _ -> True
                 And _ -> False
 
-qmTermsToFormula :: Bool -> [QmTerm] -> Formula
-qmTermsToFormula cnfMode qmTerms =
-    let terms = map (qmTermToTerm cnfMode) qmTerms
+qmTermsToFormula :: Bool -> Int -> [QmTerm] -> Formula
+qmTermsToFormula cnfMode originalTermLength qmTerms =
+    let paddedQmTerms = map (padded originalTermLength) qmTerms
+        terms = map (qmTermToTerm cnfMode) paddedQmTerms
         rootOp = if cnfMode then And else Or
-    in  rootOp terms 
+    in  rootOp terms
+
+padded :: Int -> QmTerm -> QmTerm
+padded len (QmTerm vec) = QmTerm $ zeros U.++ vec
+    where zeros = U.replicate (len - U.length vec) (Just False)
