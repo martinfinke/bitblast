@@ -11,7 +11,6 @@ import NormalFormSpec
 import QmTerm
 import QmTermSpec
 import Qm
-import Debug.Trace(traceShow)
 
 spec :: Spec
 spec = do
