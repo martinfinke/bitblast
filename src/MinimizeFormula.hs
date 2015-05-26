@@ -22,7 +22,7 @@ minimizeCanonical canonical =
 
 -- | Converts a 'Canonical' CNF\/DNF 'Formula' into a list of 'QmTerm's. In a CNF, each clause becomes one 'QmTerm'.
 canonicalToQmTerms :: Canonical -> [QmTerm]
-canonicalToQmTerms canonical = map (termToQmTerm qmTermLength) terms
+canonicalToQmTerms canonical = concatMap (termToQmTerm qmTermLength) terms
     where terms = normalFormChildren formula
           qmTermLength = highestVariableIndex formula + 1
           formula = getFormula canonical
@@ -31,8 +31,18 @@ canonicalToQmTerms canonical = map (termToQmTerm qmTermLength) terms
 -- | Converts a single min\/maxterm from a DNF/CNF into a 'QmTerm'.
 termToQmTerm :: Int -- ^ The length the 'QmcTerm' should have
               -> Formula
-              -> QmTerm
-termToQmTerm qmTermLength term = QmTerm (U.generate qmTermLength $ valueForVariable term . var)
+              -> [QmTerm]
+termToQmTerm qmTermLength term = map QmTerm $ convertDashes (U.generate qmTermLength generator)
+    where generator i = valueForVariable term (var i)
+
+convertDashes :: U.Vector (Maybe Bool) -> [U.Vector (Maybe Bool)]
+convertDashes vec
+    | U.null vec = [U.empty]
+    | otherwise = case U.head vec of
+        Nothing -> mapCons True rest ++ mapCons False rest
+        Just b -> mapCons b rest
+        where rest = convertDashes (U.tail vec)
+              mapCons b = map (U.cons $ Just b)
 
 -- | Converts a 'QmcTerm' back to a minterm (for DNFs) or maxterm (for CNFs). 
 qmTermToTerm :: Bool -- ^ 'True' for CNF, 'False' for DNF
@@ -48,10 +58,13 @@ qmTermToTerm cnfMode (QmTerm vector) = op $ U.ifoldr translate [] vector
 -- | Extracts the value of a 'Variable' in a term. Used to convert terms to 'QmcTerm's.
 valueForVariable :: Formula -> Variable -> QmTermEl
 valueForVariable term variable
-    | Atom variable `elem` literals = Just True
-    | Not (Atom variable) `elem` literals = Just False
+    | Atom variable `elem` literals = Just $ if cnfMode then False else True
+    | Not (Atom variable) `elem` literals = Just $ if cnfMode then True else False
     | otherwise = Nothing
     where literals = normalFormChildren term
+          cnfMode = case term of
+                Or _ -> True
+                And _ -> False
 
 qmTermsToFormula :: Bool -> [QmTerm] -> Formula
 qmTermsToFormula cnfMode qmTerms =
