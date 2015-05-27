@@ -18,12 +18,12 @@ spec = do
 
     describe "bitcount" $ do
             it "behaves as the python version" $ do
-                bitcount False (fromString "") `shouldBe` 0
-                bitcount False (fromString "0") `shouldBe` 0
-                bitcount False (fromString "1") `shouldBe` 1
-                bitcount False (fromString "10") `shouldBe` 1
-                bitcount False (fromString "010") `shouldBe` 1
-                bitcount False (fromString "0110") `shouldBe` 2
+                bitcount True (fromString "") `shouldBe` 0
+                bitcount True (fromString "0") `shouldBe` 0
+                bitcount True (fromString "1") `shouldBe` 1
+                bitcount True (fromString "10") `shouldBe` 1
+                bitcount True (fromString "010") `shouldBe` 1
+                bitcount True (fromString "0110") `shouldBe` 2
 
     describe "b2s" $ do
         it "behaves as the python version" $ do

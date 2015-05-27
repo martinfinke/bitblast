@@ -73,12 +73,12 @@ runQm cnfMode ones zeros dc =
         doAssert = assert $ Set.size dc'' + Set.size zeros'' + Set.size ones'' == elts'
                          && Set.size (Set.unions [dc'', zeros'', ones'']) == elts'
         primes = doAssert $ compute_primes cnfMode (Set.union ones'' dc'') numvars
-    in  unate_cover cnfMode primes ones''
+    in  unate_cover primes ones''
 
-unate_cover :: Bool -> Set.Set QmTerm -> Set.Set QmTerm -> [QmTerm]
-unate_cover cnfMode primes ones =
+unate_cover :: Set.Set QmTerm -> Set.Set QmTerm -> [QmTerm]
+unate_cover primes ones =
     let primes' = Set.elems primes
-        cs = snd $ minimum [(bitcount cnfMode (b2s cubesel (length primes')), cubesel) | cubesel <- [0..shift 1 (length primes')], is_full_cover (active_primes cubesel primes') ones]
+        cs = snd $ minimum [(bitcount True (b2s cubesel (length primes')), cubesel) | cubesel <- [0..shift 1 (length primes')], is_full_cover (active_primes cubesel primes') ones]
     in  active_primes cs primes'
 
 active_primes :: Int -> [QmTerm] -> [QmTerm]
@@ -93,7 +93,7 @@ is_cover (QmTerm prime) (QmTerm term) = minimum $ True : [p == dash || p == o | 
 
 compute_primes :: Bool -> Set.Set QmTerm -> Int -> Set.Set QmTerm
 compute_primes cnfMode cubes vars = primes
-    where termsOrderedByNumRelevantBits = [Set.fromList [i | i <- Set.toList cubes, bitcount cnfMode i == v] | v <- [0..vars]]
+    where termsOrderedByNumRelevantBits = [Set.fromList [i | i <- Set.toList cubes, bitcount (not cnfMode) i == v] | v <- [0..vars]]
           (_, primes) = whileSigma (termsOrderedByNumRelevantBits, Set.empty)
 
 whileSigma :: ([Set.Set QmTerm], Set.Set QmTerm) -> ([Set.Set QmTerm], Set.Set QmTerm)
