@@ -52,7 +52,7 @@ eval assignment formula = case formula of
     And fs -> all (eval assignment) fs
     Or fs -> any (eval assignment) fs
     Implies premise conclusion -> if eval assignment premise then eval assignment conclusion else True
-    Xor fs -> foldr (\f bool -> not $ eval assignment f == bool) False fs
+    Xor fs -> (odd . length . filter (eval assignment)) fs
     Equiv [] -> True
     Equiv (f:fs) -> all (== eval assignment f) (map (eval assignment) fs)
 
