@@ -4,7 +4,6 @@ import SpecHelper
 import Qm
 import QmTerm(fromString, flipNormalForm)
 import qualified Data.Set as Set
-import qualified Data.ByteString as B
 import qualified Data.Vector.Unboxed as U
 
 spec :: Spec
