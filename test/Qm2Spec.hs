@@ -48,7 +48,7 @@ spec = do
 
     describe "compute_primes" $ do
         it "behaves as the python version" $ do
-            let test cubes expected = compute_primes False (Set.fromList cubes) `shouldBe` Set.fromList (map QmTerm expected)
+            let test cubes expected = compute_primes (Set.fromList cubes) `shouldBe` Set.fromList (map QmTerm expected)
 
             test [] []
             test [0] [(0, 0)]
@@ -108,22 +108,22 @@ spec = do
             let terms = map fromString ["01", "10"]
             qm (map getTerm terms) [] [] `shouldBe` terms
 
-    describe "qmCnf" $ do
+    describe "qm" $ do
         it "doesn't simplify XOR (because it's impossible)" $ do
             let terms = map fromString ["11", "00"]
-            qmCnf (map getTerm terms) [] [] `shouldBe` reverse terms
+            qm (map getTerm terms) [] [] `shouldBe` reverse terms
 
         it "simplifies a 1-variable CNF with redundancies" $ do
             let terms = map fromString ["0", "1"]
-            qmCnf (map getTerm terms) [] [] `shouldBe` map fromString ["-"]
+            qm (map getTerm terms) [] [] `shouldBe` map fromString ["-"]
 
         it "simplifies a 2-variable CNF with redundancies" $ do
             let terms = map fromString ["10", "11"]
-            qmCnf (map getTerm terms) [] [] `shouldBe` map fromString ["1-"]
+            qm (map getTerm terms) [] [] `shouldBe` map fromString ["1-"]
 
         it "simplifies a 3-variable CNF with redundancies" $ do
             let terms = map fromString ["1001", "1011"]
-            qmCnf (map getTerm terms) [] [] `shouldBe` map fromString ["10-1"]
+            qm (map getTerm terms) [] [] `shouldBe` map fromString ["10-1"]
 
 
     describe "Example 1" $ do
@@ -131,14 +131,14 @@ spec = do
         let terms = Set.fromList $ map (getTerm . fromString) ["010", "100", "101", "110", "111"]
 
         it "finds the correct primes" $ do
-            compute_primes False terms `shouldBe` Set.fromList (map fromString ["-10", "1--"])
+            compute_primes terms `shouldBe` Set.fromList (map fromString ["-10", "1--"])
 
     describe "Example 2" $ do
         -- Youtube: pQ3MfzqGlrc
         let terms = Set.fromList $ map (getTerm . fromString) ["0000", "0001", "0010", "1000", "0011", "0101", "1010", "0111", "1110", "1111"]
 
         it "finds the correct primes" $ do
-            compute_primes False terms `shouldBe` Set.fromList (map fromString ["1-10", "00--", "-111", "-0-0", "111-", "0--1"])
+            compute_primes terms `shouldBe` Set.fromList (map fromString ["1-10", "00--", "-111", "-0-0", "111-", "0--1"])
 
         it "finds the correct minimal subset of primes" $ do
             qm (Set.toAscList terms) [] [] `shouldBe` map fromString ["-0-0", "0--1", "111-"]

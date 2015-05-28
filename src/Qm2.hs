@@ -6,7 +6,6 @@ import qualified Data.IntSet as IntSet
 import qualified Data.IntMap.Strict as IntMap
 import qualified Data.Bits as B
 import Data.List(find)
-import Debug.Trace(traceShow)
 import Data.Word
 import Control.Exception(assert)
 import qualified Control.Monad.State.Lazy as State
@@ -42,16 +41,16 @@ instance Show QmTerm where
 
 fromString :: String -> QmTerm
 fromString = QmTerm . fst . (foldr parse ((0,0), 0))
-    where parse char ((term, mask), pos) = traceShow pos $ case char of
+    where parse char ((term, mask), pos) = case char of
             '0' -> ((term, mask), succ pos)
             '1' -> ((B.setBit term pos, mask), succ pos)
             '-' -> ((term, B.setBit mask pos), succ pos)
 
-compute_primes :: Bool -> Set.Set BitVector -> Set.Set QmTerm
-compute_primes cnfMode cubes =
+compute_primes :: Set.Set BitVector -> Set.Set QmTerm
+compute_primes cubes =
     let sigma = Set.foldr insert IntMap.empty cubes
         sigmaAsList = map snd (IntMap.toAscList sigma) :: [Set.Set QmTerm]
-        insert cube sigma' = IntMap.insertWith Set.union (bitcount (not cnfMode) cube) (Set.singleton $ QmTerm (cube, 0::BitVector)) sigma'
+        insert cube sigma' = IntMap.insertWith Set.union (bitcount True cube) (Set.singleton $ QmTerm (cube, 0::BitVector)) sigma'
         (_, primes) = whileSigma (sigmaAsList, Set.empty)
     in primes
 
@@ -99,8 +98,7 @@ type UnateCoverState = ([IntSet.IntSet], [IntSet.IntSet])
 
 unate_cover :: [QmTerm] -> [BitVector] -> (Int, Set.Set QmTerm)
 unate_cover primes ones =
-    let primeCoversOne prime one = QmTerm (one, getMask prime) == prime
-        chart = [[i | (i,prime) <- zip [0..] primes, primeCoversOne prime one] | one <- ones] :: [[Int]]
+    let chart = [[i | (i,prime) <- zip [0..] primes, primeCoversOne prime one] | one <- ones] :: [[Int]]
         (covers,chartRest) = if length chart > 0
             then (map IntSet.singleton (head chart), tail chart)
             else ([], [])
@@ -113,6 +111,9 @@ unate_cover primes ones =
                 State.modify migrateNewCovers
 
     in minimize_complexity primes covers'
+
+primeCoversOne :: QmTerm -> BitVector -> Bool
+primeCoversOne prime one = QmTerm (one, getMask prime) == prime
 
 migrateNewCovers :: UnateCoverState -> UnateCoverState
 migrateNewCovers (_, new_covers) = (new_covers, [])
@@ -131,8 +132,8 @@ minimize_complexity primes covers =
         forEachCover cover (min_complexity, result) =
             let primes_in_cover = IntSet.foldr (\int rest -> Set.insert (mappedPrimes IntMap.! int) rest) Set.empty cover
                 complexity = calculate_complexity primes_in_cover
-            in if complexity < min_complexity then (complexity, primes_in_cover) else (min_complexity, result)
-    in foldr forEachCover (maxBound::Int, primeSet) covers
+            in if complexity <= min_complexity then (complexity, primes_in_cover) else (min_complexity, result)
+    in foldr forEachCover (calculate_complexity primeSet, primeSet) covers
 
 -- | Counts the number of unmasked positions in each 'QmTerm', and returns the sum over all of them. So the result is the number of literals in the resulting CNF/DNF.
 calculate_complexity :: Set.Set QmTerm -> Int
@@ -153,14 +154,8 @@ integralLogBase :: (Integral a, Fractional b) => Int -> a -> b
 integralLogBase base number = realToFrac $ logBase (fromIntegral base) (fromIntegral number)
 
 qm :: [BitVector] -> [BitVector] -> [BitVector] -> [QmTerm]
-qm = runQm False
-
-qmCnf :: [BitVector] -> [BitVector] -> [BitVector] -> [QmTerm]
-qmCnf = runQm True
-
-runQm :: Bool -> [BitVector] -> [BitVector] -> [BitVector] -> [QmTerm]
-runQm _ [] [] _ = error "Must specify either (or both) ones and zeros"
-runQm cnfMode ones zeros dc =
+qm [] [] _ = error "Must specify either (or both) ones and zeros"
+qm ones zeros dc =
     let 
         ones' = Set.fromList ones
         zeros' = Set.fromList zeros
@@ -176,5 +171,6 @@ runQm cnfMode ones zeros dc =
         dc'' = setOr [dc', Set.difference (Set.difference all' ones'') zeros'']
         doAssert = assert $ Set.size dc'' + Set.size zeros'' + Set.size ones'' == elts'
                          && Set.size (Set.unions [dc'', zeros'', ones'']) == elts'
-        primes = doAssert $ compute_primes cnfMode (Set.union ones'' dc'')
+        primes = doAssert $ compute_primes (Set.union ones'' dc'')
     in Set.toAscList $ snd $ unate_cover (Set.toAscList primes) (Set.toAscList ones'')
+
