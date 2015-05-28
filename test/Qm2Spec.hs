@@ -151,7 +151,7 @@ spec = do
         let terms = map getTerm $ map fromString ["0010", "0101", "0110", "1011", "1100", "1110", "1111"]
 
         it "finds the correct minimum cover" $ do
-            snd (unate_cover primes terms) `shouldBe` Just (Set.fromList $ map fromString ["-1-0", "001-", "010-", "1-11"])
+            snd (unate_cover primes terms) `shouldBe` (Set.fromList $ map fromString ["-1-0", "001-", "010-", "1-11"])
 
     describe "2-Bit Multiplier" $ do
         -- http://research.ijcaonline.org/volume42/number4/pxc3877719.pdf

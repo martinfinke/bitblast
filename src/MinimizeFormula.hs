@@ -4,8 +4,8 @@ import TruthTable
 import Formula
 import NormalForm
 import qualified Data.Vector.Unboxed as U
-import QmTerm
 import Qm
+import QmTerm
 
 -- | Minimizes an arbitrary 'Formula' to an equivalent CNF/DNF, which consists of the minimal cover of primes.
 minimizeFormula :: Formula -> Formula

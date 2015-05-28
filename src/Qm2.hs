@@ -95,7 +95,7 @@ merge (QmTerm i) (QmTerm j)
     where y = (fst i) `B.xor` (fst j) -- All positions where i and j are different
 
 
-unate_cover :: [QmTerm] -> [BitVector] -> (Int, Maybe (Set.Set QmTerm))
+unate_cover :: [QmTerm] -> [BitVector] -> (Int, Set.Set QmTerm)
 unate_cover primes ones =
     let primeCoversOne prime one = QmTerm (one, getMask prime) == prime
         chart = [[i | (i,prime) <- zip [0..] primes, primeCoversOne prime one] | one <- ones]
@@ -118,13 +118,13 @@ unate_cover primes ones =
 
     in minimize_complexity primes covers''
 
-minimize_complexity :: [QmTerm] -> [Set.Set Int] -> (Int, Maybe (Set.Set QmTerm))
+minimize_complexity :: [QmTerm] -> [Set.Set Int] -> (Int, Set.Set QmTerm)
 minimize_complexity primes covers =
     let forEachCover cover (min_complexity, result) =
             let primes_in_cover = [primes!!prime_index | prime_index <- Set.toList cover]
                 complexity = calculate_complexity primes_in_cover
-            in if complexity < min_complexity then (complexity, Just $ Set.fromList primes_in_cover) else (min_complexity, result)
-    in foldr forEachCover (maxBound::Int, Nothing) covers
+            in if complexity < min_complexity then (complexity, Set.fromList primes_in_cover) else (min_complexity, result)
+    in foldr forEachCover (maxBound::Int, Set.fromList primes) covers
 
 -- | Counts the number of unmasked positions in each 'QmTerm', and returns the sum over all of them. So the result is the number of literals in the resulting CNF/DNF.
 calculate_complexity :: [QmTerm] -> Int
@@ -168,7 +168,4 @@ runQm cnfMode ones zeros dc =
         doAssert = assert $ Set.size dc'' + Set.size zeros'' + Set.size ones'' == elts'
                          && Set.size (Set.unions [dc'', zeros'', ones'']) == elts'
         primes = doAssert $ compute_primes cnfMode (Set.union ones'' dc'') numvars
-        minCover = snd $ unate_cover (Set.toAscList primes) (Set.toAscList ones'')
-    in case minCover of
-        Nothing -> error "Couldn't find any cover."
-        Just cover -> Set.toAscList cover
+    in Set.toAscList $ snd $ unate_cover (Set.toAscList primes) (Set.toAscList ones'')
