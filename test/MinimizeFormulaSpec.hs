@@ -9,7 +9,6 @@ import FormulaSpec
 import NormalForm
 import NormalFormSpec
 import Qm
-import QmSpec
 
 spec :: Spec
 spec = do
