@@ -47,8 +47,8 @@ fromString = QmTerm . fst . (foldr parse ((0,0), 0))
             '1' -> ((B.setBit term pos, mask), succ pos)
             '-' -> ((term, B.setBit mask pos), succ pos)
 
-compute_primes :: Bool -> Set.Set BitVector -> Int -> Set.Set QmTerm
-compute_primes cnfMode cubes vars =
+compute_primes :: Bool -> Set.Set BitVector -> Set.Set QmTerm
+compute_primes cnfMode cubes =
     let sigma = Set.foldr insert IntMap.empty cubes
         sigmaAsList = map snd (IntMap.toAscList sigma) :: [Set.Set QmTerm]
         insert cube sigma' = IntMap.insertWith Set.union (bitcount (not cnfMode) cube) (Set.singleton $ QmTerm (cube, 0::BitVector)) sigma'
@@ -127,15 +127,16 @@ updateNewCovers prime_index cover (covers, new_covers) =
 minimize_complexity :: [QmTerm] -> [IntSet.IntSet] -> (Int, Set.Set QmTerm)
 minimize_complexity primes covers =
     let mappedPrimes = IntMap.fromList $ zip [0..] primes
+        primeSet = Set.fromList primes
         forEachCover cover (min_complexity, result) =
-            let primes_in_cover = map (mappedPrimes IntMap.!) $ IntSet.toList cover -- TODO: Use IntSet.map?
+            let primes_in_cover = IntSet.foldr (\int rest -> Set.insert (mappedPrimes IntMap.! int) rest) Set.empty cover
                 complexity = calculate_complexity primes_in_cover
-            in if complexity < min_complexity then (complexity, Set.fromList primes_in_cover) else (min_complexity, result)
-    in foldr forEachCover (maxBound::Int, Set.fromList primes) covers
+            in if complexity < min_complexity then (complexity, primes_in_cover) else (min_complexity, result)
+    in foldr forEachCover (maxBound::Int, primeSet) covers
 
 -- | Counts the number of unmasked positions in each 'QmTerm', and returns the sum over all of them. So the result is the number of literals in the resulting CNF/DNF.
-calculate_complexity :: [QmTerm] -> Int
-calculate_complexity primes = sum $ map (bitcount False . getMask) primes
+calculate_complexity :: Set.Set QmTerm -> Int
+calculate_complexity primes = sum $ Set.map (bitcount False . getMask) primes
 
 
 listOr :: [[a]] -> [a]
@@ -160,19 +161,20 @@ qmCnf = runQm True
 runQm :: Bool -> [BitVector] -> [BitVector] -> [BitVector] -> [QmTerm]
 runQm _ [] [] _ = error "Must specify either (or both) ones and zeros"
 runQm cnfMode ones zeros dc =
-    let elts = maximum [maximum (listOr [ones, zeros, dc]),
-                        maximum (listOr [zeros, dc, ones]),
-                        maximum (listOr [dc, ones, zeros])] + 1
-        numvars = ceiling $ integralLogBase 2 elts :: Int
-        elts' = B.shift 1 numvars :: Int
-        all' = Set.fromList $ map fromIntegral [0..elts'-1]
+    let 
         ones' = Set.fromList ones
         zeros' = Set.fromList zeros
         dc' = Set.fromList dc
+        elts = maximum [Set.findMax (setOr [ones', zeros', dc']),
+                        Set.findMax (setOr [zeros', dc', ones']),
+                        Set.findMax (setOr [dc', ones', zeros'])] + 1
+        numvars = ceiling $ integralLogBase 2 elts :: Int
+        elts' = B.shift 1 numvars :: Int
+        all' = Set.fromList $ map fromIntegral [0..elts'-1]
         ones'' = setOr [ones', Set.difference (Set.difference all' zeros') dc']
         zeros'' = setOr [zeros', Set.difference (Set.difference all' ones'') dc']
         dc'' = setOr [dc', Set.difference (Set.difference all' ones'') zeros'']
         doAssert = assert $ Set.size dc'' + Set.size zeros'' + Set.size ones'' == elts'
                          && Set.size (Set.unions [dc'', zeros'', ones'']) == elts'
-        primes = doAssert $ compute_primes cnfMode (Set.union ones'' dc'') numvars
+        primes = doAssert $ compute_primes cnfMode (Set.union ones'' dc'')
     in Set.toAscList $ snd $ unate_cover (Set.toAscList primes) (Set.toAscList ones'')

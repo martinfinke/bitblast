@@ -48,47 +48,47 @@ spec = do
 
     describe "compute_primes" $ do
         it "behaves as the python version" $ do
-            let test cubes vars expected = compute_primes False (Set.fromList cubes) vars `shouldBe` Set.fromList (map QmTerm expected)
+            let test cubes expected = compute_primes False (Set.fromList cubes) `shouldBe` Set.fromList (map QmTerm expected)
 
-            test [] 0 []
-            test [0] 0 [(0, 0)]
+            test [] []
+            test [0] [(0, 0)]
 
-            test [] 1 []
-            test [0] 1 [(0, 0)]
-            test [1] 1 [(1, 0)]
-            test [2] 1 [(2, 0)]
+            test [] []
+            test [0] [(0, 0)]
+            test [1] [(1, 0)]
+            test [2] [(2, 0)]
 
-            test [] 2 []
-            test [0] 2 [(0, 0)]
-            test [1] 2 [(1, 0)]
-            test [2] 2 [(2, 0)]
-            test [3] 2 [(3, 0)]
-            test [0,1] 2 [(0, 1)]
-            test [1,2] 2 [(2, 0), (1, 0)]
-            test [2,3] 2 [(2, 1)]
-            test [3,4] 2 [(3, 0), (4, 0)]
-            test [0,1,3] 2 [(0, 1), (1, 2)]
-            test [1,2,4] 2 [(2, 0), (1, 0), (4, 0)]
-            test [2,3,6] 2 [(2, 4), (2, 1)]
-            test [3,4,8] 2 [(3, 0), (8, 0), (4, 0)]
+            test [] []
+            test [0] [(0, 0)]
+            test [1] [(1, 0)]
+            test [2] [(2, 0)]
+            test [3] [(3, 0)]
+            test [0,1] [(0, 1)]
+            test [1,2] [(2, 0), (1, 0)]
+            test [2,3] [(2, 1)]
+            test [3,4] [(3, 0), (4, 0)]
+            test [0,1,3] [(0, 1), (1, 2)]
+            test [1,2,4] [(2, 0), (1, 0), (4, 0)]
+            test [2,3,6] [(2, 4), (2, 1)]
+            test [3,4,8] [(3, 0), (8, 0), (4, 0)]
 
-            test [] 3 []
-            test [0] 3 [(0, 0)]
-            test [1] 3 [(1, 0)]
-            test [2] 3 [(2, 0)]
-            test [3] 3 [(3, 0)]
-            test [0,1] 3 [(0, 1)]
-            test [1,2] 3 [(2, 0), (1, 0)]
-            test [2,3] 3 [(2, 1)]
-            test [3,4] 3 [(3, 0), (4, 0)]
-            test [0,1,3] 3 [(0, 1), (1, 2)]
-            test [1,2,4] 3 [(2, 0), (1, 0), (4, 0)]
-            test [2,3,6] 3 [(2, 4), (2, 1)]
-            test [3,4,8] 3 [(3, 0), (8, 0), (4, 0)]
-            test [0,1,3] 3 [(0, 1), (1, 2)]
-            test [1,2,4,9] 3 [(2, 0), (1, 8), (4, 0)]
-            test [2,3,6,13] 3 [(2, 1), (2, 4), (13, 0)]
-            test [3,4,8,12] 3 [(3, 0), (8, 4), (4, 8)]
+            test [] []
+            test [0] [(0, 0)]
+            test [1] [(1, 0)]
+            test [2] [(2, 0)]
+            test [3] [(3, 0)]
+            test [0,1] [(0, 1)]
+            test [1,2] [(2, 0), (1, 0)]
+            test [2,3] [(2, 1)]
+            test [3,4] [(3, 0), (4, 0)]
+            test [0,1,3] [(0, 1), (1, 2)]
+            test [1,2,4] [(2, 0), (1, 0), (4, 0)]
+            test [2,3,6] [(2, 4), (2, 1)]
+            test [3,4,8] [(3, 0), (8, 0), (4, 0)]
+            test [0,1,3] [(0, 1), (1, 2)]
+            test [1,2,4,9] [(2, 0), (1, 8), (4, 0)]
+            test [2,3,6,13] [(2, 1), (2, 4), (13, 0)]
+            test [3,4,8,12] [(3, 0), (8, 4), (4, 8)]
 
 
     describe "qm" $ do
@@ -128,19 +128,17 @@ spec = do
 
     describe "Example 1" $ do
         -- Youtube: pQ3MfzqGlrc
-        let numVars = 3
         let terms = Set.fromList $ map (getTerm . fromString) ["010", "100", "101", "110", "111"]
 
         it "finds the correct primes" $ do
-            compute_primes False terms numVars `shouldBe` Set.fromList (map fromString ["-10", "1--"])
+            compute_primes False terms `shouldBe` Set.fromList (map fromString ["-10", "1--"])
 
     describe "Example 2" $ do
         -- Youtube: pQ3MfzqGlrc
-        let numVars = 4
         let terms = Set.fromList $ map (getTerm . fromString) ["0000", "0001", "0010", "1000", "0011", "0101", "1010", "0111", "1110", "1111"]
 
         it "finds the correct primes" $ do
-            compute_primes False terms numVars `shouldBe` Set.fromList (map fromString ["1-10", "00--", "-111", "-0-0", "111-", "0--1"])
+            compute_primes False terms `shouldBe` Set.fromList (map fromString ["1-10", "00--", "-111", "-0-0", "111-", "0--1"])
 
         it "finds the correct minimal subset of primes" $ do
             qm (Set.toAscList terms) [] [] `shouldBe` map fromString ["-0-0", "0--1", "111-"]
