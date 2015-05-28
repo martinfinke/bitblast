@@ -42,9 +42,9 @@ instance Show QmTerm where
 fromString :: String -> QmTerm
 fromString = QmTerm . fst . (foldr parse ((0,0), 0))
     where parse char ((term, mask), pos) = traceShow pos $ case char of
-            '0' -> ((term, mask), pos+1)
-            '1' -> ((B.setBit term pos, mask), pos+1)
-            '-' -> ((term, B.setBit mask pos), pos+1)
+            '0' -> ((term, mask), succ pos)
+            '1' -> ((B.setBit term pos, mask), succ pos)
+            '-' -> ((term, B.setBit mask pos), succ pos)
 
 compute_primes :: Bool -> Set.Set BitVector -> Int -> Set.Set QmTerm
 compute_primes cnfMode cubes vars =
