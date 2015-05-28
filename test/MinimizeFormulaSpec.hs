@@ -8,9 +8,8 @@ import Formula
 import FormulaSpec
 import NormalForm
 import NormalFormSpec
-import QmTerm
-import QmTermSpec
-import Qm
+import Qm2
+import Qm2Spec
 
 spec :: Spec
 spec = do
@@ -46,23 +45,23 @@ spec = do
             valueForVariable (Or _1pos2neg) (var 1) `shouldBe` Just True
             valueForVariable (Or _1pos2neg) (var 2) `shouldBe` Just True
 
-    describe "canonicalToQmTerms" $ do
+    describe "canonicalToBitVectors" $ do
         it "converts a CNF to QmTerms" $ do
-            canonicalToQmTerms testCnf `shouldBe` map fromString [
-                "111", "011", "010", "100", "000"
+            canonicalToBitVectors testCnf `shouldBe` map (getTerm . fromString) [
+                "111", "110", "010", "001", "000"
                 ]
 
     describe "qmTermToTerm" $ do
         it "creates an empty term for an empty qmTerm" $ do
-            qmTermToTerm True (fromString "") `shouldBe` Or []
+            qmTermToTerm True 0 (fromString "") `shouldBe` Or []
 
         it "creates a term with one element for a qmcTerm with one element" $ do
-            qmTermToTerm False (fromString "0") `shouldBe` And [Not $ Atom (var 0)]
-            qmTermToTerm False (fromString "1") `shouldBe` And [Atom (var 0)]
+            qmTermToTerm False 1 (fromString "0") `shouldBe` And [Not $ Atom (var 0)]
+            qmTermToTerm False 1 (fromString "1") `shouldBe` And [Atom (var 0)]
 
         it "creates a term with two elements for a qmcTerm with two elements" $ do
-            qmTermToTerm True (fromString "10") `shouldBe` Or [Not $ Atom (var 0), Atom (var 1)]
-            qmTermToTerm True (fromString "00") `shouldBe` Or [Atom (var 0), Atom (var 1)]
+            qmTermToTerm True 2 (fromString "01") `shouldBe` Or [Not $ Atom (var 0), Atom (var 1)]
+            qmTermToTerm True 2 (fromString "00") `shouldBe` Or [Atom (var 0), Atom (var 1)]
 
     describe "minimizeCanonical" $ do
         it "doesn't minimize XOR (because it's impossible)" $ do
@@ -94,10 +93,14 @@ spec = do
             let canonical = ensureCanonical example
             getFormula canonical `shouldBe` example
 
-            let canonicalTerms = canonicalToQmTerms canonical
-            canonicalTerms `shouldBe` map fromString ["0010", "0000", "0110", "0100", "0011", "0001"]
-            let minimumCover = qmCnf (map s2b canonicalTerms) [] []
-            minimumCover `shouldBe` map fromString ["--0", "0--"]
+            let canonicalBitVectors = canonicalToBitVectors canonical
+            canonicalBitVectors `shouldBe` map (getTerm . fromString) [
+                    "0100", "0000",
+                    "0110", "0010",
+                    "1100", "1000"
+                    ]
+            let minimumCover = qm canonicalBitVectors [] []
+            minimumCover `shouldBe` map fromString ["0--0", "--00"]
             let minimized = minimizeCanonical canonical
             minimized `shouldBe` And [Or [x0, x3], Or [x0, x1]]
 
@@ -111,7 +114,7 @@ spec = do
             let canonical = ensureCanonical example
             getFormula canonical `shouldBe` example
             let minimized = minimizeCanonical canonical
-            minimized `shouldBe` Or [And [x0, x3], And [x0, x1]]
+            minimized `shouldBe` Or [And [x0, x1], And [x0, x3]]
 
 
         it "minimizes any canonical to a formula that has the same value (for a random assignment)" $ do
@@ -121,6 +124,8 @@ spec = do
 
     describe "termToQmTerm" $ do
         it "converts dashes to 0 and 1" $ do
-            termToQmTerm 1 (Or []) `shouldBe` map fromString ["1", "0"]
-            termToQmTerm 2 (And [x0]) `shouldBe` map fromString ["11", "10"]
-            termToQmTerm 4 (And [x0, Not x2, x3]) `shouldBe` map fromString ["1101", "1001"]
+            termToBitVectors 1 (Or []) `shouldBe` map (getTerm . fromString) ["1", "0"]
+            termToBitVectors 2 (And [x0]) `shouldBe` map (getTerm . fromString) ["11", "01"]
+            termToBitVectors 4 (And [x0, Not x2, x3]) `shouldBe` map (getTerm . fromString) [
+                    "1011", "1001"
+                    ]
