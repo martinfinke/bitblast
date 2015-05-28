@@ -4,9 +4,12 @@ module Qm2 where
 import qualified Data.Set as Set
 import qualified Data.IntMap.Lazy as IntMap
 import qualified Data.Bits as B
-import UnboxMaybe
+import Data.List(find)
 import Debug.Trace(traceShow)
 import Data.Word
+import Control.Exception(assert)
+import qualified Control.Monad.State.Lazy as State
+import Control.Monad
 
 
 type BitVector = Word64
@@ -16,13 +19,19 @@ newtype QmTerm = QmTerm (BitVector, BitVector)
 getTerm :: QmTerm -> BitVector
 getTerm (QmTerm (bv,_)) = bv
 
-instance Eq QmTerm where
-    (QmTerm (term1, mask1)) == (QmTerm (term2, mask2))
-        | mask1 /= mask2 = False
-        | otherwise = intersectionWithMask == 0
-            where termDiff = term1 `B.xor` term2
-                  intersectionWithMask = termDiff B..&. (B.complement mask1)
+getMask :: QmTerm -> BitVector
+getMask (QmTerm (_,mask)) = mask
 
+getMaskedTerm :: QmTerm -> BitVector
+getMaskedTerm (QmTerm (term, mask)) = maskBitVector term mask
+
+maskBitVector :: BitVector -> BitVector -> BitVector
+maskBitVector bv mask = bv B..&. (B.complement mask)
+
+instance Eq QmTerm where
+    term1 == term2
+        | getMask term1 /= getMask term2 = False
+        | otherwise = getMaskedTerm term1 == getMaskedTerm term2
 
 instance Show QmTerm where
     show (QmTerm (term, mask)) = map printBit $ reverse [0..B.finiteBitSize term - 1]
@@ -85,3 +94,81 @@ merge (QmTerm i) (QmTerm j)
     | otherwise = Just $ QmTerm (fst i B..&. fst j, snd i B..|. y)
     where y = (fst i) `B.xor` (fst j) -- All positions where i and j are different
 
+
+unate_cover :: [QmTerm] -> [BitVector] -> (Int, Maybe (Set.Set QmTerm))
+unate_cover primes ones =
+    let primeCoversOne prime one = QmTerm (one, getMask prime) == prime
+        chart = [[i | (i,prime) <- zip [0..] primes, primeCoversOne prime one] | one <- ones]
+        (covers,chartRest) = if length chart > 0
+            then (map Set.singleton (head chart), tail chart) -- TODO: Maybe use IntSet internally?
+            else ([], [])
+        (covers'',_) = flip State.execState (covers, []) $ do
+            let replaceNewCovers newCovers = \(covers, _) -> (covers, newCovers)
+            forM_ chartRest $ \column -> do
+                covers <- fmap fst State.get
+                forM_ covers $ \cover ->
+                    forM_ column $ \prime_index -> do
+                        let x = Set.insert prime_index cover
+                        (_,new_covers) <- State.get
+                        let new_covers' = filter (`Set.isProperSubsetOf` x) new_covers
+                        let append = all (x `Set.isSubsetOf`) new_covers'
+                        let new_covers'' = if append then x:new_covers' else new_covers'
+                        State.modify (replaceNewCovers new_covers'')
+                State.modify $ \(covers, new_covers) -> (new_covers, [])
+
+    in minimize_complexity primes covers''
+
+minimize_complexity :: [QmTerm] -> [Set.Set Int] -> (Int, Maybe (Set.Set QmTerm))
+minimize_complexity primes covers =
+    let forEachCover cover (min_complexity, result) =
+            let primes_in_cover = [primes!!prime_index | prime_index <- Set.toList cover]
+                complexity = calculate_complexity primes_in_cover
+            in if complexity < min_complexity then (complexity, Just $ Set.fromList primes_in_cover) else (min_complexity, result)
+    in foldr forEachCover (maxBound::Int, Nothing) covers
+
+-- | Counts the number of unmasked positions in each 'QmTerm', and returns the sum over all of them. So the result is the number of literals in the resulting CNF/DNF.
+calculate_complexity :: [QmTerm] -> Int
+calculate_complexity primes = sum $ map (bitcount False . getMask) primes
+
+
+listOr :: [[a]] -> [a]
+listOr lists = case find (not . null) lists of
+    Nothing -> []
+    Just list -> list
+
+setOr :: [Set.Set a] -> Set.Set a
+setOr sets = case find (not . Set.null) sets of
+    Nothing -> Set.empty
+    Just set -> set
+
+integralLogBase :: (Integral a, Fractional b) => Int -> a -> b
+integralLogBase base number = realToFrac $ logBase (fromIntegral base) (fromIntegral number)
+
+qm :: [BitVector] -> [BitVector] -> [BitVector] -> [QmTerm]
+qm = runQm False
+
+qmCnf :: [BitVector] -> [BitVector] -> [BitVector] -> [QmTerm]
+qmCnf = runQm True
+
+runQm :: Bool -> [BitVector] -> [BitVector] -> [BitVector] -> [QmTerm]
+runQm _ [] [] _ = error "Must specify either (or both) ones and zeros"
+runQm cnfMode ones zeros dc =
+    let elts = maximum [maximum (listOr [ones, zeros, dc]),
+                        maximum (listOr [zeros, dc, ones]),
+                        maximum (listOr [dc, ones, zeros])] + 1
+        numvars = ceiling $ integralLogBase 2 elts :: Int
+        elts' = B.shift 1 numvars :: Int
+        all' = Set.fromList $ map fromIntegral [0..elts'-1]
+        ones' = Set.fromList ones
+        zeros' = Set.fromList zeros
+        dc' = Set.fromList dc
+        ones'' = setOr [ones', Set.difference (Set.difference all' zeros') dc']
+        zeros'' = setOr [zeros', Set.difference (Set.difference all' ones'') dc']
+        dc'' = setOr [dc', Set.difference (Set.difference all' ones'') zeros'']
+        doAssert = assert $ Set.size dc'' + Set.size zeros'' + Set.size ones'' == elts'
+                         && Set.size (Set.unions [dc'', zeros'', ones'']) == elts'
+        primes = doAssert $ compute_primes cnfMode (Set.union ones'' dc'') numvars
+        minCover = snd $ unate_cover (Set.toAscList primes) (Set.toAscList ones'')
+    in case minCover of
+        Nothing -> error "Couldn't find any cover."
+        Just cover -> Set.toAscList cover
