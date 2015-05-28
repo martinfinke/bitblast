@@ -2,7 +2,7 @@ module Qm2 where
 
 
 import qualified Data.Set as Set
-import qualified Data.IntMap.Lazy as IntMap
+import qualified Data.IntMap.Strict as IntMap
 import qualified Data.Bits as B
 import Data.List(find)
 import Debug.Trace(traceShow)
@@ -102,26 +102,26 @@ unate_cover primes ones =
         (covers,chartRest) = if length chart > 0
             then (map Set.singleton (head chart), tail chart) -- TODO: Maybe use IntSet internally?
             else ([], [])
+        updateNewCovers prime_index cover (covers, new_covers) =
+            let x = Set.insert prime_index cover
+                new_covers' = filter (`Set.isProperSubsetOf` x) new_covers
+                append = all (x `Set.isSubsetOf`) new_covers'
+            in (covers, if append then x:new_covers' else new_covers')
         (covers'',_) = flip State.execState (covers, []) $ do
-            let replaceNewCovers newCovers = \(covers, _) -> (covers, newCovers)
             forM_ chartRest $ \column -> do
                 covers <- fmap fst State.get
                 forM_ covers $ \cover ->
-                    forM_ column $ \prime_index -> do
-                        let x = Set.insert prime_index cover
-                        (_,new_covers) <- State.get
-                        let new_covers' = filter (`Set.isProperSubsetOf` x) new_covers
-                        let append = all (x `Set.isSubsetOf`) new_covers'
-                        let new_covers'' = if append then x:new_covers' else new_covers'
-                        State.modify (replaceNewCovers new_covers'')
+                    forM_ column $ \prime_index ->
+                        State.modify (updateNewCovers prime_index cover)
                 State.modify $ \(covers, new_covers) -> (new_covers, [])
 
     in minimize_complexity primes covers''
 
 minimize_complexity :: [QmTerm] -> [Set.Set Int] -> (Int, Set.Set QmTerm)
 minimize_complexity primes covers =
-    let forEachCover cover (min_complexity, result) =
-            let primes_in_cover = [primes!!prime_index | prime_index <- Set.toList cover]
+    let mappedPrimes = IntMap.fromList $ zip [0..] primes
+        forEachCover cover (min_complexity, result) =
+            let primes_in_cover = map (mappedPrimes IntMap.!) $ Set.toList cover
                 complexity = calculate_complexity primes_in_cover
             in if complexity < min_complexity then (complexity, Set.fromList primes_in_cover) else (min_complexity, result)
     in foldr forEachCover (maxBound::Int, Set.fromList primes) covers
