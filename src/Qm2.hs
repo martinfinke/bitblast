@@ -2,6 +2,7 @@ module Qm2 where
 
 
 import qualified Data.Set as Set
+import qualified Data.IntSet as IntSet
 import qualified Data.IntMap.Strict as IntMap
 import qualified Data.Bits as B
 import Data.List(find)
@@ -94,34 +95,40 @@ merge (QmTerm i) (QmTerm j)
     | otherwise = Just $ QmTerm (fst i B..&. fst j, snd i B..|. y)
     where y = (fst i) `B.xor` (fst j) -- All positions where i and j are different
 
+type UnateCoverState = ([IntSet.IntSet], [IntSet.IntSet])
 
 unate_cover :: [QmTerm] -> [BitVector] -> (Int, Set.Set QmTerm)
 unate_cover primes ones =
     let primeCoversOne prime one = QmTerm (one, getMask prime) == prime
-        chart = [[i | (i,prime) <- zip [0..] primes, primeCoversOne prime one] | one <- ones]
+        chart = [[i | (i,prime) <- zip [0..] primes, primeCoversOne prime one] | one <- ones] :: [[Int]]
         (covers,chartRest) = if length chart > 0
-            then (map Set.singleton (head chart), tail chart) -- TODO: Maybe use IntSet internally?
+            then (map IntSet.singleton (head chart), tail chart)
             else ([], [])
-        updateNewCovers prime_index cover (covers, new_covers) =
-            let x = Set.insert prime_index cover
-                new_covers' = filter (`Set.isProperSubsetOf` x) new_covers
-                append = all (x `Set.isSubsetOf`) new_covers'
-            in (covers, if append then x:new_covers' else new_covers')
-        (covers'',_) = flip State.execState (covers, []) $ do
+        (covers',_) = flip State.execState (covers, []) $ do
             forM_ chartRest $ \column -> do
                 covers <- fmap fst State.get
                 forM_ covers $ \cover ->
                     forM_ column $ \prime_index ->
-                        State.modify (updateNewCovers prime_index cover)
-                State.modify $ \(covers, new_covers) -> (new_covers, [])
+                        State.modify $ updateNewCovers prime_index cover
+                State.modify migrateNewCovers
 
-    in minimize_complexity primes covers''
+    in minimize_complexity primes covers'
 
-minimize_complexity :: [QmTerm] -> [Set.Set Int] -> (Int, Set.Set QmTerm)
+migrateNewCovers :: UnateCoverState -> UnateCoverState
+migrateNewCovers (_, new_covers) = (new_covers, [])
+
+updateNewCovers :: Int -> IntSet.IntSet -> UnateCoverState -> UnateCoverState
+updateNewCovers prime_index cover (covers, new_covers) =
+    let x = IntSet.insert prime_index cover
+        new_covers' = filter (`IntSet.isProperSubsetOf` x) new_covers
+        append = all (x `IntSet.isSubsetOf`) new_covers'
+    in (covers, if append then x:new_covers' else new_covers')
+
+minimize_complexity :: [QmTerm] -> [IntSet.IntSet] -> (Int, Set.Set QmTerm)
 minimize_complexity primes covers =
     let mappedPrimes = IntMap.fromList $ zip [0..] primes
         forEachCover cover (min_complexity, result) =
-            let primes_in_cover = map (mappedPrimes IntMap.!) $ Set.toList cover
+            let primes_in_cover = map (mappedPrimes IntMap.!) $ IntSet.toList cover -- TODO: Use IntSet.map?
                 complexity = calculate_complexity primes_in_cover
             in if complexity < min_complexity then (complexity, Set.fromList primes_in_cover) else (min_complexity, result)
     in foldr forEachCover (maxBound::Int, Set.fromList primes) covers
