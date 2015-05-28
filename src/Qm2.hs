@@ -8,7 +8,7 @@ import qualified Data.Bits as B
 import Data.List(find)
 import Data.Word
 import Control.Exception(assert)
-import qualified Control.Monad.State.Lazy as State
+import qualified Control.Monad.State.Strict as State
 import Control.Monad
 
 
