@@ -84,15 +84,12 @@ bitcount :: B.Bits a => Bool -- ^ 'True' to count 1s, 'False' to count 0s.
 bitcount True = B.popCount
 bitcount False = bitcount True . B.complement
 
-isPowerOfTwoOrZero :: BitVector -> Bool
-isPowerOfTwoOrZero x = B.popCount x <= 1
-
 merge :: QmTerm -> QmTerm -> Maybe QmTerm
-merge (QmTerm i) (QmTerm j)
-    | snd i /= snd j = Nothing -- Dashes have to be the same
-    | not (isPowerOfTwoOrZero y) = Nothing -- y may contain at most one set bit (one difference between i and j)
-    | otherwise = Just $ QmTerm (fst i B..&. fst j, snd i B..|. y)
-    where y = (fst i) `B.xor` (fst j) -- All positions where i and j are different
+merge i j
+    | getMask i /= getMask j = Nothing -- Masks have to be the same
+    | B.popCount y > 1 = Nothing -- There may be at most one difference between i and j
+    | otherwise = Just $ QmTerm (getTerm i B..&. getTerm j, getMask i B..|. y)
+    where y = getTerm i `B.xor` getTerm j -- All positions where i and j are different
 
 type UnateCoverState = ([IntSet.IntSet], [IntSet.IntSet])
 
