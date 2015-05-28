@@ -2,100 +2,94 @@ module QmSpec where
 
 import SpecHelper
 import Qm
-import QmTerm(fromString, flipNormalForm)
+import Data.Word(Word64)
 import qualified Data.Set as Set
-import qualified Data.Vector.Unboxed as U
+
+instance Arbitrary QmTerm where
+    arbitrary = do
+        term <- arbitrary :: Gen Word64
+        mask <- arbitrary :: Gen Word64
+        return $ QmTerm (term, mask)
 
 spec :: Spec
 spec = do
-    describe "active_primes" $ do
+    describe "QmTerm Show instance" $ do
+        it "is inverse to fromString" $ do
+            property $ \qmTerm -> (fromString . show) qmTerm `shouldBe` qmTerm
+
+    describe "merge" $ do
         it "behaves as the python version" $ do
-            active_primes 0 [] `shouldBe` []
-            active_primes 1 [] `shouldBe` []
-            active_primes 2 [] `shouldBe` []
-            active_primes 0 [fromString "0"] `shouldBe` []
-            active_primes 0 [fromString "1"] `shouldBe` []
-            active_primes 1 [fromString "1"] `shouldBe` [fromString "1"]
-            active_primes 2 [fromString "1"] `shouldBe` []
-            active_primes 0 [fromString "11"] `shouldBe` []
-            active_primes 1 [fromString "11"] `shouldBe` [fromString "11"]
-            active_primes 2 [fromString "11"] `shouldBe` []
-            active_primes 3 [fromString "11"] `shouldBe` [fromString "11"]
-            active_primes 4 [fromString "11"] `shouldBe` []
-            active_primes 0 [fromString "01"] `shouldBe` []
-            active_primes 1 [fromString "01"] `shouldBe` [fromString "01"]
-            active_primes 2 [fromString "01"] `shouldBe` []
+            merge (fromString "0") (fromString "0") `shouldBe` Just (fromString "0")
+            merge (fromString "0") (fromString "1") `shouldBe` Just (fromString "-")
+            merge (fromString "0") (fromString "-") `shouldBe` Nothing
+            merge (fromString "00") (fromString "01") `shouldBe` Just (fromString "0-")
+            merge (fromString "001") (fromString "011") `shouldBe` Just (fromString "0-1")
+            merge (fromString "001") (fromString "01-") `shouldBe` Nothing
+            merge (fromString "-0-") (fromString "---") `shouldBe` Nothing
 
-            active_primes 0 (map fromString ["0", "1"]) `shouldBe` []
-            active_primes 1 (map fromString ["0", "1"]) `shouldBe` (map fromString ["1"])
-            active_primes 2 (map fromString ["0", "1"]) `shouldBe` (map fromString ["0"])
-            active_primes 3 (map fromString ["0", "1"]) `shouldBe` (map fromString ["0", "1"])
-            active_primes 4 (map fromString ["0", "1"]) `shouldBe` []
-            active_primes 5 (map fromString ["0", "1"]) `shouldBe` (map fromString ["1"])
-            active_primes 6 (map fromString ["0", "1"]) `shouldBe` (map fromString ["0"])
-            active_primes 7 (map fromString ["0", "1"]) `shouldBe` (map fromString ["0", "1"])
-
-            active_primes 0 (map fromString ["10", "11"]) `shouldBe` []
-            active_primes 1 (map fromString ["10", "11"]) `shouldBe` (map fromString ["11"])
-            active_primes 2 (map fromString ["10", "11"]) `shouldBe` (map fromString ["10"])
-            active_primes 3 (map fromString ["10", "11"]) `shouldBe` (map fromString ["10", "11"])
-            active_primes 4 (map fromString ["10", "11"]) `shouldBe` []
-
-    describe "is_full_cover" $ do
+    describe "bitcount" $ do
         it "behaves as the python version" $ do
-            let cover primes ones = is_full_cover (map fromString primes) (Set.fromList $ map fromString ones)
-            cover [] [] `shouldBe` True
-            cover [] ["0"] `shouldBe` False
-            cover ["0"] ["0"] `shouldBe` True
-            cover ["0", "1"] ["0"] `shouldBe` True
-            cover ["0"] ["0", "1"] `shouldBe` False
-            cover ["0", "1"] ["0", "1"] `shouldBe` True
-            cover ["-"] ["0", "1"] `shouldBe` True
-            cover ["0-1"] ["0", "1"] `shouldBe` False
-            cover ["0-1"] ["011", "101"] `shouldBe` False
-            cover ["0-1", "-01"] ["011", "101"] `shouldBe` True
+            bitcount True (getTerm $ fromString "") `shouldBe` 0
+            bitcount True (getTerm $ fromString "0") `shouldBe` 0
+            bitcount True (getTerm $ fromString "1") `shouldBe` 1
+            bitcount True (getTerm $ fromString "10") `shouldBe` 1
+            bitcount True (getTerm $ fromString "010") `shouldBe` 1
+            bitcount True (getTerm $ fromString "0110") `shouldBe` 2
 
-    describe "is_cover" $ do
-        it "behaves as the python version" $ do
-            is_cover (fromString "") (fromString "") `shouldBe` True
-            is_cover (fromString "") (fromString "0") `shouldBe` True
-            is_cover (fromString "") (fromString "1") `shouldBe` True
-            is_cover (fromString "0") (fromString "") `shouldBe` True
-            is_cover (fromString "1") (fromString "") `shouldBe` True
-            is_cover (fromString "0") (fromString "0") `shouldBe` True
-            is_cover (fromString "0") (fromString "1") `shouldBe` False
-            is_cover (fromString "1") (fromString "0") `shouldBe` False
-            is_cover (fromString "-") (fromString "0") `shouldBe` True
-            is_cover (fromString "-") (fromString "1") `shouldBe` True
-            is_cover (fromString "-") (fromString "-") `shouldBe` True
-            is_cover (fromString "0-1") (fromString "011") `shouldBe` True
-            is_cover (fromString "0-1") (fromString "001") `shouldBe` True
-            is_cover (fromString "0-1") (fromString "000") `shouldBe` False
-            is_cover (fromString "0-1") (fromString "101") `shouldBe` False
+    describe "fromString" $ do
+        it "converts 0 to 0" $ do
+            getTerm (fromString "0") `shouldBe` 0
+        it "converts 1 to 1" $
+            getTerm (fromString "1") `shouldBe` 1
+        it "converts 10 to 2" $
+            getTerm (fromString "10") `shouldBe` 2
+        it "converts 11 to 3" $
+            getTerm (fromString "11") `shouldBe` 3
 
     describe "compute_primes" $ do
         it "behaves as the python version" $ do
-            let test cubes vars expected = compute_primes False (Set.fromList $ map fromString cubes) vars `shouldBe` Set.fromList (map fromString expected)
-            test [] 0 []
-            test ["0"] 0 ["0"]
-            test ["0"] 1 ["0"]
-            test ["0"] 2 ["0"]
-            test ["1"] 0 []
-            test ["1"] 1 ["1"]
-            test ["1"] 2 ["1"]
-            test ["01"] 0 []
-            test ["01"] 1 ["01"]
-            test ["01"] 2 ["01"]
-            test ["010"] 0 []
-            test ["010"] 1 ["010"]
-            test ["010"] 2 ["010"]
-            test ["01", "10"] 0 []
-            test ["01", "10"] 1 ["01", "10"]
-            test ["01", "10"] 2 ["01", "10"]
-            test ["01", "1-"] 0 []
-            test ["01", "1-"] 1 ["01", "1-"]
-            test ["01", "1-"] 2 ["01", "1-"]
-            test ["01", "1-"] 3 ["01", "1-"]
+            let test cubes expected = compute_primes (Set.fromList cubes) `shouldBe` Set.fromList (map QmTerm expected)
+
+            test [] []
+            test [0] [(0, 0)]
+
+            test [] []
+            test [0] [(0, 0)]
+            test [1] [(1, 0)]
+            test [2] [(2, 0)]
+
+            test [] []
+            test [0] [(0, 0)]
+            test [1] [(1, 0)]
+            test [2] [(2, 0)]
+            test [3] [(3, 0)]
+            test [0,1] [(0, 1)]
+            test [1,2] [(2, 0), (1, 0)]
+            test [2,3] [(2, 1)]
+            test [3,4] [(3, 0), (4, 0)]
+            test [0,1,3] [(0, 1), (1, 2)]
+            test [1,2,4] [(2, 0), (1, 0), (4, 0)]
+            test [2,3,6] [(2, 4), (2, 1)]
+            test [3,4,8] [(3, 0), (8, 0), (4, 0)]
+
+            test [] []
+            test [0] [(0, 0)]
+            test [1] [(1, 0)]
+            test [2] [(2, 0)]
+            test [3] [(3, 0)]
+            test [0,1] [(0, 1)]
+            test [1,2] [(2, 0), (1, 0)]
+            test [2,3] [(2, 1)]
+            test [3,4] [(3, 0), (4, 0)]
+            test [0,1,3] [(0, 1), (1, 2)]
+            test [1,2,4] [(2, 0), (1, 0), (4, 0)]
+            test [2,3,6] [(2, 4), (2, 1)]
+            test [3,4,8] [(3, 0), (8, 0), (4, 0)]
+            test [0,1,3] [(0, 1), (1, 2)]
+            test [1,2,4,9] [(2, 0), (1, 8), (4, 0)]
+            test [2,3,6,13] [(2, 1), (2, 4), (13, 0)]
+            test [3,4,8,12] [(3, 0), (8, 4), (4, 8)]
+
 
     describe "qm" $ do
         it "behaves as the python version" $ do
@@ -112,51 +106,50 @@ spec = do
 
         it "doesn't simplify XOR (because it's impossible)" $ do
             let terms = map fromString ["01", "10"]
-            qm (map s2b terms) [] [] `shouldBe` terms
+            qm (map getTerm terms) [] [] `shouldBe` terms
 
-    describe "qmCnf" $ do
+    describe "qm" $ do
         it "doesn't simplify XOR (because it's impossible)" $ do
             let terms = map fromString ["11", "00"]
-            qmCnf (map s2b terms) [] [] `shouldBe` reverse terms
+            qm (map getTerm terms) [] [] `shouldBe` reverse terms
 
         it "simplifies a 1-variable CNF with redundancies" $ do
             let terms = map fromString ["0", "1"]
-            qmCnf (map s2b terms) [] [] `shouldBe` map fromString ["-"]
+            qm (map getTerm terms) [] [] `shouldBe` map fromString ["-"]
 
         it "simplifies a 2-variable CNF with redundancies" $ do
             let terms = map fromString ["10", "11"]
-            qmCnf (map s2b terms) [] [] `shouldBe` map fromString ["1-"]
+            qm (map getTerm terms) [] [] `shouldBe` map fromString ["1-"]
 
         it "simplifies a 3-variable CNF with redundancies" $ do
             let terms = map fromString ["1001", "1011"]
-            qmCnf (map s2b terms) [] [] `shouldBe` map fromString ["10-1"]
+            qm (map getTerm terms) [] [] `shouldBe` map fromString ["10-1"]
+
 
     describe "Example 1" $ do
         -- Youtube: pQ3MfzqGlrc
-        let numVars = 3
-        let terms = Set.fromList $ map fromString ["010", "100", "101", "110", "111"]
+        let terms = Set.fromList $ map (getTerm . fromString) ["010", "100", "101", "110", "111"]
 
         it "finds the correct primes" $ do
-            compute_primes False terms numVars `shouldBe` Set.fromList (map fromString ["-10", "1--"])
+            compute_primes terms `shouldBe` Set.fromList (map fromString ["-10", "1--"])
 
     describe "Example 2" $ do
         -- Youtube: pQ3MfzqGlrc
-        let numVars = 4
-        let terms = Set.fromList $ map fromString ["0000", "0001", "0010", "1000", "0011", "0101", "1010", "0111", "1110", "1111"]
+        let terms = Set.fromList $ map (getTerm . fromString) ["0000", "0001", "0010", "1000", "0011", "0101", "1010", "0111", "1110", "1111"]
 
         it "finds the correct primes" $ do
-            compute_primes False terms numVars `shouldBe` Set.fromList (map fromString ["1-10", "00--", "-111", "-0-0", "111-", "0--1"])
+            compute_primes terms `shouldBe` Set.fromList (map fromString ["1-10", "00--", "-111", "-0-0", "111-", "0--1"])
 
         it "finds the correct minimal subset of primes" $ do
-            qm (map s2b $ Set.toList terms) [] [] `shouldBe` map fromString ["-0-0", "0--1", "111-"]
+            qm (Set.toAscList terms) [] [] `shouldBe` map fromString ["-0-0", "0--1", "111-"]
 
     describe "Example 3" $ do
         -- Youtube: bkH0T3fArUI
-        let primes = Set.fromList $ map fromString ["0--0", "-1-0", "001-", "010-", "-011", "1-11", "111-"]
-        let terms = Set.fromList $ map fromString ["0010", "0101", "0110", "1011", "1100", "1110", "1111"]
+        let primes = map fromString ["0--0", "-1-0", "001-", "010-", "-011", "1-11", "111-"]
+        let terms = map getTerm $ map fromString ["0010", "0101", "0110", "1011", "1100", "1110", "1111"]
 
         it "finds the correct minimum cover" $ do
-            unate_cover primes terms `shouldBe` map fromString ["-1-0", "001-", "010-", "1-11"]
+            snd (unate_cover primes terms) `shouldBe` (Set.fromList $ map fromString ["-1-0", "001-", "010-", "1-11"])
 
     describe "2-Bit Multiplier" $ do
         -- http://research.ijcaonline.org/volume42/number4/pxc3877719.pdf
@@ -181,9 +174,9 @@ spec = do
                 "11" ++ "11" ++ "1001"
                 ]
         it "minimizes the DNF" $ do
-            qm (map s2b minterms) [] [] `shouldBe` map fromString [
-                "--000000",
+            qm (map getTerm minterms) [] [] `shouldBe` map fromString [
                 "00--0000",
+                "--000000",
                 "01010001",
                 "01100010",
                 "01110011",
@@ -194,5 +187,3 @@ spec = do
                 "11100110",
                 "11111001"
                 ]
-
-        

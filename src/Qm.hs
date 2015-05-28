@@ -1,100 +1,58 @@
-{-|
-Quine-McCluskey two-level logic minimization method.
-
-Copyright 2008, Robert Dick <dickrp@eecs.umich.edu> with improvements
-from Pat Maupin <pmaupin@gmail.com>.
-Ported from Python.
-
-Routines to compute the optimal sum of products implementation from sets of don't-care terms, minterms, and maxterms.
+module Qm where
 
 
-Library usage example:
-  import Qm(qm)
-  minterms = qm [1, 2, 5] [] [0, 7]
--}
-module Qm(qm,
-          qmCnf,
-          active_primes,
-          is_cover,
-          is_full_cover,
-          bitcount,
-          b2s,
-          s2b,
-          merge,
-          compute_primes,
-          unate_cover) where
-
-import QmTerm
-import Control.Exception(assert)
-import Data.List(find)
-import Data.Bits(shift)
 import qualified Data.Set as Set
-import qualified Data.Vector.Unboxed as U
+import qualified Data.IntSet as IntSet
+import qualified Data.IntMap.Strict as IntMap
+import qualified Data.Bits as B
+import Data.List(find)
+import Data.Word
+import Control.Exception(assert)
+import qualified Control.Monad.State.Strict as State
+import Control.Monad
 
 
-listOr :: [[a]] -> [a]
-listOr lists = case find (not . null) lists of
-    Nothing -> []
-    Just list -> list
+type BitVector = Word64
+newtype QmTerm = QmTerm (BitVector, BitVector)
+    deriving(Ord)
 
-setOr :: [Set.Set a] -> Set.Set a
-setOr sets = case find (not . Set.null) sets of
-    Nothing -> Set.empty
-    Just set -> set
+getTerm :: QmTerm -> BitVector
+getTerm (QmTerm (bv,_)) = bv
 
-integralLogBase :: (Integral a, Fractional b) => Int -> a -> b
-integralLogBase base number = realToFrac $ logBase (fromIntegral base) (fromIntegral number)
+getMask :: QmTerm -> BitVector
+getMask (QmTerm (_,mask)) = mask
 
-byteToBool :: QmTermEl -> Bool
-byteToBool (Just False) = False
-byteToBool _ = True
+getMaskedTerm :: QmTerm -> BitVector
+getMaskedTerm (QmTerm (term, mask)) = maskBitVector term mask
 
-qm :: [Int] -> [Int] -> [Int] -> [QmTerm]
-qm = runQm False
+maskBitVector :: BitVector -> BitVector -> BitVector
+maskBitVector bv mask = bv B..&. (B.complement mask)
 
-qmCnf :: [Int] -> [Int] -> [Int] -> [QmTerm]
-qmCnf = runQm True
+instance Eq QmTerm where
+    term1 == term2
+        | getMask term1 /= getMask term2 = False
+        | otherwise = getMaskedTerm term1 == getMaskedTerm term2
 
-runQm :: Bool -> [Int] -> [Int] -> [Int] -> [QmTerm]
-runQm _ [] [] _ = error "Must specify either (or both) ones and zeros"
-runQm cnfMode ones zeros dc =
-    let elts = maximum [maximum (listOr [ones, zeros, dc]),
-                        maximum (listOr [zeros, dc, ones]),
-                        maximum (listOr [dc, ones, zeros])] + 1
-        numvars = ceiling $ integralLogBase 2 elts
-        elts' = shift 1 numvars
-        all' = Set.fromList [b2s i numvars | i <- [0..elts'-1]]
-        ones' = Set.fromList [b2s i numvars | i <- ones]
-        zeros' = Set.fromList [b2s i numvars | i <- zeros]
-        dc' = Set.fromList [b2s i numvars | i <- dc]
-        ones'' = setOr [ones', Set.difference (Set.difference all' zeros') dc']
-        zeros'' = setOr [zeros', Set.difference (Set.difference all' ones'') dc']
-        dc'' = setOr [dc', Set.difference (Set.difference all' ones'') zeros'']
-        doAssert = assert $ Set.size dc'' + Set.size zeros'' + Set.size ones'' == elts'
-                         && Set.size (Set.unions [dc'', zeros'', ones'']) == elts'
-        primes = doAssert $ compute_primes cnfMode (Set.union ones'' dc'') numvars
-    in  unate_cover primes ones''
+instance Show QmTerm where
+    show (QmTerm (term, mask)) = map printBit $ reverse [0..B.finiteBitSize term - 1]
+        where printBit i = case B.testBit mask i of
+                True -> '-'
+                False -> if B.testBit term i then '1' else '0'
 
-unate_cover :: Set.Set QmTerm -> Set.Set QmTerm -> [QmTerm]
-unate_cover primes ones =
-    let primes' = Set.elems primes
-        cs = snd $ minimum [(bitcount True (b2s cubesel (length primes')), cubesel) | cubesel <- [0..shift 1 (length primes')], is_full_cover (active_primes cubesel primes') ones]
-    in  active_primes cs primes'
+fromString :: String -> QmTerm
+fromString = QmTerm . fst . (foldr parse ((0,0), 0))
+    where parse char ((term, mask), pos) = case char of
+            '0' -> ((term, mask), succ pos)
+            '1' -> ((B.setBit term pos, mask), succ pos)
+            '-' -> ((term, B.setBit mask pos), succ pos)
 
-active_primes :: Int -> [QmTerm] -> [QmTerm]
-active_primes cubesel primes = [prime | (used, prime) <- zip (U.toList $ U.map byteToBool term) primes, used]
-    where (QmTerm term) = b2s cubesel (length primes)
-
-is_full_cover :: [QmTerm] -> Set.Set QmTerm -> Bool
-is_full_cover all_primes ones = minimum (True : [maximum (False:[is_cover p o | p <- all_primes]) | o <- Set.toList ones])
-
-is_cover :: QmTerm -> QmTerm -> Bool
-is_cover (QmTerm prime) (QmTerm term) = minimum $ True : [p == dash || p == o | (p, o) <- U.toList $ U.zip prime term]
-
-compute_primes :: Bool -> Set.Set QmTerm -> Int -> Set.Set QmTerm
-compute_primes cnfMode cubes vars = primes
-    where termsOrderedByNumRelevantBits = [Set.fromList [i | i <- Set.toList cubes, bitcount (not cnfMode) i == v] | v <- [0..vars]]
-          (_, primes) = whileSigma (termsOrderedByNumRelevantBits, Set.empty)
+compute_primes :: Set.Set BitVector -> Set.Set QmTerm
+compute_primes cubes =
+    let sigma = Set.foldr insert IntMap.empty cubes
+        sigmaAsList = map snd (IntMap.toAscList sigma) :: [Set.Set QmTerm]
+        insert cube sigma' = IntMap.insertWith Set.union (bitcount True cube) (Set.singleton $ QmTerm (cube, 0::BitVector)) sigma'
+        (_, primes) = whileSigma (sigmaAsList, Set.empty)
+    in primes
 
 whileSigma :: ([Set.Set QmTerm], Set.Set QmTerm) -> ([Set.Set QmTerm], Set.Set QmTerm)
 whileSigma ([], primes) = ([], primes)
@@ -119,3 +77,97 @@ forAInC1BInC2 c1 c2 =
             Nothing -> (nc', redundant')
             Just m -> (Set.insert m nc', foldr Set.insert redundant' [a,b])
     in  (nc, redundant)
+
+bitcount :: B.Bits a => Bool -- ^ 'True' to count 1s, 'False' to count 0s.
+         -> a
+         -> Int
+bitcount True = B.popCount
+bitcount False = bitcount True . B.complement
+
+merge :: QmTerm -> QmTerm -> Maybe QmTerm
+merge i j
+    | getMask i /= getMask j = Nothing -- Masks have to be the same
+    | B.popCount y > 1 = Nothing -- There may be at most one difference between i and j
+    | otherwise = Just $ QmTerm (getTerm i B..&. getTerm j, getMask i B..|. y)
+    where y = getTerm i `B.xor` getTerm j -- All positions where i and j are different
+
+type UnateCoverState = ([IntSet.IntSet], [IntSet.IntSet])
+
+unate_cover :: [QmTerm] -> [BitVector] -> (Int, Set.Set QmTerm)
+unate_cover primes ones =
+    let chart = [[i | (i,prime) <- zip [0..] primes, primeCoversOne prime one] | one <- ones] :: [[Int]]
+        (covers,chartRest) = if length chart > 0
+            then (map IntSet.singleton (head chart), tail chart)
+            else ([], [])
+        (covers',_) = flip State.execState (covers, []) $ do
+            forM_ chartRest $ \column -> do
+                covers <- fmap fst State.get
+                forM_ covers $ \cover ->
+                    forM_ column $ \prime_index ->
+                        State.modify $ updateNewCovers prime_index cover
+                State.modify migrateNewCovers
+
+    in minimize_complexity primes covers'
+
+primeCoversOne :: QmTerm -> BitVector -> Bool
+primeCoversOne prime one = QmTerm (one, getMask prime) == prime
+
+migrateNewCovers :: UnateCoverState -> UnateCoverState
+migrateNewCovers (_, new_covers) = (new_covers, [])
+
+updateNewCovers :: Int -> IntSet.IntSet -> UnateCoverState -> UnateCoverState
+updateNewCovers prime_index cover (covers, new_covers) =
+    let x = IntSet.insert prime_index cover
+        new_covers' = filter (`IntSet.isProperSubsetOf` x) new_covers
+        append = all (x `IntSet.isSubsetOf`) new_covers'
+    in (covers, if append then x:new_covers' else new_covers')
+
+minimize_complexity :: [QmTerm] -> [IntSet.IntSet] -> (Int, Set.Set QmTerm)
+minimize_complexity primes covers =
+    let mappedPrimes = IntMap.fromList $ zip [0..] primes
+        primeSet = Set.fromList primes
+        forEachCover cover (min_complexity, result) =
+            let primes_in_cover = IntSet.foldr (\int rest -> Set.insert (mappedPrimes IntMap.! int) rest) Set.empty cover
+                complexity = calculate_complexity primes_in_cover
+            in if complexity <= min_complexity then (complexity, primes_in_cover) else (min_complexity, result)
+    in foldr forEachCover (calculate_complexity primeSet, primeSet) covers
+
+-- | Counts the number of unmasked positions in each 'QmTerm', and returns the sum over all of them. So the result is the number of literals in the resulting CNF/DNF.
+calculate_complexity :: Set.Set QmTerm -> Int
+calculate_complexity primes = sum $ Set.map (bitcount False . getMask) primes
+
+
+listOr :: [[a]] -> [a]
+listOr lists = case find (not . null) lists of
+    Nothing -> []
+    Just list -> list
+
+setOr :: [Set.Set a] -> Set.Set a
+setOr sets = case find (not . Set.null) sets of
+    Nothing -> Set.empty
+    Just set -> set
+
+integralLogBase :: (Integral a, Fractional b) => Int -> a -> b
+integralLogBase base number = realToFrac $ logBase (fromIntegral base) (fromIntegral number)
+
+qm :: [BitVector] -> [BitVector] -> [BitVector] -> [QmTerm]
+qm [] [] _ = error "Must specify either (or both) ones and zeros"
+qm ones zeros dc =
+    let 
+        ones' = Set.fromList ones
+        zeros' = Set.fromList zeros
+        dc' = Set.fromList dc
+        elts = maximum [Set.findMax (setOr [ones', zeros', dc']),
+                        Set.findMax (setOr [zeros', dc', ones']),
+                        Set.findMax (setOr [dc', ones', zeros'])] + 1
+        numvars = ceiling $ integralLogBase 2 elts :: Int
+        elts' = B.shift 1 numvars :: Int
+        all' = Set.fromList $ map fromIntegral [0..elts'-1]
+        ones'' = setOr [ones', Set.difference (Set.difference all' zeros') dc']
+        zeros'' = setOr [zeros', Set.difference (Set.difference all' ones'') dc']
+        dc'' = setOr [dc', Set.difference (Set.difference all' ones'') zeros'']
+        doAssert = assert $ Set.size dc'' + Set.size zeros'' + Set.size ones'' == elts'
+                         && Set.size (Set.unions [dc'', zeros'', ones'']) == elts'
+        primes = doAssert $ compute_primes (Set.union ones'' dc'')
+    in Set.toAscList $ snd $ unate_cover (Set.toAscList primes) (Set.toAscList ones'')
+

@@ -5,7 +5,7 @@ import Formula
 import NormalForm
 import qualified Data.Vector.Unboxed as U
 import qualified Data.Bits as B
-import Qm2
+import Qm
 
 type QmTermEl = Maybe Bool
 

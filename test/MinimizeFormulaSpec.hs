@@ -8,8 +8,8 @@ import Formula
 import FormulaSpec
 import NormalForm
 import NormalFormSpec
-import Qm2
-import Qm2Spec
+import Qm
+import QmSpec
 
 spec :: Spec
 spec = do
