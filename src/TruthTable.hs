@@ -20,7 +20,8 @@ module TruthTable (
     getOutput,
     setOutput,
     setOutputs,
-    isValidAssignment
+    isValidAssignment,
+    truthTableDiff
 ) where
 
 import qualified Data.Vector.Unboxed as V
@@ -165,3 +166,6 @@ isValidAssignment (Assignment index) (TruthTable outputColumn) = index < V.lengt
 
 printIndexError :: Int -> Int -> String
 printIndexError index len = printf "Index out of range: %d >= %d" index len
+
+truthTableDiff :: TruthTable -> TruthTable -> String
+truthTableDiff (TruthTable vec1) (TruthTable vec2) = unlines $ V.ifoldr (\index (row1,row2) list -> if row1 /= row2 then show index : list else list) [] (V.zip vec1 vec2)
