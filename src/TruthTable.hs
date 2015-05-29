@@ -14,6 +14,8 @@ module TruthTable (
     getVariable,
     TruthTable,
     emptyTable,
+    allTrueTable,
+    allFalseTable,
     numVariablesInTable,
     getOutput,
     setOutput,
@@ -122,12 +124,17 @@ renderRow rowIndex outputValue = show (assignments!!rowIndex) ++ " " ++ renderOu
             Just False -> "0"
             Nothing -> "-"
 
--- | Creates a 'TruthTable' for a given number of 'Variable's. All outputs are initially set to 'Nothing' (don't care).
-emptyTable :: Int -- ^ The number of 'Variable's used as input for the table. Has to be <= 'maxNumVariables'. The table size will be 2^thisValue.
-           -> TruthTable
-emptyTable numVariables
-    | numVariables <= maxNumVariables = TruthTable $ V.replicate (2^numVariables) Nothing
+createTable :: Int
+            -> Maybe Bool
+            -> TruthTable
+createTable numVariables initValue
+    | numVariables <= maxNumVariables = TruthTable $ V.replicate (2^numVariables) initValue
     | otherwise = error $ "Can't create TruthTable with too many variables (" ++ show numVariables ++ ")"
+
+emptyTable, allTrueTable, allFalseTable :: Int -> TruthTable
+emptyTable numVariables = createTable numVariables Nothing
+allTrueTable numVariables = createTable numVariables (Just True)
+allFalseTable numVariables = createTable numVariables (Just False)
 
 -- | The number of variables a given 'TruthTable' can hold.
 numVariablesInTable :: TruthTable -> Int
