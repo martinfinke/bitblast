@@ -81,3 +81,22 @@ spec = do
             let t1 = setOutputs outputValues empty
             getOutput allFalse t1 `shouldBe` Just True
             getOutput (setVariable (var 0) True allFalse) t1 `shouldBe` Just False
+
+    describe "assignmentFromString" $ do
+        it "is allFalse for the empty string" $ do
+            assignmentFromString "" `shouldBe` allFalse
+
+        it "is allFalse for a string with one zero" $ do
+            assignmentFromString "0" `shouldBe` allFalse
+
+        it "sets var 0 to True if the first number is 1" $ do
+            let assignment = assignmentFromString "1"
+            getVariable (var 0) assignment `shouldBe` True
+
+        it "sets var 1 to True if the second number from the right is 1" $ do
+            let assignment = assignmentFromString "10"
+            getVariable (var 1) assignment `shouldBe` True
+
+        it "is inverse to show" $ do
+            property $ \assignment -> (assignmentFromString . show) assignment `shouldBe` assignment
+            

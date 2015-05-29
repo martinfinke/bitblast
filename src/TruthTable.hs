@@ -6,6 +6,7 @@ module TruthTable (
     maxNumVariables,
     var,
     Assignment,
+    assignmentFromString,
     allFalse,
     allTrue,
     setVariable,
@@ -23,7 +24,7 @@ module TruthTable (
 import qualified Data.Vector.Unboxed as V
 import qualified Data.Bits as B
 import Numeric (showIntAtBase)
-import Data.Char (intToDigit)
+import Data.Char (intToDigit, digitToInt)
 import Text.Printf (printf)
 import UnboxMaybe
 
@@ -74,6 +75,13 @@ allFalse, allTrue :: Assignment
 allFalse = Assignment B.zeroBits
 -- | An 'Assignment' with every 'Variable' set to true.
 allTrue = setVariables (zip [minBound..maxBound::Variable] (repeat True)) allFalse
+
+assignmentFromString :: String -> Assignment
+assignmentFromString string = setVariables (zip variables booleans) allFalse
+    where booleans = map parseBool (reverse string)
+          variables = map var [0..]
+          parseBool char = if char == '0' then False else True
+
 
 -- | Sets a single 'Variable' in an 'Assignment' to 'True' or 'False'.
 setVariable :: Variable -- ^ The 'Variable' to set
