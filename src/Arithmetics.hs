@@ -31,3 +31,8 @@ summerSegment (x:xs) (y:ys)
     | otherwise = (s:sums, cOut)
     where (s,cOut) = fullAdderSegment (x,y) finalC
           (sums,finalC) = summerSegment xs ys
+
+summer :: [Formula] -> [Formula] -> Formula -> [Formula] -> Formula
+summer xs ys cOut sums = And $ Equiv [cOut,cOut'] : sumEquivs
+    where (sums', cOut') = summerSegment xs ys
+          sumEquivs = map (\(s,s') -> Equiv [s, s']) $ zip sums' sums

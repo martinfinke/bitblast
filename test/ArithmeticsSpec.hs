@@ -54,8 +54,9 @@ spec = do
 
         it "has the correct truth table for 2 bits" $ do
             let [x1,x0,y1,y0,s1,s0,cOut] = reverse $ map (Atom . var) [0..6]
-            let summerSeg@([s1',s0'], cOut') = summerSegment [x1,x0] [y1,y0]
+            let ([s1',s0'], cOut') = summerSegment [x1,x0] [y1,y0]
             let equiv = And [Equiv [s1, s1'], Equiv [s0, s0'], Equiv [cOut, cOut']]
+            let smer = summer [x1,x0] [y1,y0] cOut [s1,s0]
             let trueAssignments = map assignmentFromString [
                     "0000000",
                     "0001010",
@@ -74,7 +75,9 @@ spec = do
                     "1110011",
                     "1111101"
                     ]
-            traceShow summerSeg $ toTruthTable equiv `shouldBe` trueOnlyForAssignments trueAssignments 7
+            toTruthTable equiv `shouldBe` trueOnlyForAssignments trueAssignments 7
+            toTruthTable smer `shouldBe` trueOnlyForAssignments trueAssignments 7
+
 
         --it "has the correct truth table for 4 bits" $ do
             -- http://www.pradipyadav.com/2012/08/objective-to-design-and-implement-of-4.html
