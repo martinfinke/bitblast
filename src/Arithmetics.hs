@@ -23,7 +23,13 @@ fullAdder :: (Formula,Formula) -> (Formula,Formula) -> Formula -> Formula
 fullAdder (x,y) (cIn,cOut) s = And [Equiv [s, s'], Equiv [cOut, cOut']]
     where (s',cOut') = fullAdderSegment (x,y) cIn
 
-
+summerSegment :: [Formula] -> [Formula] -> Formula -> ([Formula], Formula)
+summerSegment [] [] cIn = ([], cIn)
+summerSegment (x:xs) (y:ys) cIn
+    | length xs /= length ys = error "The input bit vectors must have the same width."
+    | otherwise = (s:sums, cOut)
+    where (s,cOut') = fullAdderSegment (x,y) cIn
+          (sums, cOut) = summerSegment xs ys cOut'
 
 
 

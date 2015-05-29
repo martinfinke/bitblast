@@ -44,14 +44,13 @@ spec = do
             let fa = fullAdder (x,y) (cIn,cOut) s
             toTruthTable connectedOutputs `shouldBe` toTruthTable fa
 
-    describe "summer" $ do
-        it "does" $ do
-            pending
-        --it "is equivalent to a fullAdder for 1 bit" $ do
-        --    let [s,cOut,cIn,y,x] = map (Atom . var) [0..4]
-        --    let fa = fullAdder (x,y) (cIn,cOut) s
-        --    let smer = summer [x] [y] (cIn,cOut) [s]
-        --    toTruthTable smer `shouldBe` toTruthTable fa
+    describe "summerSegment" $ do
+        it "is equivalent to a fullAdderSegment for 1 bit" $ do
+            let [cIn,y,x] = map (Atom . var) [0..2]
+            let (s', cOut') = fullAdderSegment (x,y) cIn
+            let (s'', cOut'') = summerSegment [x] [y] cIn
+            let equiv = And [Equiv [s', head s''], Equiv [cOut', cOut'']]
+            toTruthTable equiv `shouldBe` allTrueTable 3
 
         --it "has the correct truth table for 2 bits" $ do
         --    let [x1,x0,y1,y0,cIn,cOut,s1,s0] = reverse $ map (Atom . var) [0..7]
