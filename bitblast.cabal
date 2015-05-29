@@ -37,7 +37,7 @@ cabal-version:       >=1.10
 
 
 library
-  exposed-modules:     TruthTable, Formula, NormalForm, QuineMcCluskey
+  exposed-modules:     Arithmetics, Formula, MinimizeFormula, NormalForm, TruthTable
   
   -- Modules included in this library but not exported.
   -- other-modules:       
