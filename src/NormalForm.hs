@@ -16,11 +16,14 @@ module NormalForm (Canonical,
                    isLiteral,
                    isPositiveLiteral,
                    normalFormChildren,
-                   termLiterals) where
+                   termLiterals,
+                   getStats,
+                   FormulaStats(..)) where
 
 import Formula
 import TruthTable (Variable, Assignment, getVariable, getOutput)
 import qualified Data.Set as Set
+import Text.Printf(printf)
 
 -- | This type wraps a 'Formula' that is (or has been converted to) a canonical CNF or DNF. The only way to create a 'Canonical' value is through the 'ensureCanonical' \/ 'toCanonicalCnf' \/ 'toCanonicalDnf' functions.
 data Canonical = CNF Formula
@@ -126,3 +129,16 @@ normalFormChildren invalidFormula = error $ "Not a normal form: " ++ show invali
 -- | The 'Set' of literals of a term
 termLiterals :: Formula -> Set.Set Formula
 termLiterals = Set.fromList . normalFormChildren
+
+data FormulaStats = FormulaStats {numClauses::Int, numLiterals::Int}
+    deriving(Eq)
+
+instance Show FormulaStats where
+    show (FormulaStats {numClauses=clauses, numLiterals=literals}) = printf "(%d,%d) (clauses/literals)" clauses literals
+
+getStats :: Formula -> FormulaStats
+getStats f
+    | isCnf f || isDnf f = FormulaStats {numClauses=length clauses,numLiterals=length literals}
+    | otherwise = error "getStats needs a CNF or DNF."
+    where clauses = normalFormChildren f
+          literals = concatMap normalFormChildren clauses

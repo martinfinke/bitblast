@@ -1,4 +1,4 @@
-module NormalFormSpec where
+module NormalFormSpec(NormalFormSpec.spec) where
 
 import SpecHelper
 import TruthTable(var, allFalse, allTrue)
@@ -124,3 +124,15 @@ spec = do
             property $ \formula ->
                 let canonical = getFormula $ ensureCanonical formula
                 in isCanonical canonical `shouldBe` True
+
+    describe "getStats" $ do
+        let clauses </> literals = FormulaStats {numClauses=clauses,numLiterals=literals}
+        it "returns 0 clauses and 0 literals for an empty CNF" $ do
+            getStats (And []) `shouldBe` 0 </> 0
+        it "returns 1 clause and 0 literals for a CNF with one empty clause" $ do
+            getStats (And [Or []]) `shouldBe` 1 </> 0
+        it "returns 1 clause and 1 literal for a CNF with one clause containing one literal" $ do
+            getStats (And [Or [Atom $ var 0]]) `shouldBe` 1 </> 1
+
+        it "returns 2 clauses and 3 literals for a CNF where one variable appears 3 times in 2 clauses" $ do
+            getStats (And [Or [Atom $ var 0], Or [Not $ Atom (var 0), Atom (var 0)]]) `shouldBe` 2 </> 3
