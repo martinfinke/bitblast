@@ -23,27 +23,11 @@ fullAdder :: (Formula,Formula) -> (Formula,Formula) -> Formula -> Formula
 fullAdder (x,y) (cIn,cOut) s = And [Equiv [s, s'], Equiv [cOut, cOut']]
     where (s',cOut') = fullAdderSegment (x,y) cIn
 
-summerSegment :: [Formula] -> [Formula] -> Formula -> ([Formula], Formula)
-summerSegment [] [] cIn = ([], cIn)
-summerSegment (x:xs) (y:ys) cIn
+summerSegment :: [Formula] -> [Formula] -> ([Formula], Formula)
+summerSegment (x:[]) (y:[]) = ([s], cOut)
+    where (s,cOut) = halfAdderSegment (x,y)
+summerSegment (x:xs) (y:ys)
     | length xs /= length ys = error "The input bit vectors must have the same width."
     | otherwise = (s:sums, cOut)
-    where (s,cOut') = fullAdderSegment (x,y) cIn
-          (sums, cOut) = summerSegment xs ys cOut'
-
-
-
---makeSum :: (Formula,Formula,Formula) -> Formula
---makeSum (x,y,c) = Xor [x, y, c]
-
---calcCs :: (Formula, Formula) -> (Formula, [Formula]) -> (Formula, [Formula])
---calcCs (x,y) (lastC, accum) =
---    let current = Or [And [y, lastC], And [x, lastC], And [x, y]]
---    in (current, current:accum)
-
---summer :: [Formula] -> [Formula] -> (Formula, Formula) -> [Formula] -> Formula
---summer xs ys (cIn,cOut) sums =
---    let (cOut', cs) = foldr calcCs (cIn, cIn:[]) (zip xs ys)
---        sums' = map makeSum (zip3 xs ys $ tail cs)
---        sumsAreEqual = zipWith (\s1 s2 -> Equiv [s1, s2]) sums sums'
---    in And $ Equiv [cOut, cOut'] : sumsAreEqual
+    where (s,cOut) = fullAdderSegment (x,y) finalC
+          (sums,finalC) = summerSegment xs ys

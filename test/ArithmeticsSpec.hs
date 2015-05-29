@@ -46,40 +46,35 @@ spec = do
 
     describe "summerSegment" $ do
         it "is equivalent to a fullAdderSegment for 1 bit" $ do
-            let [cIn,y,x] = map (Atom . var) [0..2]
-            let (s', cOut') = fullAdderSegment (x,y) cIn
-            let (s'', cOut'') = summerSegment [x] [y] cIn
+            let [y,x] = map (Atom . var) [0,1]
+            let (s', cOut') = halfAdderSegment (x,y)
+            let (s'', cOut'') = summerSegment [x] [y]
             let equiv = And [Equiv [s', head s''], Equiv [cOut', cOut'']]
-            toTruthTable equiv `shouldBe` allTrueTable 3
+            toTruthTable equiv `shouldBe` allTrueTable 2
 
-        --it "has the correct truth table for 2 bits" $ do
-        --    let [x1,x0,y1,y0,cIn,cOut,s1,s0] = reverse $ map (Atom . var) [0..7]
-        --    let smer = summer [x1,x0] [y1,y0] (cIn,cOut) [s1,s0]
-        --    let trueAssignments = map assignmentFromString [
-        --            "00000000",
-        --            "00001001",
-        --            "00010001",
-        --            "00011010",
-        --            "00100010",
-        --            "11010100",
-        --            "11011101",
-        --            "11100101",
-        --            "11101110",
-        --            "11110110",
-        --            "11111111"
-        --            ]
-        --    let tt1 = toTruthTable smer 
-        --    let tt2 = trueOnlyForAssignments trueAssignments 8
-        --    let diff = truthTableDiff tt1 tt2
-        --    let expectedFormula = And [
-        --            Equiv [cOut, Or [And [y1, Or [And [y0, cIn], And [x0, cIn], And [x0, y0]]],
-        --                             And [x1, Or [And [y0, cIn], And [x0, cIn], And [x0, y0]]],
-        --                             And [x1, y1]]],
-        --            Equiv [s1, Xor [x1, y1, Or [And [y0, cIn], And [x0, cIn], And [x0, y0]]]],
-        --            Equiv [s0, Xor [x0, y0, cIn]]
-        --            ]
-        --    smer `shouldBe` expectedFormula
-        --    traceShow diff $ toTruthTable smer `shouldBe` trueOnlyForAssignments trueAssignments 8
+        it "has the correct truth table for 2 bits" $ do
+            let [x1,x0,y1,y0,s1,s0,cOut] = reverse $ map (Atom . var) [0..6]
+            let summerSeg@([s1',s0'], cOut') = summerSegment [x1,x0] [y1,y0]
+            let equiv = And [Equiv [s1, s1'], Equiv [s0, s0'], Equiv [cOut, cOut']]
+            let trueAssignments = map assignmentFromString [
+                    "0000000",
+                    "0001010",
+                    "0010100",
+                    "0011110",
+                    "0100010",
+                    "0101100",
+                    "0110110",
+                    "0111001",
+                    "1000100",
+                    "1001110",
+                    "1010001",
+                    "1011011",
+                    "1100110",
+                    "1101001",
+                    "1110011",
+                    "1111101"
+                    ]
+            traceShow summerSeg $ toTruthTable equiv `shouldBe` trueOnlyForAssignments trueAssignments 7
 
         --it "has the correct truth table for 4 bits" $ do
             -- http://www.pradipyadav.com/2012/08/objective-to-design-and-implement-of-4.html
