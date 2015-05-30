@@ -79,6 +79,25 @@ spec = do
             toTruthTable smer `shouldBe` trueOnlyForAssignments trueAssignments 7
 
     describe "summer" $ do
+        it "has the correct truth table for 1 bit" $ do
+            let [x,y,s] = reverse $ map (Atom . var) [0..2]
+            let dontCare = summer DontCare [x] [y] [s]
+            let dontCareAssignments = map assignmentFromString [
+                    "000",
+                    "011",
+                    "101",
+                    "110"
+                    ]
+            toTruthTable dontCare `shouldBe` trueOnlyForAssignments dontCareAssignments 3
+            let forbid = summer Forbid [x] [y] [s]
+            let forbidAssigments = map assignmentFromString [
+                    "000",
+                    "011",
+                    "101"
+                    ]
+            toTruthTable forbid `shouldBe` trueOnlyForAssignments forbidAssigments 3
+            
+
         it "has the correct truth table for 3 bits" $ do
             let [x2,x1,x0,y2,y1,y0,cOut,s2,s1,s0] = reverse $ map (Atom . var) [0..9]
             let trueAssignments = map assignmentFromString [
