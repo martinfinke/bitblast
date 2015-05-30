@@ -156,3 +156,49 @@ spec = do
                     ]
             let smer = summer (Connect cOut) [x2,x1,x0] [y2,y1,y0] [s2,s1,s0]
             toTruthTable smer `shouldBe` trueOnlyForAssignments trueAssignments 10
+
+        it "can forbid overflow" $ do
+            let [x1,x0,y1,y0,s1,s0] = reverse $ map (Atom . var) [0..5]
+            let ([s1',s0'], cOut') = summerSegment [x1,x0] [y1,y0]
+            let equiv = And [Equiv [s1, s1'], Equiv [s0, s0'], Not cOut']
+            let smer = summer Forbid [x1,x0] [y1,y0] [s1,s0]
+            let trueAssignments = map assignmentFromString [
+                    "000000",
+                    "000101",
+                    "001010",
+                    "001111",
+                    "010001",
+                    "010110",
+                    "011011",
+                    "100010",
+                    "100111",
+                    "110011"
+                    ]
+            toTruthTable equiv `shouldBe` trueOnlyForAssignments trueAssignments 6
+            toTruthTable smer `shouldBe` trueOnlyForAssignments trueAssignments 6
+
+        it "can not care about overflow" $ do
+            let [x1,x0,y1,y0,s1,s0] = reverse $ map (Atom . var) [0..5]
+            let ([s1',s0'], _) = summerSegment [x1,x0] [y1,y0]
+            let equiv = And [Equiv [s1, s1'], Equiv [s0, s0']]
+            let smer = summer DontCare [x1,x0] [y1,y0] [s1,s0]
+            let trueAssignments = map assignmentFromString [
+                    "000000",
+                    "000101",
+                    "001010",
+                    "001111",
+                    "010001",
+                    "010110",
+                    "011011",
+                    "011100",
+                    "100010",
+                    "100111",
+                    "101000",
+                    "101101",
+                    "110011",
+                    "110100",
+                    "111001",
+                    "111110"
+                    ]
+            toTruthTable equiv `shouldBe` trueOnlyForAssignments trueAssignments 6
+            toTruthTable smer `shouldBe` trueOnlyForAssignments trueAssignments 6
