@@ -32,7 +32,13 @@ summerSegment (x:xs) (y:ys)
     where (s,cOut) = fullAdderSegment (x,y) finalC
           (sums,finalC) = summerSegment xs ys
 
-summer :: [Formula] -> [Formula] -> Formula -> [Formula] -> Formula
-summer xs ys cOut sums = And $ Equiv [cOut,cOut'] : sumEquivs
+summer :: OverflowMode -> [Formula] -> [Formula] -> [Formula] -> Formula
+summer overflowMode xs ys sums = And $ overflowFormula ++ sumEquivs
     where (sums', cOut') = summerSegment xs ys
+          overflowFormula = case overflowMode of
+                Forbid -> [Not cOut']
+                DontCare -> []
+                Connect cOut -> [Equiv [cOut,cOut']]
           sumEquivs = map (\(s,s') -> Equiv [s, s']) $ zip sums' sums
+
+data OverflowMode = Forbid | DontCare | Connect Formula

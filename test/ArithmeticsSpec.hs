@@ -56,7 +56,7 @@ spec = do
             let [x1,x0,y1,y0,s1,s0,cOut] = reverse $ map (Atom . var) [0..6]
             let ([s1',s0'], cOut') = summerSegment [x1,x0] [y1,y0]
             let equiv = And [Equiv [s1, s1'], Equiv [s0, s0'], Equiv [cOut, cOut']]
-            let smer = summer [x1,x0] [y1,y0] cOut [s1,s0]
+            let smer = summer (Connect cOut) [x1,x0] [y1,y0] [s1,s0]
             let trueAssignments = map assignmentFromString [
                     "0000000",
                     "0001010",
@@ -154,5 +154,5 @@ spec = do
                     "111" ++ "110" ++ "1" ++ "101",
                     "111" ++ "111" ++ "1" ++ "110"
                     ]
-            let smer = summer [x2,x1,x0] [y2,y1,y0] cOut [s2,s1,s0]
+            let smer = summer (Connect cOut) [x2,x1,x0] [y2,y1,y0] [s2,s1,s0]
             toTruthTable smer `shouldBe` trueOnlyForAssignments trueAssignments 10
