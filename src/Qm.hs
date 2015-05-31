@@ -12,9 +12,12 @@ module Qm(
           fromString,
           printAsNumbers,
           qm,
+          prepareInput,
           compute_primes,
           calculate_complexity,
+          prepareCovers,
           invertedNumvarsMask,
+          minimize_complexity,
           bitcount,
           merge,
           unate_cover
@@ -23,12 +26,12 @@ module Qm(
 
 import qualified Data.Set as Set
 import qualified Data.IntSet as IntSet
-import qualified Data.IntMap.Strict as IntMap
+import qualified Data.IntMap.Lazy as IntMap
 import qualified Data.Bits as B
 import Data.List(find)
 import Data.Word(Word64)
 import Control.Exception(assert)
-import qualified Control.Monad.Trans.State.Strict as State
+import qualified Control.Monad.Trans.State.Lazy as State
 import Control.Monad(forM_)
 import Debug.Trace(traceShow)
 
@@ -83,6 +86,12 @@ qm :: [BitVector] -- ^ Ones, i.e. the set of min/maxterms that must be covered.
    -> [QmTerm] -- ^ The minimum set of prime terms, covering all ones.
 qm [] [] _ = error "Must specify either (or both) ones and zeros"
 qm ones zeros dc =
+    let (numvars, ones', dc') = prepareInput ones zeros dc
+        primes = compute_primes (Set.union ones' dc')
+    in Set.toAscList $ snd $ unate_cover numvars (Set.toList primes) (Set.toAscList ones')
+
+prepareInput :: [BitVector] -> [BitVector] -> [BitVector] -> (Int, Set.Set BitVector, Set.Set BitVector)
+prepareInput ones zeros dc =
     let 
         ones' = Set.fromList ones
         zeros' = Set.fromList zeros
@@ -98,8 +107,8 @@ qm ones zeros dc =
         dc'' = setOr [dc', Set.difference (Set.difference all' ones'') zeros'']
         doAssert = assert $ Set.size dc'' + Set.size zeros'' + Set.size ones'' == elts'
                          && Set.size (Set.unions [dc'', zeros'', ones'']) == elts'
-        primes = doAssert $ compute_primes (Set.union ones'' dc'')
-    in Set.toAscList $ snd $ unate_cover numvars (Set.toList primes) (Set.toAscList ones'')
+    in doAssert (numvars, ones'', dc'')
+
 
 -- | Calculates the (generally not minimum) set of prime terms covering a set of min/maxterms.
 compute_primes :: Set.Set BitVector -- ^ Min/maxterms that must be covered.
@@ -160,9 +169,13 @@ unate_cover :: Int -- ^ Number of variables
             -> [BitVector] -- ^ Min/maxterms that must be covered
             -> (Int, Set.Set QmTerm) -- ^ The minimum subset of primes.
 unate_cover numvars primes ones =
+    let finalCovers = prepareCovers primes ones
+    in minimize_complexity numvars primes finalCovers
+
+prepareCovers :: [QmTerm] -> [BitVector] -> [IntSet.IntSet]
+prepareCovers primes ones =
     let chart = [[i | (i,prime) <- zip [0..] primes, primeCoversOne prime one] | one <- ones] :: [[Int]]
         -- chart is the same as in Python.
-
         (initialCovers,chartRest) = if length chart > 0
             then (map IntSet.singleton (head chart), tail chart)
             else ([], [])
@@ -173,8 +186,7 @@ unate_cover numvars primes ones =
                     forM_ column $ \prime_index ->
                         State.modify $ updateNewCovers prime_index cover
                 State.modify migrateNewCovers
-
-    in minimize_complexity numvars primes finalCovers
+    in finalCovers
 
 primeCoversOne :: QmTerm -> BitVector -> Bool
 primeCoversOne prime one = (one B..&. (B.complement $ getMask prime)) == getTerm prime
@@ -187,7 +199,8 @@ updateNewCovers prime_index cover (covers, new_covers) =
     let x = IntSet.insert prime_index cover
         new_covers' = filter (\new_cover -> not $ x `IntSet.isSubsetOf` new_cover) new_covers
         append = all (\new_cover -> not $ new_cover `IntSet.isProperSubsetOf` x) new_covers'
-    in (covers, if append then x:new_covers' else new_covers')
+        new_covers'' = if append then x:new_covers' else new_covers'
+    in (covers, new_covers'')
 
 minimize_complexity :: Int -> [QmTerm] -> [IntSet.IntSet] -> (Int, Set.Set QmTerm)
 minimize_complexity numvars primes covers =
