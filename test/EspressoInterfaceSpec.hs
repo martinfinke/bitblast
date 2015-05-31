@@ -2,7 +2,7 @@ module EspressoInterfaceSpec where
 
 import SpecHelper
 import EspressoInterface
-import Qm(fromString, getTerm)
+import Qm
 
 spec :: Spec
 spec = do

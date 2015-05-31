@@ -19,6 +19,7 @@ module Qm(
           invertedNumvarsMask,
           minimize_complexity,
           bitcount,
+          primeCoversOne,
           merge,
           unate_cover
           ) where
