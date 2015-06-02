@@ -13,6 +13,7 @@ import Text.Printf(printf)
 import Control.Monad(forM_)
 import qualified Data.Set as Set
 
+-- TODO: This shouldn't be used anymore (introducing its own variables)
 nBitAddition :: OverflowMode -> Int -> (Formula,[Variable])
 nBitAddition overflowMode numBits =
     -- Variable ordering is [x2,x1,x0] + [x5,x4,x3] = [x8,x7,x6]

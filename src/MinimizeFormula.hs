@@ -3,7 +3,7 @@ module MinimizeFormula where
 import Variable
 import Formula
 import NormalForm
-import qualified Data.Vector.Unboxed as U
+import qualified Data.Set as Set
 import qualified Data.Bits as B
 import Qm
 
@@ -30,7 +30,7 @@ canonicalToBitVectors positionMapping canonical = concatMap (termToBitVectors po
     where terms = normalFormChildren formula
           formula = getFormula canonical
 
--- TODO: Test
+-- TODO: Get rid of this one
 termToBitVectors :: [Variable] -> Formula -> [BitVector]
 termToBitVectors positionMapping term = convertDashes $ foldr setBitForVariable emptyTerm variablesWithPositions
     where emptyTerm = (QmTerm (0,0))
@@ -77,6 +77,7 @@ qmTermsToFormula cnfMode positionMapping qmTerms =
 -- B.setBit 0 sets the least significant bit, so the one on the right.
 -- So we have to reverse the positionMapping here and in termToBitVectors.
 
+-- TODO: Get rid of this one
 -- | Converts a 'QmcTerm' back to a minterm (for DNFs) or maxterm (for CNFs). 
 qmTermToTerm :: Bool -- ^ 'True' for CNF, 'False' for DNF. If true, the terms are inverted.
              -> [Variable] -- ^ The Position Mapping
@@ -89,3 +90,26 @@ qmTermToTerm cnfMode positionMapping (QmTerm (term,mask)) = op $ foldr translate
                 | B.testBit mask i = restLiterals
                 | otherwise = invertIfCnf variable (B.testBit term i) : restLiterals
           invertIfCnf v b = if cnfMode == b then Not (Atom v) else Atom v
+
+packTerm :: Set.Set Variable -> [Variable] -> Formula -> QmTerm
+packTerm variableSet posMapping term =
+    let emptyQmTerm = (QmTerm (0,0))
+        appearsInTerm = flip Set.member variableSet
+        selection = filter appearsInTerm posMapping
+        variablesWithPositions = zip [0..] (reverse selection)
+        setBitForVariable (i,variable) (QmTerm (bv,mask)) = QmTerm $ case valueForVariable term variable of
+            Nothing -> (bv, B.setBit mask i)
+            Just bool -> (if bool then B.setBit bv i else B.clearBit bv i, mask)
+    in foldr setBitForVariable emptyQmTerm variablesWithPositions
+
+unpackTerm :: Bool -> Set.Set Variable -> [Variable] -> QmTerm -> Formula
+unpackTerm cnfMode variableSet posMapping (QmTerm (term,mask)) =
+    let appearsInTerm = flip Set.member variableSet
+        selection = filter appearsInTerm posMapping
+        variablesWithPositions = zip [0..] (reverse selection)
+        op = if cnfMode then Or else And
+        invertIfCnf v b = if cnfMode == b then Not (Atom v) else Atom v
+        setVariableForBit (i,variable) restLiterals
+              | B.testBit mask i = restLiterals
+              | otherwise = invertIfCnf variable (B.testBit term i) : restLiterals
+    in op $ foldr setVariableForBit [] variablesWithPositions

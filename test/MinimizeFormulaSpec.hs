@@ -137,3 +137,27 @@ spec = do
             termToBitVectors [v3,v2,v1,v0] (And [x0, Not x2, x3]) `shouldBe` map (getTerm . fromString) [
                     "1011", "1001"
                     ]
+
+    describe "packTerm" $ do
+        it "compresses a Formula term into a QmTerm" $ do
+            let formulaTerm = And [x0, x1, Not x3]
+            let varSet = Set.fromList [v0,v1,v3]
+            packTerm varSet posMapping formulaTerm `shouldBe` fromString "011"
+        it "compresses a single literal" $ do
+            let formulaTerm = Or [Not x2]
+            let varSet = Set.fromList [v2]
+            packTerm varSet posMapping formulaTerm `shouldBe` fromString "1"
+
+    describe "unpackTerm" $ do
+        it "decompresses a QmTerm with one literal into a Formula" $ do
+            let varSet = Set.fromList [v2]
+            unpackTerm True varSet posMapping (fromString "1") `shouldBe` Or [Not x2]
+        it "ignores dashes" $ do
+            let varSet = Set.fromList posMapping -- all variables
+            unpackTerm False varSet posMapping (fromString "-10-") `shouldBe` And [Not x1, x2]
+        it "is inverse to packTerm" $ do
+            let test cnfMode formula variables = unpackTerm cnfMode (Set.fromList variables) posMapping (packTerm (Set.fromList variables) posMapping formula) `shouldBe` formula
+            test True (Or [x0,x1,x3]) [v0,v1,v3]
+            test False (And [x1,Not x3]) [v0,v1,v3]
+            test True (Or [Not x1,Not x3]) [v0,v1,v2,v3]
+            test False (And [Not x0,x1,Not x3]) [v0,v1,v3]
