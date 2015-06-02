@@ -3,6 +3,7 @@ module VariableSpec where
 import SpecHelper
 import Variable
 import Control.Monad(forM)
+import qualified Data.Set as Set
 
 instance Arbitrary Variable where
     arbitrary = do
@@ -24,11 +25,7 @@ instance Arbitrary Assignment where
 
 spec :: Spec
 spec = do
-    let (test1,test2,test3) = eval initial $ do
-            t1 <- var "test1"
-            t2 <- var "test2"
-            t3 <- var "test3"
-            return (t1,t2,t3)
+    let ([test1,test2,test3],posMapping) = generateVars 3
 
     describe "var" $ do
         it "can create variables and keep them separate" $ do
@@ -74,6 +71,30 @@ spec = do
             let assignment = (assignmentFromString [test2,test1] "10")
             getVar test2 assignment `shouldBe` Just True
             getVar test1 assignment `shouldBe` Just False
+
+    describe "expandOrReduce" $ do
+        it "does nothing if the variableSet is the same as in the assignment" $ do
+            let assignment = setVar test1 True emptyAssignment
+            let assignment' = expandOrReduce False (Set.fromList [test1]) assignment
+            assignment' `shouldBe` assignment
+        it "reduces to an emptyAssignment if the variableSet is empty" $ do
+            let assignment = setVar test1 True emptyAssignment
+            let shouldBeEmpty = expandOrReduce True Set.empty assignment
+            shouldBeEmpty `shouldBe` emptyAssignment
+        it "removes a variable that's not in the variable set" $ do
+            let assignment = setVar test1 True $ setVar test2 False emptyAssignment
+            let assignment' = expandOrReduce True (Set.fromList [test2]) assignment
+            assignment' `shouldBe` setVar test2 False emptyAssignment
+        it "assigns a variable that's not yet in the assignment" $ do
+            let assignment = setVar test1 True emptyAssignment
+            let assignment' = expandOrReduce False (Set.fromList [test1, test2]) assignment
+            let expected = setVar test1 True $ setVar test2 False emptyAssignment
+            assignment' `shouldBe` expected
+        it "can add and remove at the same time" $ do
+            let assignment = setVar test1 False $ setVar test2 True emptyAssignment
+            let assignment' = expandOrReduce False (Set.fromList [test2, test3]) assignment
+            let expected = setVar test3 False $ setVar test2 True emptyAssignment
+            assignment' `shouldBe` expected
             
     describe "TruthTable get/setRow" $ do
         let assignment1 = setVar test1 True emptyAssignment

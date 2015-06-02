@@ -66,7 +66,10 @@ spec = do
         it "doesn't minimize XOR (because it's impossible)" $ do
             let xor = ensureCanonical $ Xor [x0,x1]
             let minimized = minimizeCanonical posMapping xor
-            property $ \assignment -> eval assignment minimized `shouldBe` eval assignment (getFormula xor)
+            property $ \assignment -> 
+                let a1 = expandOrReduce False (variableSet (getFormula xor)) assignment
+                    a2 = expandOrReduce False (variableSet minimized) assignment
+                in eval a2 minimized `shouldBe` eval a1 (getFormula xor)
 
         it "minimizes a CNF with redundancies" $ do
             let redundant = ensureCanonical $ And [Or [x0, x1], Or [x0, Not x1]]
@@ -119,7 +122,9 @@ spec = do
         it "minimizes any canonical to a formula that has the same value (for a random assignment)" $ do
             property $ \canonical assignment ->
                 let minimized = minimizeCanonical posMapping canonical
-                in eval assignment minimized `shouldBe` eval assignment (getFormula canonical)
+                    a1 = expandOrReduce False (variableSet (getFormula canonical)) assignment
+                    a2 = expandOrReduce False (variableSet minimized) assignment
+                in eval a2 minimized `shouldBe` eval a1 (getFormula canonical)
 
     describe "termToQmTerm" $ do
         it "converts dashes to 0 and 1" $ do

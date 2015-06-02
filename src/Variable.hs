@@ -11,6 +11,7 @@ module Variable(
                 assignmentFromList,
                 assignmentFromString,
                 assignmentToString,
+                expandOrReduce,
                 getVar,
                 setVar,
                 TruthTable,
@@ -111,6 +112,18 @@ getVar (Variable i) (Assignment intMap) = IntMap.lookup i intMap
 setVar :: Variable -> Bool -> Assignment -> Assignment
 setVar (Variable i) b (Assignment intMap) = Assignment $ IntMap.insert i b intMap
 
+assignedVars :: Assignment -> Set.Set Variable
+assignedVars (Assignment intMap) = Set.fromList $ map Variable (IntMap.keys intMap)
+
+expandOrReduce :: Bool -> Set.Set Variable -> Assignment -> Assignment
+expandOrReduce b variableSet assignment@(Assignment intMap) =
+    let alreadyAssigned = assignedVars assignment
+        toAssign = Set.difference variableSet alreadyAssigned
+        toRemove = Set.difference alreadyAssigned variableSet
+        removed = IntMap.filterWithKey (\k _ -> (Variable k) `Set.notMember` toRemove) intMap
+        added = Set.foldr (\(Variable i) intMap' -> IntMap.insert i b intMap') removed toAssign
+    in Assignment added
+
 newtype TruthTable = TruthTable (Map.Map Assignment Bool)
     deriving(Eq, Show)
 
@@ -128,7 +141,6 @@ getRow assignment (TruthTable assignmentMap) = Map.lookup assignment assignmentM
 
 setRow :: Assignment -> Bool -> TruthTable -> TruthTable
 setRow assignment b (TruthTable assignmentMap) = TruthTable $ Map.insert assignment b assignmentMap
-
 
 tableFromList :: [(Assignment, Bool)] -> TruthTable
 tableFromList ls = foldr (uncurry setRow) emptyTable ls
