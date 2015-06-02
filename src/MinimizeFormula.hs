@@ -1,6 +1,6 @@
 module MinimizeFormula where
 
-import TruthTable(Variable, var)
+import Variable
 import Formula
 import NormalForm
 import qualified Data.Vector.Unboxed as U
@@ -10,32 +10,32 @@ import Qm
 type QmTermEl = Maybe Bool
 
 -- | Minimizes an arbitrary 'Formula' to an equivalent CNF/DNF, which consists of the minimal cover of primes.
-minimizeFormula :: Formula -> Formula
-minimizeFormula = minimizeCanonical . ensureCanonical
+minimizeFormula :: [Variable] -> Formula -> Formula
+minimizeFormula positionMapping formula =
+    let canonical = ensureCanonical formula
+    in minimizeCanonical positionMapping canonical
 
 -- | Minimizes a 'Canonical' CNF or DNF using the Quine-McCluskey method.
-minimizeCanonical :: Canonical -> Formula
-minimizeCanonical canonical =
-    let terms = canonicalToBitVectors canonical
-        qmTermLength = highestVariableIndex (getFormula canonical) + 1
+minimizeCanonical :: [Variable] -> Canonical -> Formula
+minimizeCanonical positionMapping canonical =
+    let terms = canonicalToBitVectors positionMapping canonical
         cnfMode = (getType canonical == CNFType)
         minimumCover = qm terms [] []
     in case terms of
         [] -> if cnfMode then And [] else Or []
-        _ -> qmTermsToFormula cnfMode qmTermLength minimumCover
+        _ -> qmTermsToFormula cnfMode positionMapping minimumCover
 
-canonicalToBitVectors :: Canonical -> [BitVector]
-canonicalToBitVectors canonical = concatMap (termToBitVectors qmTermLength) terms
+canonicalToBitVectors :: [Variable] -> Canonical -> [BitVector]
+canonicalToBitVectors positionMapping canonical = concatMap (termToBitVectors positionMapping) terms
     where terms = normalFormChildren formula
-          qmTermLength = highestVariableIndex formula + 1
           formula = getFormula canonical
 
 -- TODO: Test
--- | Converts a single min\/maxterm from a DNF/CNF into a 'QmTerm'.
-termToBitVectors :: Int -> Formula -> [BitVector]
-termToBitVectors qmTermLength term = convertDashes $ foldr setBitForVariable emptyTerm [0..qmTermLength-1]
+termToBitVectors :: [Variable] -> Formula -> [BitVector]
+termToBitVectors positionMapping term = convertDashes $ foldr setBitForVariable emptyTerm variablesWithPositions
     where emptyTerm = (QmTerm (0,0))
-          setBitForVariable i (QmTerm (bv,mask)) = QmTerm $ case valueForVariable term (var i) of
+          variablesWithPositions = zip [0..] positionMapping
+          setBitForVariable (i,variable) (QmTerm (bv,mask)) = QmTerm $ case valueForVariable term variable of
             Nothing -> (bv, B.setBit mask i)
             Just bool -> (if bool then B.setBit bv i else B.clearBit bv i, mask)
 
@@ -62,22 +62,23 @@ valueForVariable term variable
 
 -- | Converts a list of 'QmTerm's back to a 'Formula'
 qmTermsToFormula :: Bool -- ^ Whether the 'Formula' was a CNF. If so, the terms will be inverted.
-                 -> Int -- ^ The original number of variables (i.e. the highest index + 1)
+                 -> [Variable] -- ^ The Position Mapping
                  -> [QmTerm]
                  -> Formula
-qmTermsToFormula cnfMode originalTermLength qmTerms =
-    let terms = map (qmTermToTerm cnfMode originalTermLength) qmTerms
+qmTermsToFormula cnfMode positionMapping qmTerms =
+    let terms = map (qmTermToTerm cnfMode positionMapping) qmTerms
         rootOp = if cnfMode then And else Or
     in  rootOp terms
 
 -- | Converts a 'QmcTerm' back to a minterm (for DNFs) or maxterm (for CNFs). 
 qmTermToTerm :: Bool -- ^ 'True' for CNF, 'False' for DNF. If true, the terms are inverted.
-             -> Int -- ^ The original number of variables
+             -> [Variable] -- ^ The Position Mapping
              -> QmTerm
              -> Formula
-qmTermToTerm cnfMode originalTermLength (QmTerm (term,mask)) = op $ foldr translate [] [0..originalTermLength-1]
-    where op = if cnfMode then Or else And
-          translate i restLiterals
+qmTermToTerm cnfMode positionMapping (QmTerm (term,mask)) = op $ foldr translate [] variablesWithPositions
+    where variablesWithPositions = zip [0..] positionMapping
+          op = if cnfMode then Or else And
+          translate (i,variable) restLiterals
                 | B.testBit mask i = restLiterals
-                | otherwise = invertIfCnf i (B.testBit term i) : restLiterals
-          invertIfCnf i b = if cnfMode == b then Not (Atom (var i)) else Atom (var i)
+                | otherwise = invertIfCnf variable (B.testBit term i) : restLiterals
+          invertIfCnf v b = if cnfMode == b then Not (Atom v) else Atom v

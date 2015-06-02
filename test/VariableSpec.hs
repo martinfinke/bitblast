@@ -4,11 +4,15 @@ import SpecHelper
 import Variable
 import Control.Monad(forM)
 
+instance Arbitrary Variable where
+    arbitrary = do
+        candidates <- randomVariables 10
+        elements candidates
+
 randomVariables :: Int -> Gen [Variable]
 randomVariables numvars = do
-    let is = [0..numvars-1]
     let vars = eval initial $ do
-        forM is $ \i -> var ('x' : show i)
+            forM [0..numvars-1] $ \i -> var ('x' : show i)
     return vars
 
 instance Arbitrary Assignment where

@@ -23,8 +23,7 @@ instance Arbitrary Canonical where
 
 spec :: Spec
 spec = do
-    let [x0,x1,x2,x3,x4,x5,x6,x7,x8,x9] = V.eval V.initial $ do
-            forM [0..9] $ \i -> V.var ('x' : show i)
+    let [x0,x1,x2,x3,x4,x5,x6,x7,x8,x9] = fst $ V.generateVars 10
 
     let nestedFormula = Not $ And [Not $ Atom x3, Atom x1, Implies (Xor [Atom x7, Not $ Atom x9, Equiv [Atom x3, Atom x2, Or [Not $ Atom x3], Atom x9]]) (Or [Atom x3, Atom x2])]
 

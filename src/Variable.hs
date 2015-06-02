@@ -2,6 +2,7 @@ module Variable(
                 Variable,
                 initial,
                 eval,
+                generateVars,
                 var,
                 Assignment,
                 emptyAssignment,
@@ -21,8 +22,9 @@ import qualified Control.Monad.Trans.State.Lazy as State
 import qualified Data.IntMap as IntMap
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import Control.Monad(forM)
 
-newtype VarMem = VarMem {currentVarIndex :: Int}
+data VarMem = VarMem {currentVarIndex :: Int, positionMapping :: [Variable]}
 type VarState = State.State VarMem
 type VarStateTransformer = State.StateT VarMem
 newtype Variable = Variable Int
@@ -38,16 +40,28 @@ instance Enum Variable where
     fromEnum (Variable i) = i
 
 initial :: VarMem
-initial = VarMem {currentVarIndex=0}
+initial = VarMem {currentVarIndex=0, positionMapping=[]}
 
 eval :: VarMem -> VarState a -> a
 eval = flip State.evalState
 
+generateVars :: Int -- ^ How many 'Variable's to create
+             -> ([Variable], [Variable]) -- ^ A list of 'Variable's, and the positionMapping.
+generateVars numvars = eval initial $ do
+    variables <- forM [0..numvars-1] $ \i -> var ('x' : show i)
+    posMapping <- fmap positionMapping State.get
+    return (variables, posMapping)
+
 var :: Monad m => String -> VarStateTransformer m Variable
 var varName = do
     varIndex <- fmap currentVarIndex State.get
-    State.modify addVariable
-    return $ Variable varIndex
+    let newVar = Variable varIndex
+    State.modify (addVariable newVar)
+    return newVar
+
+addVariable :: Variable -> VarMem -> VarMem
+addVariable variable mem@(VarMem {currentVarIndex=idx, positionMapping=oldMapping}) =
+    mem{currentVarIndex=succ idx,positionMapping=variable : oldMapping}
 
 newtype Assignment = Assignment (IntMap.IntMap Bool)
     deriving(Eq, Show, Ord)
@@ -84,6 +98,3 @@ setRow assignment b (TruthTable assignmentMap) = TruthTable $ Map.insert assignm
 
 tableFromList :: [(Assignment, Bool)] -> TruthTable
 tableFromList ls = foldr (uncurry setRow) emptyTable ls
-
-addVariable :: VarMem -> VarMem
-addVariable mem@(VarMem {currentVarIndex=idx}) = mem{currentVarIndex=succ idx}
