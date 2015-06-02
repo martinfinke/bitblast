@@ -1,5 +1,6 @@
 module Variable(
                 Variable,
+                PositionMapping,
                 initial,
                 eval,
                 generateVars,
@@ -33,7 +34,7 @@ import Control.Monad(forM)
 import Text.Printf(printf)
 import Data.List(sort)
 
-data VarMem = VarMem {currentVarIndex :: Int, positionMapping :: [Variable]}
+data VarMem = VarMem {currentVarIndex :: Int, positionMapping :: PositionMapping}
 type VarState = State.State VarMem
 type VarStateTransformer = State.StateT VarMem
 newtype Variable = Variable Int
@@ -47,6 +48,8 @@ instance Show Variable where
 instance Enum Variable where
     toEnum = Variable
     fromEnum (Variable i) = i
+
+type PositionMapping = [Variable]
 
 initial :: VarMem
 initial = VarMem {currentVarIndex=0, positionMapping=[]}
@@ -87,7 +90,7 @@ assignmentFromList ls =
     let ls' = map (\(Variable i, b) -> (i,b)) ls
     in Assignment $ IntMap.fromList ls'
 
-assignmentFromString :: [Variable] -> String -> Assignment
+assignmentFromString :: PositionMapping -> String -> Assignment
 assignmentFromString posMapping string
     | length posMapping /= length string = error $ printf "The string %s has the wrong length (%d) for the positionMapping of length %d." string (length string) (length posMapping)
     | otherwise = foldr parse emptyAssignment $ zip string posMapping
@@ -96,7 +99,7 @@ assignmentFromString posMapping string
                     then setVar variable False assignment
                     else setVar variable True assignment
 
-assignmentToString :: [Variable] -> Assignment -> String
+assignmentToString :: PositionMapping -> Assignment -> String
 assignmentToString posMapping (Assignment intMap) =
     map printVar posMapping
     where printVar (Variable i) = case IntMap.lookup i intMap of
@@ -125,7 +128,7 @@ expandOrReduce b variableSet assignment@(Assignment intMap) =
 newtype TruthTable = TruthTable (Map.Map Assignment Bool)
     deriving(Eq, Show)
 
-truthTableToString :: [Variable] -> TruthTable -> String
+truthTableToString :: PositionMapping -> TruthTable -> String
 truthTableToString posMapping (TruthTable rows) =
     unlines . sort . map printRow $ Map.toList rows
     where printRow (assignment,b) = assignmentToString posMapping assignment ++ " | " ++ printBool b
@@ -148,7 +151,7 @@ allTrueTable, allFalseTable :: [Variable] -- ^ positionMapping
 allFalseTable = allSetTable False
 allTrueTable = allSetTable True
 
-allSetTable :: Bool -> [Variable] -> TruthTable
+allSetTable :: Bool -> PositionMapping -> TruthTable
 allSetTable b posMapping =
     let allAssignments = allBoolCombinations (Set.fromList posMapping)
         allSetToBool = zip allAssignments (repeat b)

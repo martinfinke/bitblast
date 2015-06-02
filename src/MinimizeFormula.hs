@@ -10,13 +10,13 @@ import Qm
 type QmTermEl = Maybe Bool
 
 -- | Minimizes an arbitrary 'Formula' to an equivalent CNF/DNF, which consists of the minimal cover of primes.
-minimizeFormula :: [Variable] -> Formula -> Formula
+minimizeFormula :: PositionMapping -> Formula -> Formula
 minimizeFormula positionMapping formula =
     let canonical = ensureCanonical formula
     in minimizeCanonical positionMapping canonical
 
 -- | Minimizes a 'Canonical' CNF or DNF using the Quine-McCluskey method.
-minimizeCanonical :: [Variable] -> Canonical -> Formula
+minimizeCanonical :: PositionMapping -> Canonical -> Formula
 minimizeCanonical positionMapping canonical =
     let terms = canonicalToBitVectors varSet positionMapping canonical
         varSet = variableSet (getFormula canonical)
@@ -26,7 +26,7 @@ minimizeCanonical positionMapping canonical =
         [] -> if cnfMode then And [] else Or []
         _ -> qmTermsToFormula varSet cnfMode positionMapping minimumCover
 
-canonicalToBitVectors :: Set.Set Variable -> [Variable] -> Canonical -> [BitVector]
+canonicalToBitVectors :: Set.Set Variable -> PositionMapping -> Canonical -> [BitVector]
 canonicalToBitVectors varSet positionMapping canonical = concatMap (convertDashes . packTerm varSet positionMapping) terms
     where terms = normalFormChildren formula
           formula = getFormula canonical
@@ -62,7 +62,7 @@ qmTermsToFormula varSet cnfMode positionMapping qmTerms =
         rootOp = if cnfMode then And else Or
     in  rootOp terms
 
-packTerm :: Set.Set Variable -> [Variable] -> Formula -> QmTerm
+packTerm :: Set.Set Variable -> PositionMapping -> Formula -> QmTerm
 packTerm variableSet posMapping term =
     let emptyQmTerm = (QmTerm (0,0))
         appearsInTerm = flip Set.member variableSet
@@ -73,7 +73,7 @@ packTerm variableSet posMapping term =
             Just bool -> (if bool then B.setBit bv i else B.clearBit bv i, mask)
     in foldr setBitForVariable emptyQmTerm variablesWithPositions
 
-unpackTerm :: Bool -> Set.Set Variable -> [Variable] -> QmTerm -> Formula
+unpackTerm :: Bool -> Set.Set Variable -> PositionMapping -> QmTerm -> Formula
 unpackTerm cnfMode variableSet posMapping (QmTerm (term,mask)) =
     let appearsInTerm = flip Set.member variableSet
         selection = filter appearsInTerm posMapping
