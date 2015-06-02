@@ -60,6 +60,20 @@ spec = do
         it "doesn't set variables that aren't in the list" $ do
             let a = assignmentFromList [(test2, False)]
             getVar test1 a `shouldBe` Nothing
+
+    describe "assignmentFromString" $ do
+        it "is the emptyAssignment for an empty string" $ do
+            assignmentFromString [] "" `shouldBe` emptyAssignment
+        it "throws an error if the positionMapping doesn't match the string" $ do
+            evaluate (assignmentFromString [test1] "01") `shouldThrow` anyException
+        it "works for one variable" $ do
+            getVar test2 (assignmentFromString [test2] "1") `shouldBe` Just True
+        it "doesn't assign other variables" $ do
+            getVar test2 (assignmentFromString [test1] "1") `shouldBe` Nothing
+        it "expects the last-added variable on the left end" $ do
+            let assignment = (assignmentFromString [test2,test1] "10")
+            getVar test2 assignment `shouldBe` Just True
+            getVar test1 assignment `shouldBe` Just False
             
     describe "TruthTable get/setRow" $ do
         let assignment1 = setVar test1 True emptyAssignment

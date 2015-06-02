@@ -10,13 +10,18 @@ module Variable(
                 allFalse,
                 assignmentFromList,
                 assignmentFromString,
+                assignmentToString,
                 getVar,
                 setVar,
                 TruthTable,
                 emptyTable,
                 getRow,
                 setRow,
-                tableFromList
+                tableFromList,
+                truthTableToString,
+                allFalseTable,
+                allTrueTable,
+                allBoolCombinations
                 ) where
 
 import qualified Control.Monad.Trans.State.Lazy as State
@@ -25,6 +30,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Control.Monad(forM)
 import Text.Printf(printf)
+import Data.List(sort)
 
 data VarMem = VarMem {currentVarIndex :: Int, positionMapping :: [Variable]}
 type VarState = State.State VarMem
@@ -90,6 +96,15 @@ assignmentFromString posMapping string
                     then setVar variable False assignment
                     else setVar variable True assignment
 
+-- TODO: Test
+assignmentToString :: [Variable] -> Assignment -> String
+assignmentToString posMapping (Assignment intMap) =
+    map printVar posMapping
+    where printVar (Variable i) = case IntMap.lookup i intMap of
+            Nothing -> '-'
+            Just True -> '1'
+            Just False -> '0'
+
 getVar :: Variable -> Assignment -> Maybe Bool
 getVar (Variable i) (Assignment intMap) = IntMap.lookup i intMap
 
@@ -98,6 +113,12 @@ setVar (Variable i) b (Assignment intMap) = Assignment $ IntMap.insert i b intMa
 
 newtype TruthTable = TruthTable (Map.Map Assignment Bool)
     deriving(Eq, Show)
+
+truthTableToString :: [Variable] -> TruthTable -> String
+truthTableToString posMapping (TruthTable rows) =
+    unlines . sort . map printRow $ Map.toList rows
+    where printRow (assignment,b) = assignmentToString posMapping assignment ++ " | " ++ printBool b
+          printBool b = if b then "1" else "0"
 
 emptyTable :: TruthTable
 emptyTable = TruthTable Map.empty
@@ -108,5 +129,29 @@ getRow assignment (TruthTable assignmentMap) = Map.lookup assignment assignmentM
 setRow :: Assignment -> Bool -> TruthTable -> TruthTable
 setRow assignment b (TruthTable assignmentMap) = TruthTable $ Map.insert assignment b assignmentMap
 
+
 tableFromList :: [(Assignment, Bool)] -> TruthTable
 tableFromList ls = foldr (uncurry setRow) emptyTable ls
+
+allTrueTable, allFalseTable :: [Variable] -- ^ positionMapping
+              -> TruthTable
+allFalseTable = allSetTable False
+allTrueTable = allSetTable True
+
+allSetTable :: Bool -> [Variable] -> TruthTable
+allSetTable b posMapping =
+    let allAssignments = allBoolCombinations (Set.fromList posMapping)
+        allSetToBool = zip allAssignments (repeat b)
+    in tableFromList allSetToBool
+
+
+
+-- | All possible 'Assignment's for a 'Set.Set' of 'Variable's.
+allBoolCombinations :: Set.Set Variable -> [Assignment]
+allBoolCombinations variables = allBoolCombinations' (allFalse variables) variables
+
+allBoolCombinations' allFalse' variables
+    | Set.null variables = [allFalse']
+    | otherwise = rest ++ map (setVar variable True) rest
+    where variable = Set.elemAt (Set.size variables - 1) variables -- TODO: use Set.maxElem
+          rest = allBoolCombinations' allFalse' (Set.delete variable variables)

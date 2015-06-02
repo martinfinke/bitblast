@@ -7,11 +7,12 @@ import Variable hiding (eval)
 import Control.Monad(forM_)
 import MinimizeFormula
 import Debug.Trace(traceShow)
+import qualified Data.Set as Set
 
 spec :: Spec
 spec = do
     --let trueOnlyForAssignments assignments numVariables = setOutputs (zip assignments $ repeat (Just True)) (allFalseTable numVariables)
-    let trueOnlyForAssignments assignments = tableFromList $ zip assignments (repeat True)
+    let trueOnlyForAssignments posMapping assignments = foldr (flip setRow True) (allFalseTable posMapping) assignments
     describe "halfAdder" $ do
         it "has the correct truth table" $ do
             let (vars, posMapping) = generateVars 4
@@ -23,7 +24,7 @@ spec = do
                     "1010",
                     "1101"
                     ]
-            toTruthTable ha `shouldBe` trueOnlyForAssignments trueAssignments
+            toTruthTable ha `shouldBe` trueOnlyForAssignments posMapping trueAssignments
 
     describe "fullAdderSegment" $ do
         let (vars, posMapping) = generateVars 5
@@ -41,7 +42,7 @@ spec = do
                     "11010",
                     "11111"
                     ]
-            toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments trueAssignments
+            toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments posMapping trueAssignments
 
         it "is equivalent to a fullAdder when the outputs are connected" $ do
             let fa = fullAdder (x,y) (cIn,cOut) s
@@ -54,12 +55,11 @@ spec = do
             let (s', cOut') = halfAdderSegment (x,y)
             let (s'', cOut'') = summerSegment [x] [y]
             let equiv = And [Equiv [s', head s''], Equiv [cOut', cOut'']]
-            --toTruthTable equiv `shouldBe` allTrueTable 2
-            pending -- TODO: bring back
+            toTruthTable equiv `shouldBe` allTrueTable posMapping
 
         it "has the correct truth table for 2 bits" $ do
             let (vars, posMapping) = generateVars 7
-            let [x1,x0,y1,y0,s1,s0,cOut] = map Atom vars
+            let [cOut,s0,s1,y0,y1,x0,x1] = map Atom vars
             
             let ([s1',s0'], cOut') = summerSegment [x1,x0] [y1,y0]
             let equiv = And [Equiv [s1, s1'], Equiv [s0, s0'], Equiv [cOut, cOut']]
@@ -82,13 +82,13 @@ spec = do
                     "1110011",
                     "1111101"
                     ]
-            toTruthTable equiv `shouldBe` trueOnlyForAssignments trueAssignments
-            toTruthTable smer `shouldBe` trueOnlyForAssignments trueAssignments
+            toTruthTable equiv `shouldBe` trueOnlyForAssignments posMapping trueAssignments
+            toTruthTable smer `shouldBe` trueOnlyForAssignments posMapping trueAssignments
 
     describe "summer" $ do
         it "has the correct truth table for 1 bit" $ do
             let (vars, posMapping) = generateVars 3
-            let [x,y,s] = map Atom vars
+            let [s,y,x] = map Atom vars
             let dontCare = summer DontCare [x] [y] [s]
             let dontCareAssignments = map (assignmentFromString posMapping) [
                     "000",
@@ -96,19 +96,19 @@ spec = do
                     "101",
                     "110"
                     ]
-            toTruthTable dontCare `shouldBe` trueOnlyForAssignments dontCareAssignments
+            toTruthTable dontCare `shouldBe` trueOnlyForAssignments posMapping dontCareAssignments
             let forbid = summer Forbid [x] [y] [s]
             let forbidAssigments = map (assignmentFromString posMapping) [
                     "000",
                     "011",
                     "101"
                     ]
-            toTruthTable forbid `shouldBe` trueOnlyForAssignments forbidAssigments
+            toTruthTable forbid `shouldBe` trueOnlyForAssignments posMapping forbidAssigments
             
 
         it "has the correct truth table for 3 bits" $ do
             let (vars, posMapping) = generateVars 10
-            let [x2,x1,x0,y2,y1,y0,cOut,s2,s1,s0] = map Atom vars
+            let [s0,s1,s2,cOut,y0,y1,y2,x0,x1,x2] = map Atom vars
             let trueAssignments = map (assignmentFromString posMapping) [
                     "000" ++ "000" ++ "0" ++ "000",
                     "000" ++ "001" ++ "0" ++ "001",
@@ -183,11 +183,11 @@ spec = do
                     "111" ++ "111" ++ "1" ++ "110"
                     ]
             let smer = summer (Connect cOut) [x2,x1,x0] [y2,y1,y0] [s2,s1,s0]
-            toTruthTable smer `shouldBe` trueOnlyForAssignments trueAssignments
+            toTruthTable smer `shouldBe` trueOnlyForAssignments posMapping trueAssignments
 
         it "can forbid overflow" $ do
             let (vars, posMapping) = generateVars 6
-            let [x1,x0,y1,y0,s1,s0] = map Atom vars
+            let [s0,s1,y0,y1,x0,x1] = map Atom vars
             let ([s1',s0'], cOut') = summerSegment [x1,x0] [y1,y0]
             let equiv = And [Equiv [s1, s1'], Equiv [s0, s0'], Not cOut']
             let smer = summer Forbid [x1,x0] [y1,y0] [s1,s0]
@@ -203,12 +203,12 @@ spec = do
                     "100111",
                     "110011"
                     ]
-            toTruthTable equiv `shouldBe` trueOnlyForAssignments trueAssignments
-            toTruthTable smer `shouldBe` trueOnlyForAssignments trueAssignments
+            toTruthTable equiv `shouldBe` trueOnlyForAssignments posMapping trueAssignments
+            toTruthTable smer `shouldBe` trueOnlyForAssignments posMapping trueAssignments
 
         it "can not care about overflow" $ do
             let (vars, posMapping) = generateVars 6
-            let [x1,x0,y1,y0,s1,s0] = map Atom vars
+            let [s0,s1,y0,y1,x0,x1] = map Atom vars
             let ([s1',s0'], _) = summerSegment [x1,x0] [y1,y0]
             let equiv = And [Equiv [s1, s1'], Equiv [s0, s0']]
             let smer = summer DontCare [x1,x0] [y1,y0] [s1,s0]
@@ -230,5 +230,5 @@ spec = do
                     "111001",
                     "111110"
                     ]
-            toTruthTable equiv `shouldBe` trueOnlyForAssignments trueAssignments
-            toTruthTable smer `shouldBe` trueOnlyForAssignments trueAssignments
+            toTruthTable equiv `shouldBe` trueOnlyForAssignments posMapping trueAssignments
+            toTruthTable smer `shouldBe` trueOnlyForAssignments posMapping trueAssignments

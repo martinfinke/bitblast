@@ -80,14 +80,7 @@ toTruthTable formula = tableFromList outputs
 possibleAssignments :: Formula -> [Assignment]
 possibleAssignments = allBoolCombinations . variableSet
 
--- | All possible 'Assignment's for a 'Set.Set' of 'Variable's.
-allBoolCombinations :: Set.Set Variable -> [Assignment]
-allBoolCombinations variables
-    | Set.null variables = [allFalse variables]
-    | otherwise = rest ++ map (setVar variable True) rest
-    where variable = Set.elemAt (Set.size variables - 1) variables
-          rest = allBoolCombinations (Set.delete variable variables)
-
+-- TODO: this shouldn't be needed anymore
 -- | The index of the highest 'Variable' appearing in a 'Formula'. This is used to create 'QmcTerm's (min/maxterms) of the right length.
 highestVariableIndex :: Formula -> Int
 highestVariableIndex formula = case Set.toList variables of
