@@ -4,17 +4,19 @@ import SpecHelper
 import Variable
 import Control.Monad(forM)
 
-instance Arbitrary Variable where
-    arbitrary = do
-        i <- choose (0,10::Int)
-        return $ eval initial $ var ('x' : show i)
-
 randomVariables :: Int -> Gen [Variable]
 randomVariables numvars = do
     let is = [0..numvars-1]
-    forM is $ \i -> do
-        return $ eval initial $ var ('x' : show i)
+    let vars = eval initial $ do
+        forM is $ \i -> var ('x' : show i)
+    return vars
 
+instance Arbitrary Assignment where
+    arbitrary = do
+        numvars <- choose (1,10::Int)
+        variables <- randomVariables numvars
+        bools <- vectorOf numvars (arbitrary::Gen Bool)
+        return $ assignmentFromList (zip variables bools)
 
 spec :: Spec
 spec = do

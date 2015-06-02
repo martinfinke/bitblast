@@ -44,11 +44,8 @@ spec = do
 
     let nestedFormula = Not $ And [Not $ Atom x3, Atom x1, Implies (Xor [Atom x7, Not $ Atom x9, Equiv [Atom x3, Atom x2, Or [Not $ Atom x3], Atom x9]]) (Or [Atom x3, Atom x2])]
 
-    let smallNestedFormula = Equiv [Xor [Not $ Atom x1, Atom x0], Not $ And [Atom x1, Or [Not $ Atom x0, Atom x3]]]
-
     let allFalseFor = allFalse . variableSet
     let allTrueFor = allTrue . variableSet
-
 
     describe "eval for literals" $ do
         it "is true if the variable is assigned true" $ do

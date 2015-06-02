@@ -21,7 +21,7 @@ module NormalForm (Canonical,
                    FormulaStats(..)) where
 
 import Formula
-import TruthTable (Variable, Assignment, getVariable, getOutput)
+import Variable
 import qualified Data.Set as Set
 import Text.Printf(printf)
 
@@ -57,7 +57,7 @@ toNormalForm formType formula = operator terms
           terms = map (assignmentToTerm formType $ variableSet formula) onlyRelevantOutput
           relevantOutput = if formType == CNFType then Just False else Just True
           operator = if formType == CNFType then CNF . And else DNF . Or
-          onlyRelevantOutput = filter (\assignment -> getOutput assignment truthTable == relevantOutput) assignments
+          onlyRelevantOutput = filter (\assignment -> getRow assignment truthTable == relevantOutput) assignments
 
 -- | Extract the type of a 'Canonical' formula.
 getType :: Canonical -> FormType
@@ -74,9 +74,10 @@ assignmentToTerm formType variables assignment = operator $ Set.foldr addLiteral
           addLiteral variable literals =
             let ifTrue = if formType == CNFType then Not (Atom variable) else Atom variable
                 ifFalse = if formType == CNFType then Atom variable else Not (Atom variable)
-            in if getVariable variable assignment
-                then ifTrue : literals
-                else ifFalse : literals
+            in case getVar variable assignment of
+                Just True -> ifTrue : literals
+                Just False -> ifFalse : literals
+                Nothing -> error $ show assignment ++ " is incomplete for variableSet: " ++ show variables
 
 isCnf, isDnf :: Formula -> Bool
 -- | Checks whether a 'Formula' is a conjunction of clauses (disjunctions of literals). Doesn't check if it is canonical.

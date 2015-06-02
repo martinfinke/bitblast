@@ -1,35 +1,41 @@
 module NormalFormSpec(NormalFormSpec.spec) where
 
 import SpecHelper
-import TruthTable(var)
+import qualified Variable as V
+import VariableSpec
 import Formula(Formula(..), eval)
 import NormalForm
 import qualified Data.Set as Set
 import FormulaSpec
+import Control.Monad(forM)
 
-instance Arbitrary FormType where
+instance Arbitrary FormType where -- TODO: still needed?
     arbitrary = elements [CNFType, DNFType]
 
 instance Arbitrary Canonical where
     arbitrary = do
         numVariables <- choose (1,4)
-        let variables = map var [0..numVariables-1]
+        variables <- randomVariables numVariables
         rndFormula <- randomFormula variables 2
-        formType <- arbitrary
-        return $ case formType of
-            CNFType -> toCanonicalCnf rndFormula
-            DNFType -> toCanonicalDnf rndFormula
+        toCanonical <- elements [toCanonicalCnf, toCanonicalDnf]
+        return $ toCanonical rndFormula
 
 
 spec :: Spec
 spec = do
+    let [x0,x1,x2,x3,x4,x5,x6,x7,x8,x9] = V.eval V.initial $ do
+            forM [0..9] $ \i -> V.var ('x' : show i)
+
+    let nestedFormula = Not $ And [Not $ Atom x3, Atom x1, Implies (Xor [Atom x7, Not $ Atom x9, Equiv [Atom x3, Atom x2, Or [Not $ Atom x3], Atom x9]]) (Or [Atom x3, Atom x2])]
+
+    let smallNestedFormula = Equiv [Xor [Not $ Atom x1, Atom x0], Not $ And [Atom x1, Or [Not $ Atom x0, Atom x3]]]
     describe "toCanonicalCnf" $ do
         it "creates a CNF for a literal" $ do
-            let formula = Atom (var 14)
-            getFormula (toCanonicalCnf formula) `shouldBe` And [Or [Atom (var 14)]]
+            let formula = Atom x9
+            getFormula (toCanonicalCnf formula) `shouldBe` And [Or [Atom x9]]
 
         it "creates an identical CNF for a canonical CNF" $ do
-            let formula = And [Or [Atom (var 1), Not $ Atom (var 2), Atom (var 3)], Or [Not $ Atom (var 1), Atom (var 2), Not $ Atom (var 3)]]
+            let formula = And [Or [Atom x1, Not $ Atom x2, Atom x3], Or [Not $ Atom x1, Atom x2, Not $ Atom x3]]
             getFormula (toCanonicalCnf formula) `shouldBe` formula
 
         it "doesn't change anything when converting a canonical CNF to a canonical CNF" $ do
@@ -48,8 +54,8 @@ spec = do
 
     describe "toCanonicalDnf" $ do
         it "creates a DNF for a literal" $ do
-            let formula = Atom (var 1)
-            getFormula (toCanonicalDnf formula) `shouldBe` Or [And [Atom (var 1)]]
+            let formula = Atom x1
+            getFormula (toCanonicalDnf formula) `shouldBe` Or [And [Atom x1]]
 
         it "doesn't change anything when converting a canonical DNF to a canonical DNF" $ do
             let alreadyDnf = getFormula $ toCanonicalDnf smallNestedFormula
@@ -93,10 +99,10 @@ spec = do
 
     describe "isLiteral" $ do
         it "is True for a literal" $ do
-            isLiteral (Atom (var 3)) `shouldBe` True
+            isLiteral (Atom x3) `shouldBe` True
 
         it "is True for a negated literal" $ do
-            isLiteral (Not $ Atom (var 15)) `shouldBe` True
+            isLiteral (Not $ Atom x9) `shouldBe` True
 
         it "is False for a conjunct" $ do
             isLiteral (And []) `shouldBe` False
@@ -108,11 +114,11 @@ spec = do
                 in isCanonical dnf `shouldBe` True
 
         it "is False for a non-canonical CNF" $ do
-            let nonCanonical = And [Or [Atom (var 0), Not $ Atom (var 1)], Or [Atom (var 1)]]
+            let nonCanonical = And [Or [Atom x0, Not $ Atom x1], Or [Atom x1]]
             isCanonical nonCanonical `shouldBe` False
 
         it "is False for a DNF with a clause containing two literals of one variable" $ do
-            let nonCanonical = Or [And [Atom (var 0), Atom (var 0)]]
+            let nonCanonical = Or [And [Atom x0, Atom x0]]
             isCanonical nonCanonical `shouldBe` False
 
         it "is False for a Formula that isn't a CNF/DNF" $ do
@@ -132,7 +138,7 @@ spec = do
         it "returns 1 clause and 0 literals for a CNF with one empty clause" $ do
             getStats (And [Or []]) `shouldBe` 1 </> 0
         it "returns 1 clause and 1 literal for a CNF with one clause containing one literal" $ do
-            getStats (And [Or [Atom $ var 0]]) `shouldBe` 1 </> 1
+            getStats (And [Or [Atom x0]]) `shouldBe` 1 </> 1
 
         it "returns 2 clauses and 3 literals for a CNF where one variable appears 3 times in 2 clauses" $ do
-            getStats (And [Or [Atom $ var 0], Or [Not $ Atom (var 0), Atom (var 0)]]) `shouldBe` 2 </> 3
+            getStats (And [Or [Atom x0], Or [Not $ Atom x0, Atom x0]]) `shouldBe` 2 </> 3
