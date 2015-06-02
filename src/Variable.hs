@@ -165,5 +165,5 @@ allBoolCombinations variables = allBoolCombinations' (allFalse variables) variab
 allBoolCombinations' allFalse' variables
     | Set.null variables = [allFalse']
     | otherwise = rest ++ map (setVar variable True) rest
-    where variable = Set.elemAt (Set.size variables - 1) variables -- TODO: use Set.maxElem
+    where variable = Set.findMax variables
           rest = allBoolCombinations' allFalse' (Set.delete variable variables)

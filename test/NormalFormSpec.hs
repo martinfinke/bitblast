@@ -9,9 +9,6 @@ import qualified Data.Set as Set
 import FormulaSpec
 import Control.Monad(forM)
 
-instance Arbitrary FormType where -- TODO: still needed?
-    arbitrary = elements [CNFType, DNFType]
-
 instance Arbitrary Canonical where
     arbitrary = do
         numVariables <- choose (1,4)

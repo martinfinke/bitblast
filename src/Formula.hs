@@ -6,8 +6,7 @@ module Formula (Formula(..),
                 variableSet,
                 toTruthTable,
                 possibleAssignments,
-                allBoolCombinations,
-                highestVariableIndex
+                allBoolCombinations
                 ) where
 
 import Variable hiding(eval)
@@ -79,11 +78,3 @@ toTruthTable formula = tableFromList outputs
 -- | All possible 'Assignment's for a given 'Formula', i.e. all combinations of true/false values for its 'variableSet'.
 possibleAssignments :: Formula -> [Assignment]
 possibleAssignments = allBoolCombinations . variableSet
-
--- TODO: this shouldn't be needed anymore
--- | The index of the highest 'Variable' appearing in a 'Formula'. This is used to create 'QmcTerm's (min/maxterms) of the right length.
-highestVariableIndex :: Formula -> Int
-highestVariableIndex formula = case Set.toList variables of
-    [] -> -1
-    _ -> fromEnum $ Set.findMax variables
-    where variables = variableSet formula
