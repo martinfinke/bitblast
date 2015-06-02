@@ -6,21 +6,23 @@ import Formula
 import MinimizeFormula
 import NormalForm
 import Qm
-import TruthTable
+import Variable hiding(eval)
 
 import System.Environment(getArgs)
 import Text.Printf(printf)
 import Control.Monad(forM_)
 import qualified Data.Set as Set
 
-nBitAddition :: OverflowMode -> Int -> Formula
+nBitAddition :: OverflowMode -> Int -> (Formula,[Variable])
 nBitAddition overflowMode numBits =
     -- Variable ordering is [x2,x1,x0] + [x5,x4,x3] = [x8,x7,x6]
-    let first = map (Atom . var) $ reverse $ [0..numBits-1]
-        second = map (Atom . var) $ reverse $ [numBits..2*numBits-1]
-        sums = map (Atom . var) $ reverse $ [2*numBits..3*numBits-1]
+    let (vars, posMapping) = generateVars (3*numBits)
+        atoms = map Atom vars
+        first = reverse $ take numBits atoms
+        second = reverse $ take numBits $ drop numBits atoms
+        sums = reverse $ take numBits $ drop (2*numBits) atoms
         summerCircuit = summer overflowMode first second sums
-    in summerCircuit
+    in (summerCircuit,posMapping)
 
 main :: IO ()
 main = do
@@ -30,11 +32,11 @@ main = do
     
 runVerbose :: Int -> IO ()
 runVerbose numBits = do
-    let addition = nBitAddition Forbid numBits
+    let (addition,posMapping) = nBitAddition Forbid numBits
     putStrLn "Circuit:"
     putStrLn $ show addition
     putStrLn "----------------------------------------------------------------"
-    let oneTerms = canonicalToBitVectors (ensureCanonical addition)
+    let oneTerms = canonicalToBitVectors posMapping (ensureCanonical addition)
     putStrLn "Ones:"
     putStrLn $ show oneTerms
     putStrLn "----------------------------------------------------------------"
@@ -57,15 +59,15 @@ runVerbose numBits = do
 
 runEspressoVerbose :: Int -> IO ()
 runEspressoVerbose numBits = do
-    let addition = nBitAddition Forbid numBits
+    let (addition,posMapping) = nBitAddition Forbid numBits
     --putStrLn "Circuit:"
     --putStrLn $ show addition
     --putStrLn "----------------------------------------------------------------"
-    let onesQm = map (\one -> QmTerm(one,0)) $ canonicalToBitVectors (ensureCanonical addition)
+    let onesQm = map (\one -> QmTerm(one,0)) $ canonicalToBitVectors posMapping (ensureCanonical addition)
     putStrLn $ "Ones: " ++ (show $ length onesQm)
     optimizedTerms <- espressoOptimizeExact (3*numBits) $ onesQm
     putStrLn $ "Optimized: " ++ (show $ length optimizedTerms)
-    let cnf = qmTermsToFormula True (3*numBits) optimizedTerms
+    let cnf = qmTermsToFormula True posMapping optimizedTerms
     putStrLn "CNF:"
     putStrLn $ show cnf
     putStrLn "----------------------------------------------------------------"
@@ -74,9 +76,10 @@ runEspressoVerbose numBits = do
 
 
 
-[x0,x1,x2,x3,x4,x5,x6,x7,x8, t1,t2] = map (Atom . var) [0..10]
+(vars, posMapping) = generateVars 11
+[x0,x1,x2,x3,x4,x5,x6,x7,x8, t1,t2] = map Atom vars
 -- -(0 && 1) && ((0 XOR 1) <=> 2)
-oneBit = nBitAddition Forbid 1
+(oneBit,posMapping') = nBitAddition Forbid 1 -- TODO: This won't work because nBitAddition does its own position mapping.
 expectedOneBit = And [Not $ And [x0,x1], Equiv [Xor [x0,x1], x2]]
 
 -- minimal CNF without extra variables:
@@ -159,7 +162,7 @@ twoExtraVariables = [
     twoTseitin10
     ]
 
-twoExtraMinimal = map minimizeFormula twoExtraVariables
+twoExtraMinimal = map (minimizeFormula posMapping) twoExtraVariables
 
 
 
