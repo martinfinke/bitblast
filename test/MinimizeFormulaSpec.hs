@@ -60,7 +60,7 @@ spec = do
             property $ \assignment -> 
                 let a1 = expandOrReduce False (variableSet (getFormula xor)) assignment
                     a2 = expandOrReduce False (variableSet minimized) assignment
-                in eval a2 minimized `shouldBe` eval a1 (getFormula xor)
+                in a2 `isModelOf` minimized `shouldBe` a1 `isModelOf` getFormula xor
 
         it "minimizes a CNF with redundancies" $ do
             let redundant = ensureCanonical $ And [Or [x0, x1], Or [x0, Not x1]]
@@ -115,7 +115,7 @@ spec = do
                 let minimized = minimizeCanonical posMapping canonical
                     a1 = expandOrReduce False (variableSet (getFormula canonical)) assignment
                     a2 = expandOrReduce False (variableSet minimized) assignment
-                in eval a2 minimized `shouldBe` eval a1 (getFormula canonical)
+                in a2 `isModelOf` minimized `shouldBe` a1 `isModelOf` getFormula canonical
 
     describe "convertDashes" $ do
         it "converts dashes to 0 and 1" $ do

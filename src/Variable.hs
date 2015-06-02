@@ -40,14 +40,8 @@ type VarStateTransformer = State.StateT VarMem
 newtype Variable = Variable Int
     deriving(Eq, Ord)
 
--- TODO: Show shouldn't be there. Only possible in a VarState
 instance Show Variable where
     show (Variable i) = show i
-
--- TODO: Enum shouldn't be there.
-instance Enum Variable where
-    toEnum = Variable
-    fromEnum (Variable i) = i
 
 type PositionMapping = [Variable]
 
@@ -60,12 +54,12 @@ eval = flip State.evalState
 generateVars :: Int -- ^ How many 'Variable's to create
              -> ([Variable], [Variable]) -- ^ A list of 'Variable's, and the positionMapping.
 generateVars numvars = eval initial $ do
-    variables <- forM [0..numvars-1] $ \i -> var ('x' : show i)
+    variables <- forM [0..numvars-1] $ const var
     posMapping <- fmap positionMapping State.get
     return (variables, posMapping)
 
-var :: Monad m => String -> VarStateTransformer m Variable
-var varName = do
+var :: Monad m => VarStateTransformer m Variable
+var = do
     varIndex <- fmap currentVarIndex State.get
     let newVar = Variable varIndex
     State.modify (addVariable newVar)

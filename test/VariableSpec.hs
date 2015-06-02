@@ -13,7 +13,7 @@ instance Arbitrary Variable where
 randomVariables :: Int -> Gen [Variable]
 randomVariables numvars = do
     let vars = eval initial $ do
-            forM [0..numvars-1] $ \i -> var ('x' : show i)
+            forM [0..numvars-1] $ const var
     return vars
 
 instance Arbitrary Assignment where

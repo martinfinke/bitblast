@@ -2,7 +2,7 @@
 'Formula' type representing a boolean function in propositional logic, and functions to evaluate and convert to a 'TruthTable.TruthTable'.
 -}
 module Formula (Formula(..),
-                eval,
+                isModelOf,
                 variableSet,
                 toTruthTable,
                 possibleAssignments,
@@ -42,20 +42,20 @@ instance Show Formula where
               parensJoin delimiter fs = parens $ intercalate delimiter $ map show fs
 
 -- | Evaluates a 'Formula' under a given 'Assignment' to 'True' or 'False'.
-eval :: Assignment -- ^ Assigns a value to each 'Variable'
+isModelOf :: Assignment -- ^ Assigns a value to each 'Variable'
      -> Formula -- ^ The 'Formula' to evaluate
      -> Bool -- ^ The value of the 'Formula' under the given 'Assignment'
-eval assignment formula = case formula of
+isModelOf assignment formula = case formula of
     Atom v -> case getVar v assignment of
         Nothing -> error $ "Variable not assigned: " ++ show v -- TODO: Maybe change eval's return type to Maybe Bool instead?
         Just b -> b
-    Not f -> not $ eval assignment f
-    And fs -> all (eval assignment) fs
-    Or fs -> any (eval assignment) fs
-    Implies premise conclusion -> if eval assignment premise then eval assignment conclusion else True
-    Xor fs -> (odd . length . filter (eval assignment)) fs
+    Not f -> not $ assignment `isModelOf` f
+    And fs -> all (assignment `isModelOf`) fs
+    Or fs -> any (assignment `isModelOf`) fs
+    Implies premise conclusion -> if assignment `isModelOf` premise then assignment `isModelOf` conclusion else True
+    Xor fs -> (odd . length . filter (assignment `isModelOf`)) fs
     Equiv [] -> True
-    Equiv (f:fs) -> all (== eval assignment f) (map (eval assignment) fs)
+    Equiv (f:fs) -> all (== assignment `isModelOf` f) (map (assignment `isModelOf`) fs)
 
 -- | The 'Set.Set' of all 'Variable's that appear in a given 'Formula'.
 variableSet :: Formula -> Set.Set Variable
@@ -73,7 +73,7 @@ variableSet formula = case formula of
 toTruthTable :: Formula -> TruthTable
 toTruthTable formula = tableFromList outputs
     where assignments = possibleAssignments formula
-          outputs = map (\assignment -> (assignment, eval assignment formula)) assignments
+          outputs = map (\assignment -> (assignment, assignment `isModelOf` formula)) assignments
 
 -- | All possible 'Assignment's for a given 'Formula', i.e. all combinations of true/false values for its 'variableSet'.
 possibleAssignments :: Formula -> [Assignment]

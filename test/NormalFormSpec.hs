@@ -3,7 +3,7 @@ module NormalFormSpec(NormalFormSpec.spec) where
 import SpecHelper
 import qualified Variable as V
 import VariableSpec
-import Formula(Formula(..), eval, variableSet)
+import Formula(Formula(..), isModelOf, variableSet)
 import NormalForm
 import qualified Data.Set as Set
 import FormulaSpec
@@ -43,7 +43,7 @@ spec = do
                 let cnf = getFormula $ toCanonicalCnf formula
                     a1 = V.expandOrReduce False (variableSet formula) assignment
                     a2 = V.expandOrReduce False (variableSet cnf) assignment
-                in eval a2 cnf `shouldBe` eval a1 formula
+                in a2 `isModelOf` cnf `shouldBe` a1 `isModelOf` formula
 
         it "can create a CNF for a formula without variables" $ do
             let formula = Or [Implies (And []) (And []), Xor []]
@@ -71,7 +71,7 @@ spec = do
                 let dnf = getFormula $ toCanonicalDnf formula
                     a1 = V.expandOrReduce False (variableSet formula) assignment
                     a2 = V.expandOrReduce False (variableSet dnf) assignment
-                in eval a2 dnf `shouldBe` eval a1 formula
+                in a2 `isModelOf` dnf `shouldBe` a1 `isModelOf` formula
 
     describe "isCnf" $ do
         it "is True for a CNF" $ do

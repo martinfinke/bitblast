@@ -48,101 +48,101 @@ spec = do
     describe "eval for literals" $ do
         it "is true if the variable is assigned true" $ do
             let formula = Atom x1
-            eval (allTrue (variableSet formula)) formula `shouldBe` True
+            allTrue (variableSet formula) `isModelOf` formula `shouldBe` True
 
         it "is false if a negated variable is assigned true" $ do
             let negated = Not $ Atom x0
-            eval (allTrue (variableSet negated)) negated `shouldBe` False
+            allTrue (variableSet negated) `isModelOf` negated `shouldBe` False
 
         it "evaluates any Atom correctly" $ do
             property $ \variable bool ->
                 let assignment = setVar variable bool $ allFalse (Set.fromList [variable])
-                in eval assignment (Atom variable) `shouldBe` bool
+                in assignment `isModelOf` Atom variable `shouldBe` bool
 
         it "evaluates any negated Atom correctly" $ do
             property $ \variable bool ->
                 let assignment = setVar variable bool $ allTrue (Set.fromList [variable])
-                in eval assignment (Not $ Atom variable) `shouldBe` not bool
+                in assignment `isModelOf` Not (Atom variable) `shouldBe` not bool
 
     describe "eval And" $ do
         it "is true for empty conjuncts" $ do
-            eval (allFalse Set.empty) (And []) `shouldBe` True
+            allFalse Set.empty `isModelOf` And [] `shouldBe` True
 
         it "is false for conjuncts with false literals" $ do
             let f = And [Atom (x0), Atom (x5)]
-            eval (allFalseFor f) f `shouldBe` False
+            allFalseFor f `isModelOf` f `shouldBe` False
 
         it "is true for conjuncts with only true literals" $ do
             let f = And [Not (Atom (x3)), Not (Atom (x1))]
-            eval (allFalseFor f) f `shouldBe` True
+            allFalseFor f `isModelOf` f `shouldBe` True
 
     describe "eval Or" $ do
         it "is false for empty disjuncts" $ do
             let f = Or []
-            eval (allFalseFor f) f `shouldBe` False
+            allFalseFor f `isModelOf` f `shouldBe` False
 
         it "is true if exactly one literal is true" $ do
             let f = Or [Not (Atom (x9)), Atom (x2)]
-            eval (allFalseFor f) f `shouldBe` True
+            allFalseFor f `isModelOf` f `shouldBe` True
 
         it "is true if more than one literal is true" $ do
             let f = Or [Not (Atom (x9)), Atom (x2), Not (Atom (x1))]
-            eval (allFalseFor f) f `shouldBe` True
+            allFalseFor f `isModelOf` f `shouldBe` True
 
         it "is false if there are no true literals" $ do
             let f = Or [Atom (x1), Atom (x5), Atom x9]
-            eval (allFalseFor f) f `shouldBe` False
+            allFalseFor f `isModelOf` f `shouldBe` False
 
     describe "eval implication" $ do
         it "is true when premise is false" $ do
             let f = Implies (Atom (x0)) (Atom x8)
-            eval (allFalseFor f) f `shouldBe` True
+            allFalseFor f `isModelOf` f `shouldBe` True
 
         it "is true when premise is true and conclusion is true" $ do
             let f = Implies (Atom (x0)) (Atom (x2))
-            eval (allTrueFor f) f `shouldBe` True
+            allTrueFor f `isModelOf` f `shouldBe` True
 
         it "is false when premise is true and conclusion is false" $ do
             let f = Implies (Atom (x0)) (Not (Atom x8))
-            eval (allTrueFor f) f `shouldBe` False
+            allTrueFor f `isModelOf` f `shouldBe` False
 
     describe "eval Xor" $ do
         it "is false for an empty Xor" $ do
             let f = Xor []
-            eval (allFalseFor f) f `shouldBe` False
+            allFalseFor f `isModelOf` f `shouldBe` False
 
         it "is true for an Xor with exactly one true term" $ do
             let f = Xor [Not $ Atom (x3)]
-            eval (allFalseFor f) f `shouldBe` True
+            allFalseFor f `isModelOf` f `shouldBe` True
 
         it "is false for an Xor with two true terms" $ do
             let f = Xor [Atom (x2), Atom (x1)]
-            eval (allTrueFor f) f `shouldBe` False
+            allTrueFor f `isModelOf` f `shouldBe` False
 
         it "is true for an Xor with three true terms" $ do
             let f = Xor [Atom (x2), Atom (x1), Atom (x1), Not (Atom (x2))]
-            eval (allTrueFor f) f `shouldBe` True
+            allTrueFor f `isModelOf` f `shouldBe` True
 
     describe "eval Equiv" $ do
         it "is true if there are no terms" $ do
             let f = Equiv []
-            eval (allTrueFor f) f `shouldBe` True
+            allTrueFor f `isModelOf` f `shouldBe` True
 
         it "is true if there's only one term (no matter if that term is true or false)" $ do
             let f = Equiv [Atom (x1)]
-            eval (allFalseFor f) f `shouldBe` True
+            allFalseFor f `isModelOf` f `shouldBe` True
 
         it "is true if all (> 1) terms are false" $ do
             let f = Equiv [Atom (x1), Atom (x9), Atom (x3)]
-            eval (allFalseFor f) f `shouldBe` True
+            allFalseFor f `isModelOf` f `shouldBe` True
 
         it "is true if all (> 1) terms are true" $ do
             let f = Equiv [Not $ Atom (x1), Not $ Atom x9, Not $ Atom (x3)]
-            eval (allFalseFor f) f `shouldBe` True
+            allFalseFor f `isModelOf` f `shouldBe` True
 
         it "is false if one term is false" $ do
             let f = Equiv [Not $ Atom (x1), Atom x9, Not $ Atom (x3)]
-            eval (allFalseFor f) f `shouldBe` False
+            allFalseFor f `isModelOf` f `shouldBe` False
 
     describe "eval nestedFormula" $ do
         it "evaluates nestedFormula correctly" $ do
@@ -153,7 +153,7 @@ spec = do
                     (x7, False),
                     (x9, True)
                     ]
-            eval assignment nestedFormula `shouldBe` True
+            assignment `isModelOf` nestedFormula `shouldBe` True
 
     describe "Formula Show instance" $ do
         it "shows an Atom correctly" $ do
