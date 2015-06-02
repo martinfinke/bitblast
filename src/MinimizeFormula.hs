@@ -1,6 +1,6 @@
 module MinimizeFormula where
 
-import TruthTable
+import TruthTable(Variable, var)
 import Formula
 import NormalForm
 import qualified Data.Vector.Unboxed as U

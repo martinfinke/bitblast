@@ -1,7 +1,7 @@
 module NormalFormSpec(NormalFormSpec.spec) where
 
 import SpecHelper
-import TruthTable(var, allFalse, allTrue)
+import TruthTable(var)
 import Formula(Formula(..), eval)
 import NormalForm
 import qualified Data.Set as Set

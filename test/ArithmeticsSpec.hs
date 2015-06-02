@@ -3,7 +3,7 @@ module ArithmeticsSpec where
 import SpecHelper
 import Arithmetics
 import Formula
-import TruthTable
+import TruthTable(var, setOutputs, allTrueTable, allFalseTable, assignmentFromString)
 import Control.Monad(forM_)
 import MinimizeFormula
 import Debug.Trace(traceShow)

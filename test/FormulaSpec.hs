@@ -2,7 +2,7 @@ module FormulaSpec where
 
 import SpecHelper
 import Formula
-import TruthTable
+import TruthTable(Variable, var, allTrue, allFalse, setVariable, setVariables, emptyTable, setOutput)
 import TruthTableSpec
 import qualified Data.Set as Set
 

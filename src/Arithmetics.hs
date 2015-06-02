@@ -1,7 +1,6 @@
 module Arithmetics where
 
 import Formula
-import TruthTable(Variable)
 import Data.List(zip4)
 import Debug.Trace(traceShow)
 
