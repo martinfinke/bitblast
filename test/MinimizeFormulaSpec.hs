@@ -48,24 +48,10 @@ spec = do
 
     describe "canonicalToBitVectors" $ do
         it "converts a CNF to QmTerms" $ do
-            Set.fromList (canonicalToBitVectors posMapping testCnf) `shouldBe` Set.fromList (map (getTerm . fromString) [
-                "0111", "0110", "0010", "0001", "0000", "1111", "1110", "1010", "1001", "1000"
+            let varSet = variableSet (getFormula testCnf)
+            Set.fromList (canonicalToBitVectors varSet posMapping testCnf) `shouldBe` Set.fromList (map (getTerm . fromString) [
+                "0111", "0110", "0010", "0001", "0000"
                 ])
-
-    describe "qmTermToTerm" $ do
-        it "creates an empty term for an empty qmTerm" $ do
-            qmTermToTerm True [] (fromString "") `shouldBe` Or []
-
-        it "creates a term with one element for a qmcTerm with one element" $ do
-            qmTermToTerm False posMapping (fromString "---0") `shouldBe` And [Not x0]
-            qmTermToTerm False posMapping (fromString "---1") `shouldBe` And [x0]
-
-        it "creates a term with two elements for a qmcTerm with two elements" $ do
-            qmTermToTerm True posMapping (fromString "--01") `shouldBe` Or [Not x0, x1]
-            qmTermToTerm True posMapping (fromString "--00") `shouldBe` Or [x0, x1]
-
-        it "creates a term with three elements for a qmcTerm with three elements" $ do
-            qmTermToTerm False posMapping (fromString "1-01") `shouldBe` And [x0, Not x1, x3]
 
     describe "minimizeCanonical" $ do
         it "doesn't minimize XOR (because it's impossible)" $ do
@@ -99,15 +85,15 @@ spec = do
                     ]
             let canonical = ensureCanonical example
             getFormula canonical `shouldBe` example
-
-            let canonicalBitVectors = canonicalToBitVectors posMapping canonical
+            let varSet = variableSet (getFormula canonical)
+            let canonicalBitVectors = canonicalToBitVectors varSet posMapping canonical
             canonicalBitVectors `shouldBe` map (getTerm . fromString) [
-                    "0100", "0000",
-                    "0110", "0010",
-                    "1100", "1000"
+                    "000",
+                    "010",
+                    "100"
                     ]
             let minimumCover = qm canonicalBitVectors [] []
-            minimumCover `shouldBe` map fromString ["0--0", "--00"]
+            minimumCover `shouldBe` map fromString ["0-0", "-00"]
             let minimized = minimizeCanonical posMapping canonical
             minimized `shouldBe` And [Or [x0, x3], Or [x0, x1]]
 
@@ -131,12 +117,10 @@ spec = do
                     a2 = expandOrReduce False (variableSet minimized) assignment
                 in eval a2 minimized `shouldBe` eval a1 (getFormula canonical)
 
-    describe "termToQmTerm" $ do
+    describe "convertDashes" $ do
         it "converts dashes to 0 and 1" $ do
-            termToBitVectors [v1,v0] (And [x0]) `shouldBe` map (getTerm . fromString) ["11", "01"]
-            termToBitVectors [v3,v2,v1,v0] (And [x0, Not x2, x3]) `shouldBe` map (getTerm . fromString) [
-                    "1011", "1001"
-                    ]
+            convertDashes (fromString "1-0") `shouldBe` map (getTerm . fromString) ["110", "100"]
+            convertDashes (fromString "1--") `shouldBe` map (getTerm . fromString) ["111", "101", "110", "100"]
 
     describe "packTerm" $ do
         it "compresses a Formula term into a QmTerm" $ do
@@ -161,3 +145,17 @@ spec = do
             test False (And [x1,Not x3]) [v0,v1,v3]
             test True (Or [Not x1,Not x3]) [v0,v1,v2,v3]
             test False (And [Not x0,x1,Not x3]) [v0,v1,v3]
+
+        it "creates an empty term for an empty qmTerm" $ do
+            unpackTerm True Set.empty [] (fromString "") `shouldBe` Or []
+
+        it "creates a term with one element for a qmcTerm with one element" $ do
+            unpackTerm False (Set.fromList posMapping) posMapping (fromString "---0") `shouldBe` And [Not x0]
+            unpackTerm False (Set.fromList posMapping) posMapping (fromString "---1") `shouldBe` And [x0]
+
+        it "creates a term with two elements for a qmcTerm with two elements" $ do
+            unpackTerm True (Set.fromList posMapping) posMapping (fromString "--01") `shouldBe` Or [Not x0, x1]
+            unpackTerm True (Set.fromList posMapping) posMapping (fromString "--00") `shouldBe` Or [x0, x1]
+
+        it "creates a term with three elements for a qmcTerm with three elements" $ do
+            unpackTerm False (Set.fromList posMapping) posMapping (fromString "1-01") `shouldBe` And [x0, Not x1, x3]
