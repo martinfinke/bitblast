@@ -1,16 +1,20 @@
 module Variable(
+                Variable,
                 initial,
                 eval,
                 var,
                 Assignment,
                 emptyAssignment,
+                allTrue,
+                allFalse,
                 assignmentFromList,
                 getVar,
                 setVar,
                 TruthTable,
                 emptyTable,
                 getRow,
-                setRow
+                setRow,
+                tableFromList
                 ) where
 
 import qualified Control.Monad.Trans.State.Lazy as State
@@ -22,7 +26,16 @@ newtype VarMem = VarMem {currentVarIndex :: Int}
 type VarState = State.State VarMem
 type VarStateTransformer = State.StateT VarMem
 newtype Variable = Variable Int
-    deriving(Eq)
+    deriving(Eq, Ord)
+
+-- TODO: Show shouldn't be there. Only possible in a VarState
+instance Show Variable where
+    show (Variable i) = show i
+
+-- TODO: Enum shouldn't be there.
+instance Enum Variable where
+    toEnum = Variable
+    fromEnum (Variable i) = i
 
 initial :: VarMem
 initial = VarMem {currentVarIndex=0}
@@ -58,7 +71,7 @@ setVar :: Variable -> Bool -> Assignment -> Assignment
 setVar (Variable i) b (Assignment intMap) = Assignment $ IntMap.insert i b intMap
 
 newtype TruthTable = TruthTable (Map.Map Assignment Bool)
-    deriving(Eq)
+    deriving(Eq, Show)
 
 emptyTable :: TruthTable
 emptyTable = TruthTable Map.empty

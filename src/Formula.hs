@@ -10,7 +10,7 @@ module Formula (Formula(..),
                 highestVariableIndex
                 ) where
 
-import TruthTable (Variable, getVariable, setVariable, Assignment, allFalse, TruthTable, emptyTable, setOutputs)
+import Variable hiding(eval)
 import Data.List (intercalate)
 import qualified Data.Set as Set
 
@@ -47,7 +47,9 @@ eval :: Assignment -- ^ Assigns a value to each 'Variable'
      -> Formula -- ^ The 'Formula' to evaluate
      -> Bool -- ^ The value of the 'Formula' under the given 'Assignment'
 eval assignment formula = case formula of
-    Atom v -> getVariable v assignment
+    Atom v -> case getVar v assignment of
+        Nothing -> error $ "Variable not assigned: " ++ show v -- TODO: Maybe change eval's return type to Maybe Bool instead?
+        Just b -> b
     Not f -> not $ eval assignment f
     And fs -> all (eval assignment) fs
     Or fs -> any (eval assignment) fs
@@ -70,10 +72,10 @@ variableSet formula = case formula of
 
 -- | Generates a 'TruthTable' from a given 'Formula'
 toTruthTable :: Formula -> TruthTable
-toTruthTable formula = setOutputs outputs (emptyTable tableSize)
+toTruthTable formula = tableFromList outputs
     where assignments = possibleAssignments formula
           tableSize = highestVariableIndex formula + 1
-          outputs = map (\assignment -> (assignment, Just $ eval assignment formula)) assignments
+          outputs = map (\assignment -> (assignment, eval assignment formula)) assignments
 
 -- | All possible 'Assignment's for a given 'Formula', i.e. all combinations of true/false values for its 'variableSet'.
 possibleAssignments :: Formula -> [Assignment]
@@ -82,8 +84,8 @@ possibleAssignments = allBoolCombinations . variableSet
 -- | All possible 'Assignment's for a 'Set.Set' of 'Variable's.
 allBoolCombinations :: Set.Set Variable -> [Assignment]
 allBoolCombinations variables
-    | Set.null variables = [allFalse]
-    | otherwise = rest ++ map (setVariable variable True) rest
+    | Set.null variables = [allFalse variables]
+    | otherwise = rest ++ map (setVar variable True) rest
     where variable = Set.elemAt (Set.size variables - 1) variables
           rest = allBoolCombinations (Set.delete variable variables)
 

@@ -2,6 +2,19 @@ module VariableSpec where
 
 import SpecHelper
 import Variable
+import Control.Monad(forM)
+
+instance Arbitrary Variable where
+    arbitrary = do
+        i <- choose (0,10::Int)
+        return $ eval initial $ var ('x' : show i)
+
+randomVariables :: Int -> Gen [Variable]
+randomVariables numvars = do
+    let is = [0..numvars-1]
+    forM is $ \i -> do
+        return $ eval initial $ var ('x' : show i)
+
 
 spec :: Spec
 spec = do
