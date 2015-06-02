@@ -38,7 +38,6 @@ spec = do
                     (term "1110", [0,4]),
                     (term "1111", [2,4])
                     ]
-
         it "throws an error if a minterm isn't covered" $ do
             let prime = fromString "-1"
             let minterm = term "10"
