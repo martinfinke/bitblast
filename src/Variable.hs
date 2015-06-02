@@ -1,6 +1,7 @@
 module Variable where
 
 import qualified Control.Monad.Trans.State.Lazy as State
+import qualified Data.IntMap as IntMap
 
 newtype VarMem = VarMem {currentVarIndex :: Int}
 type VarState = State.State VarMem
@@ -20,9 +21,21 @@ var varName = do
     State.modify addVariable
     return $ Variable varIndex
 
+newtype Assignment = Assignment (IntMap.IntMap Bool)
+    deriving(Eq, Show)
+
+emptyAssignment :: Assignment
+emptyAssignment = Assignment IntMap.empty
+
+getVarValue :: Variable -> Assignment -> Maybe Bool
+getVarValue (Variable i) (Assignment intMap) = IntMap.lookup i intMap
+
+setVarValue :: Variable -> Bool -> Assignment -> Assignment
+setVarValue (Variable i) b (Assignment intMap) = Assignment $ IntMap.insert i b intMap
+
 
 
 
 
 addVariable :: VarMem -> VarMem
-addVariable mem@(VarMem {currentVarIndex=idx}) = VarMem {currentVarIndex=succ idx}
+addVariable mem@(VarMem {currentVarIndex=idx}) = mem{currentVarIndex=succ idx}
