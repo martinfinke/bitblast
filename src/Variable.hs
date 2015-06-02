@@ -69,5 +69,8 @@ getRow assignment (TruthTable assignmentMap) = Map.lookup assignment assignmentM
 setRow :: Assignment -> Bool -> TruthTable -> TruthTable
 setRow assignment b (TruthTable assignmentMap) = TruthTable $ Map.insert assignment b assignmentMap
 
+tableFromList :: [(Assignment, Bool)] -> TruthTable
+tableFromList ls = foldr (uncurry setRow) emptyTable ls
+
 addVariable :: VarMem -> VarMem
 addVariable mem@(VarMem {currentVarIndex=idx}) = mem{currentVarIndex=succ idx}
