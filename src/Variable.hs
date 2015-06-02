@@ -87,7 +87,6 @@ assignmentFromList ls =
     let ls' = map (\(Variable i, b) -> (i,b)) ls
     in Assignment $ IntMap.fromList ls'
 
--- TODO: Test
 assignmentFromString :: [Variable] -> String -> Assignment
 assignmentFromString posMapping string
     | length posMapping /= length string = error $ printf "The string %s has the wrong length (%d) for the positionMapping of length %d." string (length string) (length posMapping)
@@ -97,7 +96,6 @@ assignmentFromString posMapping string
                     then setVar variable False assignment
                     else setVar variable True assignment
 
--- TODO: Test
 assignmentToString :: [Variable] -> Assignment -> String
 assignmentToString posMapping (Assignment intMap) =
     map printVar posMapping

@@ -72,6 +72,17 @@ spec = do
             getVar test2 assignment `shouldBe` Just True
             getVar test1 assignment `shouldBe` Just False
 
+    describe "assignmentToString" $ do
+        it "is the empty string for an empty assignment" $ do
+            assignmentToString [] emptyAssignment `shouldBe` ""
+        it "creates a dash if a variable isn't in the assignment" $ do
+            assignmentToString [test1] emptyAssignment `shouldBe` "-"
+            assignmentToString posMapping emptyAssignment `shouldBe` "---"
+        it "creates a one for a true value" $ do
+            assignmentToString [test1] (setVar test1 True emptyAssignment) `shouldBe` "1"
+        it "creates a zero for a false value" $ do
+            assignmentToString posMapping (setVar test1 False emptyAssignment) `shouldBe` "--0"
+
     describe "expandOrReduce" $ do
         it "does nothing if the variableSet is the same as in the assignment" $ do
             let assignment = setVar test1 True emptyAssignment
