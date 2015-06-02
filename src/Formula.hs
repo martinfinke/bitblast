@@ -74,7 +74,6 @@ variableSet formula = case formula of
 toTruthTable :: Formula -> TruthTable
 toTruthTable formula = tableFromList outputs
     where assignments = possibleAssignments formula
-          tableSize = highestVariableIndex formula + 1
           outputs = map (\assignment -> (assignment, eval assignment formula)) assignments
 
 -- | All possible 'Assignment's for a given 'Formula', i.e. all combinations of true/false values for its 'variableSet'.

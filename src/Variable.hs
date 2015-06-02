@@ -9,6 +9,7 @@ module Variable(
                 allTrue,
                 allFalse,
                 assignmentFromList,
+                assignmentFromString,
                 getVar,
                 setVar,
                 TruthTable,
@@ -23,6 +24,7 @@ import qualified Data.IntMap as IntMap
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Control.Monad(forM)
+import Text.Printf(printf)
 
 data VarMem = VarMem {currentVarIndex :: Int, positionMapping :: [Variable]}
 type VarState = State.State VarMem
@@ -77,6 +79,16 @@ assignmentFromList :: [(Variable, Bool)] -> Assignment
 assignmentFromList ls =
     let ls' = map (\(Variable i, b) -> (i,b)) ls
     in Assignment $ IntMap.fromList ls'
+
+-- TODO: Test
+assignmentFromString :: [Variable] -> String -> Assignment
+assignmentFromString posMapping string
+    | length posMapping /= length string = error $ printf "The string %s has the wrong length (%d) for the positionMapping of length %d." string (length string) (length posMapping)
+    | otherwise = foldr parse emptyAssignment $ zip string posMapping
+        where parse (c,variable) assignment =
+                if c == '0'
+                    then setVar variable False assignment
+                    else setVar variable True assignment
 
 getVar :: Variable -> Assignment -> Maybe Bool
 getVar (Variable i) (Assignment intMap) = IntMap.lookup i intMap
