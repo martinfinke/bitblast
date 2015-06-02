@@ -5,7 +5,6 @@ import Formula
 import Variable hiding (eval)
 import qualified Variable as V
 import VariableSpec
-import TruthTableSpec
 import qualified Data.Set as Set
 import Control.Monad(forM)
 
