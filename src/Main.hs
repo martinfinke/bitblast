@@ -37,7 +37,7 @@ runVerbose numBits = do
     putStrLn "Circuit:"
     putStrLn $ show addition
     putStrLn "----------------------------------------------------------------"
-    let oneTerms = canonicalToBitVectors posMapping (ensureCanonical addition)
+    let oneTerms = canonicalToBitVectors (Set.fromList posMapping) posMapping (ensureCanonical addition)
     putStrLn "Ones:"
     putStrLn $ show oneTerms
     putStrLn "----------------------------------------------------------------"
@@ -64,11 +64,11 @@ runEspressoVerbose numBits = do
     --putStrLn "Circuit:"
     --putStrLn $ show addition
     --putStrLn "----------------------------------------------------------------"
-    let onesQm = map (\one -> QmTerm(one,0)) $ canonicalToBitVectors posMapping (ensureCanonical addition)
+    let onesQm = map (\one -> QmTerm(one,0)) $ canonicalToBitVectors (Set.fromList posMapping) posMapping (ensureCanonical addition)
     putStrLn $ "Ones: " ++ (show $ length onesQm)
     optimizedTerms <- espressoOptimizeExact (3*numBits) $ onesQm
     putStrLn $ "Optimized: " ++ (show $ length optimizedTerms)
-    let cnf = qmTermsToFormula True posMapping optimizedTerms
+    let cnf = qmTermsToFormula (Set.fromList posMapping) True posMapping optimizedTerms
     putStrLn "CNF:"
     putStrLn $ show cnf
     putStrLn "----------------------------------------------------------------"
