@@ -16,6 +16,7 @@ module Variable(
 import qualified Control.Monad.Trans.State.Lazy as State
 import qualified Data.IntMap as IntMap
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 newtype VarMem = VarMem {currentVarIndex :: Int}
 type VarState = State.State VarMem
@@ -40,6 +41,10 @@ newtype Assignment = Assignment (IntMap.IntMap Bool)
 
 emptyAssignment :: Assignment
 emptyAssignment = Assignment IntMap.empty
+
+allTrue, allFalse :: Set.Set Variable -> Assignment
+(allTrue, allFalse) = (forAllVars True, forAllVars False)
+    where forAllVars b = Set.foldr (flip setVar b) emptyAssignment
 
 assignmentFromList :: [(Variable, Bool)] -> Assignment
 assignmentFromList ls =
