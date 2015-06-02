@@ -34,7 +34,7 @@ canonicalToBitVectors positionMapping canonical = concatMap (termToBitVectors po
 termToBitVectors :: [Variable] -> Formula -> [BitVector]
 termToBitVectors positionMapping term = convertDashes $ foldr setBitForVariable emptyTerm variablesWithPositions
     where emptyTerm = (QmTerm (0,0))
-          variablesWithPositions = zip [0..] positionMapping
+          variablesWithPositions = zip [0..] (reverse positionMapping)
           setBitForVariable (i,variable) (QmTerm (bv,mask)) = QmTerm $ case valueForVariable term variable of
             Nothing -> (bv, B.setBit mask i)
             Just bool -> (if bool then B.setBit bv i else B.clearBit bv i, mask)
@@ -70,13 +70,20 @@ qmTermsToFormula cnfMode positionMapping qmTerms =
         rootOp = if cnfMode then And else Or
     in  rootOp terms
 
+
+-- The last-added variable (i.e. the first in positionMapping) is at Bit 0.
+-- In an Assignment, the last-added variable is on the left
+-- In a QmTerm, the least significant bit is on the right
+-- B.setBit 0 sets the least significant bit, so the one on the right.
+-- So we have to reverse the positionMapping here and in termToBitVectors.
+
 -- | Converts a 'QmcTerm' back to a minterm (for DNFs) or maxterm (for CNFs). 
 qmTermToTerm :: Bool -- ^ 'True' for CNF, 'False' for DNF. If true, the terms are inverted.
              -> [Variable] -- ^ The Position Mapping
              -> QmTerm
              -> Formula
 qmTermToTerm cnfMode positionMapping (QmTerm (term,mask)) = op $ foldr translate [] variablesWithPositions
-    where variablesWithPositions = zip [0..] positionMapping
+    where variablesWithPositions = zip [0..] (reverse positionMapping)
           op = if cnfMode then Or else And
           translate (i,variable) restLiterals
                 | B.testBit mask i = restLiterals

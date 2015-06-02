@@ -8,6 +8,8 @@ import FormulaSpec
 import NormalForm
 import NormalFormSpec
 import Qm
+import qualified Data.Set as Set
+
 
 spec :: Spec
 spec = do
@@ -46,21 +48,24 @@ spec = do
 
     describe "canonicalToBitVectors" $ do
         it "converts a CNF to QmTerms" $ do
-            canonicalToBitVectors posMapping testCnf `shouldBe` map (getTerm . fromString) [
-                "111", "110", "010", "001", "000"
-                ]
+            Set.fromList (canonicalToBitVectors posMapping testCnf) `shouldBe` Set.fromList (map (getTerm . fromString) [
+                "0111", "0110", "0010", "0001", "0000", "1111", "1110", "1010", "1001", "1000"
+                ])
 
     describe "qmTermToTerm" $ do
         it "creates an empty term for an empty qmTerm" $ do
-            qmTermToTerm True posMapping (fromString "") `shouldBe` Or []
+            qmTermToTerm True [] (fromString "") `shouldBe` Or []
 
         it "creates a term with one element for a qmcTerm with one element" $ do
-            qmTermToTerm False posMapping (fromString "0") `shouldBe` And [Not x0]
-            qmTermToTerm False posMapping (fromString "1") `shouldBe` And [x0]
+            qmTermToTerm False posMapping (fromString "---0") `shouldBe` And [Not x0]
+            qmTermToTerm False posMapping (fromString "---1") `shouldBe` And [x0]
 
         it "creates a term with two elements for a qmcTerm with two elements" $ do
-            qmTermToTerm True posMapping (fromString "01") `shouldBe` Or [Not x0, x1]
-            qmTermToTerm True posMapping (fromString "00") `shouldBe` Or [x0, x1]
+            qmTermToTerm True posMapping (fromString "--01") `shouldBe` Or [Not x0, x1]
+            qmTermToTerm True posMapping (fromString "--00") `shouldBe` Or [x0, x1]
+
+        it "creates a term with three elements for a qmcTerm with three elements" $ do
+            qmTermToTerm False posMapping (fromString "1-01") `shouldBe` And [x0, Not x1, x3]
 
     describe "minimizeCanonical" $ do
         it "doesn't minimize XOR (because it's impossible)" $ do
@@ -128,8 +133,7 @@ spec = do
 
     describe "termToQmTerm" $ do
         it "converts dashes to 0 and 1" $ do
-            termToBitVectors posMapping (Or []) `shouldBe` map (getTerm . fromString) ["1", "0"]
-            termToBitVectors posMapping (And [x0]) `shouldBe` map (getTerm . fromString) ["11", "01"]
-            termToBitVectors posMapping (And [x0, Not x2, x3]) `shouldBe` map (getTerm . fromString) [
+            termToBitVectors [v1,v0] (And [x0]) `shouldBe` map (getTerm . fromString) ["11", "01"]
+            termToBitVectors [v3,v2,v1,v0] (And [x0, Not x2, x3]) `shouldBe` map (getTerm . fromString) [
                     "1011", "1001"
                     ]
