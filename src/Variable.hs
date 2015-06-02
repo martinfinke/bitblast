@@ -1,4 +1,17 @@
-module Variable where
+module Variable(
+                initial,
+                eval,
+                var,
+                Assignment,
+                emptyAssignment,
+                assignmentFromList,
+                getVar,
+                setVar,
+                TruthTable,
+                emptyTable,
+                getRow,
+                setRow
+                ) where
 
 import qualified Control.Monad.Trans.State.Lazy as State
 import qualified Data.IntMap as IntMap
@@ -28,17 +41,22 @@ newtype Assignment = Assignment (IntMap.IntMap Bool)
 emptyAssignment :: Assignment
 emptyAssignment = Assignment IntMap.empty
 
-getVarValue :: Variable -> Assignment -> Maybe Bool
-getVarValue (Variable i) (Assignment intMap) = IntMap.lookup i intMap
+assignmentFromList :: [(Variable, Bool)] -> Assignment
+assignmentFromList ls =
+    let ls' = map (\(Variable i, b) -> (i,b)) ls
+    in Assignment $ IntMap.fromList ls'
 
-setVarValue :: Variable -> Bool -> Assignment -> Assignment
-setVarValue (Variable i) b (Assignment intMap) = Assignment $ IntMap.insert i b intMap
+getVar :: Variable -> Assignment -> Maybe Bool
+getVar (Variable i) (Assignment intMap) = IntMap.lookup i intMap
+
+setVar :: Variable -> Bool -> Assignment -> Assignment
+setVar (Variable i) b (Assignment intMap) = Assignment $ IntMap.insert i b intMap
 
 newtype TruthTable = TruthTable (Map.Map Assignment Bool)
     deriving(Eq)
 
 emptyTable :: TruthTable
-emptyTable = TruthTable (Map.empty)
+emptyTable = TruthTable Map.empty
 
 getRow :: Assignment -> TruthTable -> Maybe Bool
 getRow assignment (TruthTable assignmentMap) = Map.lookup assignment assignmentMap
