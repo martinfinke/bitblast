@@ -106,19 +106,21 @@ fullAdderChain products sumIns initialCIn = (finalSums,finalCOut)
     where (finalSums,finalCOut) = foldr makeFullAdder ([],initialCIn) $ zip products sumIns
           makeFullAdder (p,sumIn) (sums,cIn) =
                 let (sOut,cOut) = fullAdderSegment (p,sumIn) cIn
-                in (sOut:sums, cOut) -- TODO: Maybe this has to be: sums ++ [sOut]
+                in (sOut:sums, cOut)
 
--- TODO: Ensure that this works with 1 bit, too.
 multiplierSegment :: [Formula] -> [Formula] -> [Formula]
-multiplierSegment xs ys =
-    let lsbAtFrontYs = reverse ys
-        firstRowSums = firstRow xs (head lsbAtFrontYs)
-        second@(secondRowSums,_) = secondRow xs (head $ tail lsbAtFrontYs) (init firstRowSums)
-        ((lastRowSums, finalCarryOut), accumSums) = foldr (connectRows' xs) (second, [last secondRowSums, last firstRowSums]) (drop 2 lsbAtFrontYs)
-    in finalCarryOut : (init lastRowSums) ++ accumSums
+multiplierSegment xs ys
+    | hasSecondRow =
+        let ((lastRowSums, finalCarryOut), accumSums) = foldr (connectRows xs) (second, [last secondRowSums, last firstRowSums]) (drop 2 lsbAtFrontYs)
+        in finalCarryOut : (init lastRowSums) ++ accumSums
+    | otherwise = firstRowSums
+    where lsbAtFrontYs = reverse ys
+          firstRowSums = firstRow xs (head lsbAtFrontYs)
+          hasSecondRow = length lsbAtFrontYs > 1
+          second@(secondRowSums,_) = secondRow xs (head $ tail lsbAtFrontYs) (init firstRowSums)
 
-connectRows' :: [Formula] -> Formula -> (Row, [Formula]) -> (Row, [Formula])
-connectRows' xs y ((previousSums, previousCarry), sumsAccum) =
+connectRows :: [Formula] -> Formula -> (Row, [Formula]) -> (Row, [Formula])
+connectRows xs y ((previousSums, previousCarry), sumsAccum) =
     let row@(currentSums, _) = nthRow xs y (previousCarry : init previousSums)
     in (row, last currentSums : sumsAccum)
 
