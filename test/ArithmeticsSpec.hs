@@ -8,10 +8,10 @@ import Control.Monad(forM_)
 import MinimizeFormula
 import Debug.Trace(traceShow)
 import qualified Data.Set as Set
+import ArithmeticTruthTables
 
 spec :: Spec
 spec = do
-    --let trueOnlyForAssignments assignments numVariables = setOutputs (zip assignments $ repeat (Just True)) (allFalseTable numVariables)
     let trueOnlyForAssignments posMapping assignments = foldr (flip setRow True) (allFalseTable posMapping) assignments
     describe "halfAdder" $ do
         it "has the correct truth table" $ do
@@ -64,24 +64,7 @@ spec = do
             let ([s1',s0'], cOut') = summerSegment [x1,x0] [y1,y0]
             let equiv = And [Equiv [s1, s1'], Equiv [s0, s0'], Equiv [cOut, cOut']]
             let smer = summer (Connect cOut) [x1,x0] [y1,y0] [s1,s0]
-            let trueAssignments = map (assignmentFromString posMapping) [
-                    "0000000",
-                    "0001010",
-                    "0010100",
-                    "0011110",
-                    "0100010",
-                    "0101100",
-                    "0110110",
-                    "0111001",
-                    "1000100",
-                    "1001110",
-                    "1010001",
-                    "1011011",
-                    "1100110",
-                    "1101001",
-                    "1110011",
-                    "1111101"
-                    ]
+            let trueAssignments = map (assignmentFromString posMapping) addition2BitConnectOverflow
             toTruthTable equiv `shouldBe` trueOnlyForAssignments posMapping trueAssignments
             toTruthTable smer `shouldBe` trueOnlyForAssignments posMapping trueAssignments
 
@@ -109,79 +92,7 @@ spec = do
         it "has the correct truth table for 3 bits" $ do
             let (vars, posMapping) = generateVars 10
             let [s0,s1,s2,cOut,y0,y1,y2,x0,x1,x2] = map Atom vars
-            let trueAssignments = map (assignmentFromString posMapping) [
-                    "000" ++ "000" ++ "0" ++ "000",
-                    "000" ++ "001" ++ "0" ++ "001",
-                    "000" ++ "010" ++ "0" ++ "010",
-                    "000" ++ "011" ++ "0" ++ "011",
-                    "000" ++ "100" ++ "0" ++ "100",
-                    "000" ++ "101" ++ "0" ++ "101",
-                    "000" ++ "110" ++ "0" ++ "110",
-                    "000" ++ "111" ++ "0" ++ "111",
-
-                    "001" ++ "000" ++ "0" ++ "001",
-                    "001" ++ "001" ++ "0" ++ "010",
-                    "001" ++ "010" ++ "0" ++ "011",
-                    "001" ++ "011" ++ "0" ++ "100",
-                    "001" ++ "100" ++ "0" ++ "101",
-                    "001" ++ "101" ++ "0" ++ "110",
-                    "001" ++ "110" ++ "0" ++ "111",
-                    "001" ++ "111" ++ "1" ++ "000",
-
-                    "010" ++ "000" ++ "0" ++ "010",
-                    "010" ++ "001" ++ "0" ++ "011",
-                    "010" ++ "010" ++ "0" ++ "100",
-                    "010" ++ "011" ++ "0" ++ "101",
-                    "010" ++ "100" ++ "0" ++ "110",
-                    "010" ++ "101" ++ "0" ++ "111",
-                    "010" ++ "110" ++ "1" ++ "000",
-                    "010" ++ "111" ++ "1" ++ "001",
-
-                    "011" ++ "000" ++ "0" ++ "011",
-                    "011" ++ "001" ++ "0" ++ "100",
-                    "011" ++ "010" ++ "0" ++ "101",
-                    "011" ++ "011" ++ "0" ++ "110",
-                    "011" ++ "100" ++ "0" ++ "111",
-                    "011" ++ "101" ++ "1" ++ "000",
-                    "011" ++ "110" ++ "1" ++ "001",
-                    "011" ++ "111" ++ "1" ++ "010",
-
-                    "100" ++ "000" ++ "0" ++ "100",
-                    "100" ++ "001" ++ "0" ++ "101",
-                    "100" ++ "010" ++ "0" ++ "110",
-                    "100" ++ "011" ++ "0" ++ "111",
-                    "100" ++ "100" ++ "1" ++ "000",
-                    "100" ++ "101" ++ "1" ++ "001",
-                    "100" ++ "110" ++ "1" ++ "010",
-                    "100" ++ "111" ++ "1" ++ "011",
-
-                    "101" ++ "000" ++ "0" ++ "101",
-                    "101" ++ "001" ++ "0" ++ "110",
-                    "101" ++ "010" ++ "0" ++ "111",
-                    "101" ++ "011" ++ "1" ++ "000",
-                    "101" ++ "100" ++ "1" ++ "001",
-                    "101" ++ "101" ++ "1" ++ "010",
-                    "101" ++ "110" ++ "1" ++ "011",
-                    "101" ++ "111" ++ "1" ++ "100",
-
-                    "110" ++ "000" ++ "0" ++ "110",
-                    "110" ++ "001" ++ "0" ++ "111",
-                    "110" ++ "010" ++ "1" ++ "000",
-                    "110" ++ "011" ++ "1" ++ "001",
-                    "110" ++ "100" ++ "1" ++ "010",
-                    "110" ++ "101" ++ "1" ++ "011",
-                    "110" ++ "110" ++ "1" ++ "100",
-                    "110" ++ "111" ++ "1" ++ "101",
-
-                    "111" ++ "000" ++ "0" ++ "111",
-                    "111" ++ "001" ++ "1" ++ "000",
-                    "111" ++ "010" ++ "1" ++ "001",
-                    "111" ++ "011" ++ "1" ++ "010",
-                    "111" ++ "100" ++ "1" ++ "011",
-                    "111" ++ "101" ++ "1" ++ "100",
-                    "111" ++ "110" ++ "1" ++ "101",
-                    "111" ++ "111" ++ "1" ++ "110"
-                    ]
+            let trueAssignments = map (assignmentFromString posMapping) addition3Bit
             let smer = summer (Connect cOut) [x2,x1,x0] [y2,y1,y0] [s2,s1,s0]
             toTruthTable smer `shouldBe` trueOnlyForAssignments posMapping trueAssignments
 
@@ -191,18 +102,7 @@ spec = do
             let ([s1',s0'], cOut') = summerSegment [x1,x0] [y1,y0]
             let equiv = And [Equiv [s1, s1'], Equiv [s0, s0'], Not cOut']
             let smer = summer Forbid [x1,x0] [y1,y0] [s1,s0]
-            let trueAssignments = map (assignmentFromString posMapping) [
-                    "000000",
-                    "000101",
-                    "001010",
-                    "001111",
-                    "010001",
-                    "010110",
-                    "011011",
-                    "100010",
-                    "100111",
-                    "110011"
-                    ]
+            let trueAssignments = map (assignmentFromString posMapping) addition2BitForbidOverflow
             toTruthTable equiv `shouldBe` trueOnlyForAssignments posMapping trueAssignments
             toTruthTable smer `shouldBe` trueOnlyForAssignments posMapping trueAssignments
 
@@ -212,24 +112,7 @@ spec = do
             let ([s1',s0'], _) = summerSegment [x1,x0] [y1,y0]
             let equiv = And [Equiv [s1, s1'], Equiv [s0, s0']]
             let smer = summer DontCare [x1,x0] [y1,y0] [s1,s0]
-            let trueAssignments = map (assignmentFromString posMapping) [
-                    "000000",
-                    "000101",
-                    "001010",
-                    "001111",
-                    "010001",
-                    "010110",
-                    "011011",
-                    "011100",
-                    "100010",
-                    "100111",
-                    "101000",
-                    "101101",
-                    "110011",
-                    "110100",
-                    "111001",
-                    "111110"
-                    ]
+            let trueAssignments = map (assignmentFromString posMapping) addition2BitDontCareOverflow
             toTruthTable equiv `shouldBe` trueOnlyForAssignments posMapping trueAssignments
             toTruthTable smer `shouldBe` trueOnlyForAssignments posMapping trueAssignments
 
@@ -263,24 +146,7 @@ spec = do
                     Equiv [s0,s0'],
                     Equiv [s1,s1']
                     ]
-            let trueAssignments = map (assignmentFromString posMapping) [
-                    "000000",
-                    "000100",
-                    "001000",
-                    "001100",
-                    "010000",
-                    "010101",
-                    "011010",
-                    "011111",
-                    "100000",
-                    "100110",
-                    "101000",
-                    "101110",
-                    "110000",
-                    "110111",
-                    "111010",
-                    "111101"
-                    ]
+            let trueAssignments = map (assignmentFromString posMapping) multiplication2BitDontCareOverflow
             toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments posMapping trueAssignments
 
     describe "multiplierSegment (combinatorial)" $ do
@@ -315,25 +181,45 @@ spec = do
                     Equiv [s2,s2'],
                     Equiv [s3,s3']
                     ]
-            let trueAssignments = map (assignmentFromString posMapping) [
-                    "00000000",
-                    "00010000",
-                    "00100000",
-                    "00110000",
-                    "01000000",
-                    "01010001",
-                    "01100010",
-                    "01110011",
-                    "10000000",
-                    "10010010",
-                    "10100100",
-                    "10110110",
-                    "11000000",
-                    "11010011",
-                    "11100110",
-                    "11111001"
+            let trueAssignments = map (assignmentFromString posMapping) multiplication2BitConnectOverflow
+            toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments posMapping trueAssignments
+            let generatedTable = map (assignmentFromString posMapping) (multiplicationTableGen 2 4)
+            toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments posMapping generatedTable
+
+        it "has the correct truth table for 3 bits" $ do
+            let (vars, posMapping) = generateVars 12
+            let [s0,s1,s2,s3,s4,s5,y0,y1,y2,x0,x1,x2] = map Atom vars
+            let [s5',s4',s3',s2',s1',s0'] = multiplierSegment [x2,x1,x0] [y2,y1,y0]
+            let connectedOutputs = And [
+                    Equiv [s0,s0'],
+                    Equiv [s1,s1'],
+                    Equiv [s2,s2'],
+                    Equiv [s3,s3'],
+                    Equiv [s4,s4'],
+                    Equiv [s5,s5']
                     ]
-            truthTableToString posMapping (toTruthTable connectedOutputs) `shouldBe` truthTableToString posMapping (trueOnlyForAssignments posMapping trueAssignments)
+            let generatedTable = map (assignmentFromString posMapping) (multiplicationTableGen 3 6)
+            toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments posMapping generatedTable
+        it "has the correct truth table for 4 bits" $ do
+            let (vars, posMapping) = generateVars 16
+            let [s0,s1,s2,s3,s4,s5,s6,s7,y0,y1,y2,y3,x0,x1,x2,x3] = map Atom vars
+            let [s7',s6',s5',s4',s3',s2',s1',s0'] = multiplierSegment [x3,x2,x1,x0] [y3,y2,y1,y0]
+            let connectedOutputs = And [
+                    Equiv [s0,s0'],
+                    Equiv [s1,s1'],
+                    Equiv [s2,s2'],
+                    Equiv [s3,s3'],
+                    Equiv [s4,s4'],
+                    Equiv [s5,s5'],
+                    Equiv [s6,s6'],
+                    Equiv [s7,s7']
+                    ]
+            let generatedTable = map (assignmentFromString posMapping) (multiplicationTableGen 4 8)
+            -- TODO: This takes too long
+            --toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments posMapping generatedTable
+            pending
+
+
 
 (vars, posMapping) = generateVars 8
 [s0,s1,s2,s3,y0,y1,x0,x1] = map Atom vars
