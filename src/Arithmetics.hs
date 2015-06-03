@@ -5,8 +5,6 @@ import Data.List(zip4)
 import Debug.Trace(traceShow)
 import Data.List(zip3)
 import Text.Printf(printf)
-import qualified Control.Monad.Trans.State.Lazy as State
-import Control.Monad(forM_)
 
 halfAdderSegment :: (Formula,Formula) -> (Formula,Formula)
 halfAdderSegment (x,y) = (s,c)
@@ -50,24 +48,20 @@ summer overflowMode xs ys sums
 
 -- Imperative port from Boolector's mul_aigvec. Has DontCare overflow.
 multiplierSegmentDontCareOverflow :: [Formula] -> [Formula] -> [Formula]
-multiplierSegmentDontCareOverflow xs ys = fst $ flip State.execState ([And [x, last ys] | x <- xs], false) $ do
-    let len = length xs
-    let outerLoopRange = reverse [0..length xs - 2]
-    forM_ outerLoopRange $ \i -> do
-        State.modify $ storeCout false
-        let innerLoopRange = reverse [0..i]
-        forM_ innerLoopRange $ \j -> do
-            let andGate = And [xs!!(len - 1 - i + j), ys!!i]
-            (res,cout) <- State.get
-            let tmp = res!!j
-            let cin = cout
-            let (adderSum,adderCout) = fullAdderSegment (tmp,andGate) cin
-            State.modify $ storeCout adderCout
-            State.modify $ storeRes (replaceInList res j adderSum)
+multiplierSegmentDontCareOverflow xs ys =
+    let res = [And [x, last ys] | x <- xs]
+    in fst $ foldr outerLoop (res,false) [0..length xs - 2]
     where false = Or []
-
-storeRes newRes (_,oldCout) = (newRes,oldCout)
-storeCout newCout (oldRes,_) = (oldRes,newCout)
+          len = length xs
+          outerLoop i (res,cout) =
+                let res' = fst $ foldr (innerLoop i) (res,cout) [0..i]
+                in (res',false) 
+          innerLoop i j (res,cout) =
+                let andGate = And [xs!!(len - 1 - i + j), ys!!i]
+                    tmp = res!!j
+                    cin = cout
+                    (adderSum,adderCout) = fullAdderSegment (tmp,andGate) cin
+                in (replaceInList res j adderSum, adderCout)
 
 replaceInList :: [a] -> Int -> a -> [a]
 replaceInList ls i el =
