@@ -233,11 +233,11 @@ spec = do
             toTruthTable equiv `shouldBe` trueOnlyForAssignments posMapping trueAssignments
             toTruthTable smer `shouldBe` trueOnlyForAssignments posMapping trueAssignments
 
-    describe "multiplierSegment" $ do
+    describe "multiplierSegmentDontCareOverflow (from Boolector)" $ do
         it "multiplies two one-bit numbers" $ do
             let (vars,posMapping) = generateVars 2
             let [x,y] = map Atom vars
-            let mulSeg = multiplierSegment' [x] [y]
+            let mulSeg = multiplierSegmentDontCareOverflow [x] [y]
             let prod = last mulSeg
             let trueAssignments = map (assignmentFromString posMapping) [
                     "11"
@@ -246,7 +246,7 @@ spec = do
         it "has the correct truth table for 1 bit" $ do
             let (vars,posMapping) = generateVars 3
             let [s,y,x] = map Atom vars
-            let mulSeg = multiplierSegment' [x] [y]
+            let mulSeg = multiplierSegmentDontCareOverflow [x] [y]
             let connectedOutputs = Equiv [s, last mulSeg]
             let trueAssignments = map (assignmentFromString posMapping) [
                     "000",
@@ -258,7 +258,7 @@ spec = do
         it "has the correct truth table for 2 bits" $ do
             let (vars, posMapping) = generateVars 6
             let [s0,s1,y0,y1,x0,x1] = map Atom vars
-            let [s1',s0'] = multiplierSegment' [x1,x0] [y1,y0]
+            let [s1',s0'] = multiplierSegmentDontCareOverflow [x1,x0] [y1,y0]
             let connectedOutputs = And [
                     Equiv [s0,s0'],
                     Equiv [s1,s1']
@@ -282,3 +282,58 @@ spec = do
                     "111101"
                     ]
             toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments posMapping trueAssignments
+
+    describe "multiplierSegment (combinatorial)" $ do
+        it "multiplies two one-bit numbers" $ do
+            let (vars,posMapping) = generateVars 2
+            let [x,y] = map Atom vars
+            let mulSeg = multiplierSegment [x] [y]
+            let prod = last mulSeg
+            let trueAssignments = map (assignmentFromString posMapping) [
+                    "11"
+                    ]
+            toTruthTable prod `shouldBe` trueOnlyForAssignments posMapping trueAssignments
+        it "has the correct truth table for 1 bit" $ do
+            let (vars,posMapping) = generateVars 3
+            let [s,y,x] = map Atom vars
+            let mulSeg = multiplierSegment [x] [y]
+            let connectedOutputs = Equiv [s, last mulSeg]
+            let trueAssignments = map (assignmentFromString posMapping) [
+                    "000",
+                    "010",
+                    "100",
+                    "111"
+                    ]
+            toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments posMapping trueAssignments
+        it "has the correct truth table for 2 bits" $ do
+            let (vars, posMapping) = generateVars 8
+            let [s0,s1,s2,s3,y0,y1,x0,x1] = map Atom vars
+            let [s3',s2',s1',s0'] = multiplierSegment [x1,x0] [y1,y0]
+            let connectedOutputs = And [
+                    Equiv [s0,s0'],
+                    Equiv [s1,s1'],
+                    Equiv [s2,s2'],
+                    Equiv [s3,s3']
+                    ]
+            let trueAssignments = map (assignmentFromString posMapping) [
+                    "00000000",
+                    "00010000",
+                    "00100000",
+                    "00110000",
+                    "01000000",
+                    "01010001",
+                    "01100010",
+                    "01110011",
+                    "10000000",
+                    "10010010",
+                    "10100100",
+                    "10110110",
+                    "11000000",
+                    "11010011",
+                    "11100110",
+                    "11111001"
+                    ]
+            truthTableToString posMapping (toTruthTable connectedOutputs) `shouldBe` truthTableToString posMapping (trueOnlyForAssignments posMapping trueAssignments)
+
+(vars, posMapping) = generateVars 8
+[s0,s1,s2,s3,y0,y1,x0,x1] = map Atom vars

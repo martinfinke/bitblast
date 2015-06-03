@@ -48,9 +48,9 @@ summer overflowMode xs ys sums
                 DontCare -> sumEquivs
                 Connect cOut -> Equiv [cOut,cOut'] : sumEquivs
 
--- Imperative port from Boolector's mul_aigvec. Has DontCate overflow.
-multiplierSegment' :: [Formula] -> [Formula] -> [Formula]
-multiplierSegment' xs ys = fst $ flip State.execState ([And [x, last ys] | x <- xs], false) $ do
+-- Imperative port from Boolector's mul_aigvec. Has DontCare overflow.
+multiplierSegmentDontCareOverflow :: [Formula] -> [Formula] -> [Formula]
+multiplierSegmentDontCareOverflow xs ys = fst $ flip State.execState ([And [x, last ys] | x <- xs], false) $ do
     let len = length xs
     let outerLoopRange = reverse [0..length xs - 2]
     forM_ outerLoopRange $ \i -> do
@@ -76,35 +76,49 @@ replaceInList ls i el =
 
 
 
+-- See http://www.allsyllabus.com/aj/note/ECE/Digital_System_Design_Using_VHDL/Unit4/4-bit%20Multiplier%20Partial%20Products.php
+-- oberste Reihe sind nur AND aus x_i und y_0
+-- in der zweiten Reihe sind der erste und letzte ein Halb-Adder, und alles in der Mitte ein fullAdder
+-- in allen folgenden Reihen ist der letzte ein Halb-Adder, alles andere sind Full-Adder
 
+firstRow :: [Formula] -> Formula -> [Formula]
+firstRow xs y = [And [x,y] | x <- xs]
 
+type Row = ([Formula], Formula)
+-- Hier dürfen nur die n-1 sums rein, die von der firstRow tatsächlich weitergegeben werden!
+secondRow :: [Formula] -> Formula -> [Formula] -> Row
+secondRow xs y sumIns = (sumOuts, leftmostCarryOut)
+    where sumOuts = leftmostSum : middleSums ++ [rightmostSum]
+          products = [And [x,y] | x <- xs]
+          (leftmostSum,leftmostCarryOut) = halfAdderSegment (head products, middleCarryOut)
+          (rightmostSum,rightmostCarryOut) = halfAdderSegment (last products, last sumIns)
+          (middleSums,middleCarryOut) = fullAdderChain (tail $ init products) (init sumIns) rightmostCarryOut
 
+nthRow :: [Formula] -> Formula -> [Formula] -> Row
+nthRow xs y sumIns = (sumOuts, leftmostCarryOut)
+    where sumOuts = otherSums ++ [rightmostSum]
+          products = [And [x,y] | x <- xs]
+          (rightmostSum,rightmostCarryOut) = halfAdderSegment (last products, last sumIns)
+          (otherSums,leftmostCarryOut) = fullAdderChain (init products) (init sumIns) rightmostCarryOut
 
--- Non-functional combinatorial multiplier below:
+fullAdderChain :: [Formula] -> [Formula] -> Formula -> ([Formula], Formula)
+fullAdderChain products sumIns initialCIn = (finalSums,finalCOut)
+    where (finalSums,finalCOut) = foldr makeFullAdder ([],initialCIn) $ zip products sumIns
+          makeFullAdder (p,sumIn) (sums,cIn) =
+                let (sOut,cOut) = fullAdderSegment (p,sumIn) cIn
+                in (sOut:sums, cOut) -- TODO: Maybe this has to be: sums ++ [sOut]
 
-topRow :: [Formula] -> Formula -> ([Formula], [Formula])
-topRow xs y = (sumOuts, cOuts)
-    where blocks = [halfAdderSegment (And [x,y], Or []) | x <- xs] -- Actually there's no need for a half adder here, the AND is enough
-          (sumOuts,cOuts) = (map fst blocks, map snd blocks)
-
-row :: [Formula] -> [Formula] -> [Formula] -> Formula -> ([Formula],[Formula])
-row (x:xs) sumIns (cIn:cIns) y
-    | length xs /= length sumIns || length xs /= length cIns = error $ printf "Inputs have wrong lengths: %d %d %d" (length $ x:xs) (length sumIns) (length $ cIn:cIns)
-    | otherwise = (sumOuts, cOuts)
-    where firstBlock = halfAdderSegment (And [x,y], traceShow ("    cIn: " ++ show cIn )$ cIn)
-          blocks = firstBlock : [fullAdderSegment (sumIn,And [x',y]) cIn' | (sumIn,x',cIn') <- zip3 sumIns xs cIns]
-          (sumOuts,cOuts) = (map fst blocks, map snd blocks)
-
--- | The xs and ys should have the LSB at the end. The sum outputs will have the LSB at the end.
+-- TODO: Ensure that this works with 1 bit, too.
 multiplierSegment :: [Formula] -> [Formula] -> [Formula]
-multiplierSegment xs ys = 
+multiplierSegment xs ys =
     let lsbAtFrontYs = reverse ys
-        firstRow = topRow xs (head lsbAtFrontYs)
-        (rows,sums) = foldr (connectRows xs) (firstRow,[]) (tail lsbAtFrontYs)
-        (lastRowSums,(msbCarry:_)) = rows
-    in msbCarry : lastRowSums ++ sums
+        firstRowSums = firstRow xs (head lsbAtFrontYs)
+        second@(secondRowSums,_) = secondRow xs (head $ tail lsbAtFrontYs) (init firstRowSums)
+        ((lastRowSums, finalCarryOut), accumSums) = foldr (connectRows' xs) (second, [last secondRowSums, last firstRowSums]) (drop 2 lsbAtFrontYs)
+    in finalCarryOut : (init lastRowSums) ++ accumSums
 
-connectRows :: [Formula] -> Formula -> (([Formula],[Formula]),[Formula]) -> (([Formula],[Formula]),[Formula])
-connectRows xs y ((lastSums,lastCs),sums) =
-    let currentRow = row xs (init lastSums) lastCs y
-    in (currentRow,last lastSums : sums)
+connectRows' :: [Formula] -> Formula -> (Row, [Formula]) -> (Row, [Formula])
+connectRows' xs y ((previousSums, previousCarry), sumsAccum) =
+    let row@(currentSums, _) = nthRow xs y (previousCarry : init previousSums)
+    in (row, last currentSums : sumsAccum)
+
