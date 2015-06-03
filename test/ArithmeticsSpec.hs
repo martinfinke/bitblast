@@ -234,42 +234,51 @@ spec = do
             toTruthTable smer `shouldBe` trueOnlyForAssignments posMapping trueAssignments
 
     describe "multiplierSegment" $ do
-        let (vars,posMapping) = generateVars 2
-        let [x,y] = map Atom vars
         it "multiplies two one-bit numbers" $ do
-            let mulSeg = multiplierSegment [x] [y]
-            let prod = head mulSeg
+            let (vars,posMapping) = generateVars 2
+            let [x,y] = map Atom vars
+            let mulSeg = multiplierSegment' [x] [y]
+            let prod = last mulSeg
             let trueAssignments = map (assignmentFromString posMapping) [
                     "11"
                     ]
             toTruthTable prod `shouldBe` trueOnlyForAssignments posMapping trueAssignments
-
-    describe "partialProducts" $ do
-        let (vars,posMapping) = generateVars 10
-        let [x0,x1,x2,x3,x4,y0,y1,y2,y3,y4] = map Atom vars
-        it "is the conjunction for index 0" $ do
-            partialProducts 0 [x0] [y0] `shouldBe` [And [x0, y0]]
-        it "is two products for index 1" $ do
-            partialProducts 1 [x0,x1] [y0,y1] `shouldBe` [And [x0,y1], And [x1,y0]]
-        it "is three products for index 2" $ do
-            partialProducts 2 [x0,x1,x2] [y0,y1,y2] `shouldBe` [
-                    And [x0,y2],
-                    And [x2,y0],
-                    And [x1,y1]
+        it "has the correct truth table for 1 bit" $ do
+            let (vars,posMapping) = generateVars 3
+            let [s,y,x] = map Atom vars
+            let mulSeg = multiplierSegment' [x] [y]
+            let connectedOutputs = Equiv [s, last mulSeg]
+            let trueAssignments = map (assignmentFromString posMapping) [
+                    "000",
+                    "010",
+                    "100",
+                    "111"
                     ]
-        it "is four products for index 3" $ do
-            pending
-            --partialProducts 3 [x0,x1,x2,x3] [y0,y1,y2,y3] `shouldBe` [
-            --        And [x3,y0],
-            --        And [x2,y1],
-            --        And [x1,y2],
-            --        And [x0,y3]
-            --        ]
-
-    describe "buildingBlock" $ do
-        let (vars,posMapping) = generateVars 4
-        let [x,y,sumIn,cIn] = map Atom vars
-        it "creates the correct circuit" $ do
-            let (sumOut,cOut) = buildingBlock sumIn (x,y) cIn
-            sumOut `shouldBe` Xor [sumIn, And [x,y], cIn]
-            cOut `shouldBe` Or [And [And [x,y], cIn], And [sumIn, cIn], And [sumIn, And [x,y]]]
+            toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments posMapping trueAssignments
+        it "has the correct truth table for 2 bits" $ do
+            let (vars, posMapping) = generateVars 6
+            let [s0,s1,y0,y1,x0,x1] = map Atom vars
+            let [s1',s0'] = multiplierSegment' [x1,x0] [y1,y0]
+            let connectedOutputs = And [
+                    Equiv [s0,s0'],
+                    Equiv [s1,s1']
+                    ]
+            let trueAssignments = map (assignmentFromString posMapping) [
+                    "000000",
+                    "000100",
+                    "001000",
+                    "001100",
+                    "010000",
+                    "010101",
+                    "011010",
+                    "011111",
+                    "100000",
+                    "100110",
+                    "101000",
+                    "101110",
+                    "110000",
+                    "110111",
+                    "111010",
+                    "111101"
+                    ]
+            toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments posMapping trueAssignments
