@@ -232,3 +232,44 @@ spec = do
                     ]
             toTruthTable equiv `shouldBe` trueOnlyForAssignments posMapping trueAssignments
             toTruthTable smer `shouldBe` trueOnlyForAssignments posMapping trueAssignments
+
+    describe "multiplierSegment" $ do
+        let (vars,posMapping) = generateVars 2
+        let [x,y] = map Atom vars
+        it "multiplies two one-bit numbers" $ do
+            let mulSeg = multiplierSegment [x] [y]
+            let prod = head mulSeg
+            let trueAssignments = map (assignmentFromString posMapping) [
+                    "11"
+                    ]
+            toTruthTable prod `shouldBe` trueOnlyForAssignments posMapping trueAssignments
+
+    describe "partialProducts" $ do
+        let (vars,posMapping) = generateVars 10
+        let [x0,x1,x2,x3,x4,y0,y1,y2,y3,y4] = map Atom vars
+        it "is the conjunction for index 0" $ do
+            partialProducts 0 [x0] [y0] `shouldBe` [And [x0, y0]]
+        it "is two products for index 1" $ do
+            partialProducts 1 [x0,x1] [y0,y1] `shouldBe` [And [x0,y1], And [x1,y0]]
+        it "is three products for index 2" $ do
+            partialProducts 2 [x0,x1,x2] [y0,y1,y2] `shouldBe` [
+                    And [x0,y2],
+                    And [x2,y0],
+                    And [x1,y1]
+                    ]
+        it "is four products for index 3" $ do
+            pending
+            --partialProducts 3 [x0,x1,x2,x3] [y0,y1,y2,y3] `shouldBe` [
+            --        And [x3,y0],
+            --        And [x2,y1],
+            --        And [x1,y2],
+            --        And [x0,y3]
+            --        ]
+
+    describe "buildingBlock" $ do
+        let (vars,posMapping) = generateVars 4
+        let [x,y,sumIn,cIn] = map Atom vars
+        it "creates the correct circuit" $ do
+            let (sumOut,cOut) = buildingBlock sumIn (x,y) cIn
+            sumOut `shouldBe` Xor [sumIn, And [x,y], cIn]
+            cOut `shouldBe` Or [And [And [x,y], cIn], And [sumIn, cIn], And [sumIn, And [x,y]]]

@@ -43,3 +43,23 @@ summer overflowMode xs ys sums
                 Forbid -> Not cOut' : sumEquivs
                 DontCare -> sumEquivs
                 Connect cOut -> Equiv [cOut,cOut'] : sumEquivs
+
+multiplierSegment :: [Formula] -> [Formula] -> [Formula]
+multiplierSegment (x:[]) (y:[]) = [And [x,y]]
+multiplierSegment xs ys = undefined
+
+partialProducts :: Int -> [Formula] -> [Formula] -> [Formula]
+partialProducts 0 (x0:[]) (y0:[]) = [And [x0,y0]]
+partialProducts 1 (x0:x1:[]) (y0:y1:[]) = partialProducts 0 [x0] [y1] ++ partialProducts 0 [x1] [y0]
+partialProducts 2 (x0:x1:x2:[]) (y0:y1:y2:[]) = partialProducts 1 [x0,x2] [y0,y2] ++ partialProducts 0 [x1] [y1]
+
+-- partialProducts(0) = [a0 && b0]
+-- partialProducts(1) = [a0 && b1, a1 && b0]
+-- partialProducts(2) = [a2 && b0, a1 && b1, a0 && b2]
+--  = partialProducts(1) von den beiden Enden ++ partialProducts(0) von denen in der Mitte
+-- partialProducts(3) = [a3 && b0, a2 && b1, a1 && b2, a0 && b3]
+--  = partialProducts(1) von den beiden Enden ++ partialProducts(1) von denen in der Mitte
+
+buildingBlock :: Formula -> (Formula,Formula) -> Formula -> (Formula,Formula)
+buildingBlock sumIn (x,y) cIn = (sumOut,cOut)
+    where (sumOut,cOut) = fullAdderSegment (sumIn,And [x,y]) cIn
