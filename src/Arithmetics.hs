@@ -77,9 +77,6 @@ replaceInList ls i el =
 
 
 -- See http://www.allsyllabus.com/aj/note/ECE/Digital_System_Design_Using_VHDL/Unit4/4-bit%20Multiplier%20Partial%20Products.php
--- oberste Reihe sind nur AND aus x_i und y_0
--- in der zweiten Reihe sind der erste und letzte ein Halb-Adder, und alles in der Mitte ein fullAdder
--- in allen folgenden Reihen ist der letzte ein Halb-Adder, alles andere sind Full-Adder
 
 firstRow :: [Formula] -> Formula -> [Formula]
 firstRow xs y = [And [x,y] | x <- xs]
@@ -116,7 +113,7 @@ multiplierSegment xs ys
     | otherwise = firstRowSums
     where lsbAtFrontYs = reverse ys
           firstRowSums = firstRow xs (head lsbAtFrontYs)
-          hasSecondRow = length lsbAtFrontYs > 1
+          hasSecondRow = length ys > 1
           second@(secondRowSums,_) = secondRow xs (head $ tail lsbAtFrontYs) (init firstRowSums)
 
 connectRows :: [Formula] -> Formula -> (Row, [Formula]) -> (Row, [Formula])
@@ -124,3 +121,14 @@ connectRows xs y ((previousSums, previousCarry), sumsAccum) =
     let row@(currentSums, _) = nthRow xs y (previousCarry : init previousSums)
     in (row, last currentSums : sumsAccum)
 
+multiplier :: OverflowMode -> [Formula] -> [Formula] -> [Formula] -> Formula
+multiplier overflowMode xs ys sums
+    | length xs /= length ys = error "The input bit vectors must have the same width."
+    | otherwise = And $ forbidOverflow ++ sumEquivs
+    where sums' = multiplierSegment xs ys
+          overflowingLength = length sums' - length xs
+          overflowing = take overflowingLength sums' -- TODO: Use splitAt
+          (forbidOverflow,nonOverflowing) = case overflowMode of
+                Forbid -> (map Not overflowing, drop overflowingLength sums')
+                _ -> ([], sums')
+          sumEquivs = map (\(s,s') -> Equiv [s, s']) $ zip nonOverflowing sums

@@ -149,6 +149,96 @@ spec = do
             let trueAssignments = map (assignmentFromString posMapping) multiplication2BitDontCareOverflow
             toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments posMapping trueAssignments
 
+        it "has the correct truth table for 3 bits" $ do
+            let (vars, posMapping) = generateVars 9
+            let [s0,s1,s2,y0,y1,y2,x0,x1,x2] = map Atom vars
+            let [s2',s1',s0'] = multiplierSegmentDontCareOverflow [x2,x1,x0] [y2,y1,y0]
+            let connectedOutputs = And [
+                    Equiv [s0,s0'],
+                    Equiv [s1,s1'],
+                    Equiv [s2,s2']
+                    ]
+            let trueAssignments = map (assignmentFromString posMapping) $ multiplicationTableGen DontCare 3 3
+            toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments posMapping trueAssignments
+
+        it "has the correct truth table for 4 bits" $ do
+            let (vars, posMapping) = generateVars 12
+            let [s0,s1,s2,s3,y0,y1,y2,y3,x0,x1,x2,x3] = map Atom vars
+            let [s3',s2',s1',s0'] = multiplierSegmentDontCareOverflow [x3,x2,x1,x0] [y3,y2,y1,y0]
+            let connectedOutputs = And [
+                    Equiv [s0,s0'],
+                    Equiv [s1,s1'],
+                    Equiv [s2,s2'],
+                    Equiv [s3,s3']
+                    ]
+            let trueAssignments = map (assignmentFromString posMapping) $ multiplicationTableGen DontCare 4 4
+            toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments posMapping trueAssignments
+
+        it "has the correct truth table for 5 bits" $ do
+            let (vars, posMapping) = generateVars 15
+            let [s0,s1,s2,s3,s4,y0,y1,y2,y3,y4,x0,x1,x2,x3,x4] = map Atom vars
+            let [s4',s3',s2',s1',s0'] = multiplierSegmentDontCareOverflow [x4,x3,x2,x1,x0] [y4,y3,y2,y1,y0]
+            let connectedOutputs = And [
+                    Equiv [s0,s0'],
+                    Equiv [s1,s1'],
+                    Equiv [s2,s2'],
+                    Equiv [s3,s3'],
+                    Equiv [s4,s4']
+                    ]
+            let trueAssignments = map (assignmentFromString posMapping) $ multiplicationTableGen DontCare 5 5
+            pendingWith "Takes a little too long, but has passed before. Uncomment to test again."
+            --toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments posMapping trueAssignments
+
+    describe "multiplier" $ do
+        it "has the correct truth table for 1 bit, allow overflow" $ do
+            let (vars,posMapping) = generateVars 3
+            let [s,y,x] = map Atom vars
+            let mul = multiplier DontCare [x] [y] [s]
+            let trueAssignments = map (assignmentFromString posMapping) [
+                    "000",
+                    "010",
+                    "100",
+                    "111"
+                    ]
+            toTruthTable mul `shouldBe` trueOnlyForAssignments posMapping trueAssignments
+        it "has the correct truth table for 2 bits, allow overflow" $ do
+            let (vars, posMapping) = generateVars 8
+            let [s0,s1,s2,s3,y0,y1,x0,x1] = map Atom vars
+            let mul = multiplier DontCare [x1,x0] [y1,y0] [s3,s2,s1,s0]
+            let trueAssignments = map (assignmentFromString posMapping) multiplication2BitConnectOverflow
+            toTruthTable mul `shouldBe` trueOnlyForAssignments posMapping trueAssignments
+            let generatedTable = map (assignmentFromString posMapping) (multiplicationTableGen DontCare 2 4)
+            toTruthTable mul `shouldBe` trueOnlyForAssignments posMapping generatedTable
+        it "has the correct truth table for 2 bits, forbid overflow" $ do
+            let (vars, posMapping) = generateVars 6
+            let [s0,s1,y0,y1,x0,x1] = map Atom vars
+            let mul = multiplier Forbid [x1,x0] [y1,y0] [s1,s0]
+            let expectedTable = map (assignmentFromString posMapping) multiplication2BitForbidOverflow
+            let generatedTable = map (assignmentFromString posMapping) (multiplicationTableGen Forbid 2 2)
+            toTruthTable mul `shouldBe` trueOnlyForAssignments posMapping expectedTable
+
+        it "has the correct truth table for 3 bits, allow overflow" $ do
+            let (vars, posMapping) = generateVars 12
+            let [s0,s1,s2,s3,s4,s5,y0,y1,y2,x0,x1,x2] = map Atom vars
+            let mul = multiplier DontCare [x2,x1,x0] [y2,y1,y0] [s5,s4,s3,s2,s1,s0]
+            let generatedTable = map (assignmentFromString posMapping) (multiplicationTableGen DontCare 3 6)
+            toTruthTable mul `shouldBe` trueOnlyForAssignments posMapping generatedTable
+
+        it "has the correct truth table for 3 bits, forbid overflow" $ do
+            let (vars, posMapping) = generateVars 9
+            let [s0,s1,s2,y0,y1,y2,x0,x1,x2] = map Atom vars
+            let mul = multiplier Forbid [x2,x1,x0] [y2,y1,y0] [s2,s1,s0]
+            let generatedTable = map (assignmentFromString posMapping) (multiplicationTableGen Forbid 3 3)
+            toTruthTable mul `shouldBe` trueOnlyForAssignments posMapping generatedTable
+        it "has the correct truth table for 4 bits, forbid overflow" $ do
+            let (vars, posMapping) = generateVars 12
+            let [s0,s1,s2,s3,y0,y1,y2,y3,x0,x1,x2,x3] = map Atom vars
+            let mul = multiplier Forbid [x3,x2,x1,x0] [y3,y2,y1,y0] [s3,s2,s1,s0]
+            let generatedTable = map (assignmentFromString posMapping) (multiplicationTableGen Forbid 4 4)
+            --truthTableToString posMapping (toTruthTable mul) `shouldBe` truthTableToString posMapping (trueOnlyForAssignments posMapping generatedTable)
+            pending
+            --toTruthTable mul `shouldBe` trueOnlyForAssignments posMapping generatedTable
+
     describe "multiplierSegment (combinatorial)" $ do
         it "multiplies two one-bit numbers" $ do
             let (vars,posMapping) = generateVars 2
@@ -159,67 +249,3 @@ spec = do
                     "11"
                     ]
             toTruthTable prod `shouldBe` trueOnlyForAssignments posMapping trueAssignments
-        it "has the correct truth table for 1 bit" $ do
-            let (vars,posMapping) = generateVars 3
-            let [s,y,x] = map Atom vars
-            let mulSeg = multiplierSegment [x] [y]
-            let connectedOutputs = Equiv [s, last mulSeg]
-            let trueAssignments = map (assignmentFromString posMapping) [
-                    "000",
-                    "010",
-                    "100",
-                    "111"
-                    ]
-            toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments posMapping trueAssignments
-        it "has the correct truth table for 2 bits" $ do
-            let (vars, posMapping) = generateVars 8
-            let [s0,s1,s2,s3,y0,y1,x0,x1] = map Atom vars
-            let [s3',s2',s1',s0'] = multiplierSegment [x1,x0] [y1,y0]
-            let connectedOutputs = And [
-                    Equiv [s0,s0'],
-                    Equiv [s1,s1'],
-                    Equiv [s2,s2'],
-                    Equiv [s3,s3']
-                    ]
-            let trueAssignments = map (assignmentFromString posMapping) multiplication2BitConnectOverflow
-            toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments posMapping trueAssignments
-            let generatedTable = map (assignmentFromString posMapping) (multiplicationTableGen 2 4)
-            toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments posMapping generatedTable
-
-        it "has the correct truth table for 3 bits" $ do
-            let (vars, posMapping) = generateVars 12
-            let [s0,s1,s2,s3,s4,s5,y0,y1,y2,x0,x1,x2] = map Atom vars
-            let [s5',s4',s3',s2',s1',s0'] = multiplierSegment [x2,x1,x0] [y2,y1,y0]
-            let connectedOutputs = And [
-                    Equiv [s0,s0'],
-                    Equiv [s1,s1'],
-                    Equiv [s2,s2'],
-                    Equiv [s3,s3'],
-                    Equiv [s4,s4'],
-                    Equiv [s5,s5']
-                    ]
-            let generatedTable = map (assignmentFromString posMapping) (multiplicationTableGen 3 6)
-            toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments posMapping generatedTable
-        it "has the correct truth table for 4 bits" $ do
-            let (vars, posMapping) = generateVars 16
-            let [s0,s1,s2,s3,s4,s5,s6,s7,y0,y1,y2,y3,x0,x1,x2,x3] = map Atom vars
-            let [s7',s6',s5',s4',s3',s2',s1',s0'] = multiplierSegment [x3,x2,x1,x0] [y3,y2,y1,y0]
-            let connectedOutputs = And [
-                    Equiv [s0,s0'],
-                    Equiv [s1,s1'],
-                    Equiv [s2,s2'],
-                    Equiv [s3,s3'],
-                    Equiv [s4,s4'],
-                    Equiv [s5,s5'],
-                    Equiv [s6,s6'],
-                    Equiv [s7,s7']
-                    ]
-            let generatedTable = map (assignmentFromString posMapping) (multiplicationTableGen 4 8)
-            -- TODO: This takes too long
-            --toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments posMapping generatedTable
-            pending
-
-
-
-(vars, posMapping) = generateVars 8
-[s0,s1,s2,s3,y0,y1,x0,x1] = map Atom vars

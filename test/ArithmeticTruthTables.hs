@@ -1,5 +1,6 @@
 module ArithmeticTruthTables where
 
+import Arithmetics(OverflowMode(..))
 import Numeric (showIntAtBase)
 import Data.Char (intToDigit)
 import Text.Printf(printf)
@@ -147,6 +148,20 @@ multiplication2BitDontCareOverflow = [
     "111010",
     "111101"
     ]
+multiplication2BitForbidOverflow = [
+    "000000",
+    "000100",
+    "001000",
+    "001100",
+    "010000",
+    "010101",
+    "011010",
+    "011111",
+    "100000",
+    "100110",
+    "110000",
+    "110111"
+    ]
 
 multiplication2BitConnectOverflow = [
     "00000000",
@@ -167,16 +182,18 @@ multiplication2BitConnectOverflow = [
     "11111001"
     ]
 
--- Connect: Keep when result >= 2^resultBits
--- DontCare: Keep (...) but trim to resultBits
--- Forbid: Don't keep when result >= ...
-
-multiplicationTableGen termBits resultBits =
+multiplicationTableGen overflowMode termBits resultBits =
     let formatString = "%0" ++ show termBits ++ "b"
         resultFormatString = "%0" ++ show resultBits ++ "b"
         range = [0..(2^termBits)-1] :: [Int]
         calculate = (*)
-        rows = [printf formatString i ++ printf formatString j ++ printf resultFormatString (calculate i j) | i <- range, j <- range] :: [String]
+        printResult i j =
+            let str = printf resultFormatString (calculate i j) :: String
+            in drop (length str - resultBits) str
+        valid res = case overflowMode of
+            Forbid -> res < 2^resultBits
+            _ -> True
+        rows = [printf formatString i ++ printf formatString j ++ printResult i j | i <- range, j <- range, valid (calculate i j)] :: [String]
     in rows
 
-multiplication3BitConnectOverflow = multiplicationTableGen 3 6
+multiplication3BitConnectOverflow = multiplicationTableGen DontCare 3 6
