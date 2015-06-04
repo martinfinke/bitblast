@@ -50,7 +50,7 @@ summer overflowMode xs ys sums
 multiplierSegmentDontCareOverflow :: [Formula] -> [Formula] -> [Formula]
 multiplierSegmentDontCareOverflow xs ys =
     let firstRow = [And [x, last ys] | x <- xs]
-        forAllRows (i,y) previousRow = -- goes over all ys except the last one (which is already covered by firstRow)
+        forAllRemainingRows (i,y) previousRow =
               let relevantXs = drop (length xs - 1 - i) xs
                   andGates = [And [x,y] | x <- relevantXs]
                   (currentRow,_) = foldr innerLoop (drop (i+1) previousRow, Nothing) $ zip andGates previousRow
@@ -60,10 +60,10 @@ multiplierSegmentDontCareOverflow xs ys =
                     Nothing -> halfAdderSegment (andGate,incomingSum)
                     Just carry -> fullAdderSegment (andGate,incomingSum) carry
               in (adderSum : res, Just adderCout)
-    in foldr forAllRows firstRow $ zip [0..length ys - 2] ys
+    in foldr forAllRemainingRows firstRow $ zip [0..length ys - 2] (init ys)
 
-    
-    
+
+
 
 -- See http://www.allsyllabus.com/aj/note/ECE/Digital_System_Design_Using_VHDL/Unit4/4-bit%20Multiplier%20Partial%20Products.php
 
