@@ -25,7 +25,7 @@ instance Arbitrary Assignment where
 
 spec :: Spec
 spec = do
-    let ([test1,test2,test3],posMapping) = generateVars 3
+    let [test1,test2,test3] = generateVars 3
 
     describe "var" $ do
         it "can create variables and keep them separate" $ do
@@ -60,28 +60,28 @@ spec = do
 
     describe "assignmentFromString" $ do
         it "is the emptyAssignment for an empty string" $ do
-            assignmentFromString [] "" `shouldBe` emptyAssignment
-        it "throws an error if the positionMapping doesn't match the string" $ do
-            evaluate (assignmentFromString [test1] "01") `shouldThrow` anyException
+            assignmentFromString Set.empty "" `shouldBe` emptyAssignment
+        it "throws an error if the variable set doesn't match the string" $ do
+            evaluate (assignmentFromString (Set.singleton test1) "01") `shouldThrow` anyException
         it "works for one variable" $ do
-            getVar test2 (assignmentFromString [test2] "1") `shouldBe` Just True
+            getVar test2 (assignmentFromString (Set.singleton test2) "1") `shouldBe` Just True
         it "doesn't assign other variables" $ do
-            getVar test2 (assignmentFromString [test1] "1") `shouldBe` Nothing
+            getVar test2 (assignmentFromString (Set.singleton test1) "1") `shouldBe` Nothing
         it "expects the last-added variable on the left end" $ do
-            let assignment = (assignmentFromString [test2,test1] "10")
+            let assignment = (assignmentFromString (Set.fromList [test2,test1]) "10")
             getVar test2 assignment `shouldBe` Just True
             getVar test1 assignment `shouldBe` Just False
 
     describe "assignmentToString" $ do
         it "is the empty string for an empty assignment" $ do
-            assignmentToString [] emptyAssignment `shouldBe` ""
+            assignmentToString Set.empty emptyAssignment `shouldBe` ""
         it "creates a dash if a variable isn't in the assignment" $ do
-            assignmentToString [test1] emptyAssignment `shouldBe` "-"
-            assignmentToString posMapping emptyAssignment `shouldBe` "---"
+            assignmentToString (Set.singleton test1) emptyAssignment `shouldBe` "-"
+            assignmentToString (Set.fromList [test1,test2,test3]) emptyAssignment `shouldBe` "---"
         it "creates a one for a true value" $ do
-            assignmentToString [test1] (setVar test1 True emptyAssignment) `shouldBe` "1"
+            assignmentToString (Set.singleton test1) (setVar test1 True emptyAssignment) `shouldBe` "1"
         it "creates a zero for a false value" $ do
-            assignmentToString posMapping (setVar test1 False emptyAssignment) `shouldBe` "--0"
+            assignmentToString (Set.fromList [test1,test2,test3]) (setVar test1 False emptyAssignment) `shouldBe` "--0"
 
     describe "expandOrReduce" $ do
         it "does nothing if the variableSet is the same as in the assignment" $ do

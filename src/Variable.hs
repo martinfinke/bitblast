@@ -1,6 +1,5 @@
 module Variable(
                 Variable,
-                PositionMapping,
                 initial,
                 eval,
                 generateVars,
@@ -34,7 +33,7 @@ import Control.Monad(forM)
 import Text.Printf(printf)
 import Data.List(sort)
 
-data VarMem = VarMem {currentVarIndex :: Int, positionMapping :: PositionMapping}
+data VarMem = VarMem {currentVarIndex :: Int}
 type VarState = State.State VarMem
 type VarStateTransformer = State.StateT VarMem
 newtype Variable = Variable Int
@@ -43,31 +42,27 @@ newtype Variable = Variable Int
 instance Show Variable where
     show (Variable i) = show i
 
-type PositionMapping = [Variable]
-
 initial :: VarMem
-initial = VarMem {currentVarIndex=0, positionMapping=[]}
+initial = VarMem {currentVarIndex=0}
 
 eval :: VarMem -> VarState a -> a
 eval = flip State.evalState
 
 generateVars :: Int -- ^ How many 'Variable's to create
-             -> ([Variable], [Variable]) -- ^ A list of 'Variable's, and the positionMapping.
+             -> [Variable]
 generateVars numvars = eval initial $ do
-    variables <- forM [0..numvars-1] $ const var
-    posMapping <- fmap positionMapping State.get
-    return (variables, posMapping)
+    forM [0..numvars-1] $ const var
 
 var :: Monad m => VarStateTransformer m Variable
 var = do
     varIndex <- fmap currentVarIndex State.get
     let newVar = Variable varIndex
-    State.modify (addVariable newVar)
+    State.modify addVariable
     return newVar
 
-addVariable :: Variable -> VarMem -> VarMem
-addVariable variable mem@(VarMem {currentVarIndex=idx, positionMapping=oldMapping}) =
-    mem{currentVarIndex=succ idx,positionMapping=variable : oldMapping}
+addVariable :: VarMem -> VarMem
+addVariable mem@(VarMem {currentVarIndex=idx}) =
+    mem{currentVarIndex=succ idx}
 
 newtype Assignment = Assignment (IntMap.IntMap Bool)
     deriving(Eq, Show, Ord)
@@ -84,18 +79,17 @@ assignmentFromList ls =
     let ls' = map (\(Variable i, b) -> (i,b)) ls
     in Assignment $ IntMap.fromList ls'
 
-assignmentFromString :: PositionMapping -> String -> Assignment
-assignmentFromString posMapping string
-    | length posMapping /= length string = error $ printf "The string %s has the wrong length (%d) for the positionMapping of length %d." string (length string) (length posMapping)
-    | otherwise = foldr parse emptyAssignment $ zip string posMapping
+assignmentFromString :: Set.Set Variable -> String -> Assignment
+assignmentFromString varSet string
+    | Set.size varSet /= length string = error $ printf "The string %s has the wrong length (%d) for the variable set of size %d." string (length string) (Set.size varSet)
+    | otherwise = foldr parse emptyAssignment $ zip (reverse string) (Set.toAscList varSet)
         where parse (c,variable) assignment =
                 if c == '0'
                     then setVar variable False assignment
                     else setVar variable True assignment
 
-assignmentToString :: PositionMapping -> Assignment -> String
-assignmentToString posMapping (Assignment intMap) =
-    map printVar posMapping
+assignmentToString :: Set.Set Variable -> Assignment -> String
+assignmentToString varSet (Assignment intMap) = reverse $ map printVar $ Set.toAscList varSet
     where printVar (Variable i) = case IntMap.lookup i intMap of
             Nothing -> '-'
             Just True -> '1'
@@ -122,10 +116,10 @@ expandOrReduce b variableSet assignment@(Assignment intMap) =
 newtype TruthTable = TruthTable (Map.Map Assignment Bool)
     deriving(Eq, Show)
 
-truthTableToString :: PositionMapping -> TruthTable -> String
-truthTableToString posMapping (TruthTable rows) =
+truthTableToString :: Set.Set Variable -> TruthTable -> String
+truthTableToString varSet (TruthTable rows) =
     unlines . sort . map printRow $ Map.toList rows
-    where printRow (assignment,b) = assignmentToString posMapping assignment ++ " | " ++ printBool b
+    where printRow (assignment,b) = assignmentToString varSet assignment ++ " | " ++ printBool b
           printBool b = if b then "1" else "0"
 
 emptyTable :: TruthTable
@@ -140,14 +134,14 @@ setRow assignment b (TruthTable assignmentMap) = TruthTable $ Map.insert assignm
 tableFromList :: [(Assignment, Bool)] -> TruthTable
 tableFromList ls = foldr (uncurry setRow) emptyTable ls
 
-allTrueTable, allFalseTable :: [Variable] -- ^ positionMapping
+allTrueTable, allFalseTable :: Set.Set Variable
               -> TruthTable
 allFalseTable = allSetTable False
 allTrueTable = allSetTable True
 
-allSetTable :: Bool -> PositionMapping -> TruthTable
-allSetTable b posMapping =
-    let allAssignments = allBoolCombinations (Set.fromList posMapping)
+allSetTable :: Bool -> Set.Set Variable -> TruthTable
+allSetTable b varSet =
+    let allAssignments = allBoolCombinations varSet
         allSetToBool = zip allAssignments (repeat b)
     in tableFromList allSetToBool
 
