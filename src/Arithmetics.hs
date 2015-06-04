@@ -46,22 +46,22 @@ summer overflowMode xs ys sums
                 DontCare -> sumEquivs
                 Connect cOut -> Equiv [cOut,cOut'] : sumEquivs
 
--- Imperative port from Boolector's mul_aigvec. Has DontCare overflow.
+-- Port from Boolector's mul_aigvec. Has DontCare overflow.
 multiplierSegmentDontCareOverflow :: [Formula] -> [Formula] -> [Formula]
 multiplierSegmentDontCareOverflow xs ys =
-    let res = [And [x, last ys] | x <- xs]
-    in fst $ foldr outerLoop (res,false) [0..length xs - 2]
-    where false = Or []
-          len = length xs
-          outerLoop i (res,cout) =
-                let res' = fst $ foldr (innerLoop i) (res,cout) [0..i]
-                in (res',false) 
-          innerLoop i j (res,cout) =
-                let andGate = And [xs!!(len - 1 - i + j), ys!!i]
-                    tmp = res!!j
-                    cin = cout
-                    (adderSum,adderCout) = fullAdderSegment (tmp,andGate) cin
-                in (replaceInList res j adderSum, adderCout)
+    let false = Or []
+        firstRow = [And [x, last ys] | x <- xs]
+        forAllRows i (previousRow,cout) = -- goes over all ys except the last one (which is already covered by firstRow)
+              let y = ys!!i
+                  (currentRow,_) = foldr (innerLoop y i) (previousRow,cout) [0..i]
+              in (currentRow,false)
+        innerLoop y i j (res,cout) =
+              let andGate = And [xs!!(length xs - 1 - i + j), y]
+                  (adderSum,adderCout) = fullAdderSegment (res!!j,andGate) cout
+              in (replaceInList res j adderSum, adderCout)
+    in fst $ foldr forAllRows (firstRow,false) [0..length ys - 2]
+          
+          
 
 replaceInList :: [a] -> Int -> a -> [a]
 replaceInList ls i el =
