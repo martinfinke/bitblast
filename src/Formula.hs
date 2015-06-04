@@ -47,7 +47,7 @@ isModelOf :: Assignment -- ^ Assigns a value to each 'Variable'
      -> Bool -- ^ The value of the 'Formula' under the given 'Assignment'
 isModelOf assignment formula = case formula of
     Atom v -> case getVar v assignment of
-        Nothing -> error $ "Variable not assigned: " ++ show v -- TODO: Maybe change eval's return type to Maybe Bool instead?
+        Nothing -> error $ "Variable not assigned: " ++ show v
         Just b -> b
     Not f -> not $ assignment `isModelOf` f
     And fs -> all (assignment `isModelOf`) fs

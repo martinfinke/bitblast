@@ -42,6 +42,10 @@ newtype Variable = Variable Int
 instance Show Variable where
     show (Variable i) = show i
 
+instance Enum Variable where
+    fromEnum (Variable i) = i
+    toEnum = Variable
+
 initial :: VarMem
 initial = VarMem {currentVarIndex=0}
 
