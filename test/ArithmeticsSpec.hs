@@ -4,22 +4,16 @@ import SpecHelper
 import Arithmetics
 import Formula
 import Variable hiding (eval)
-import Control.Monad(forM_)
-import MinimizeFormula
-import Debug.Trace(traceShow)
 import qualified Data.Set as Set
 import ArithmeticTruthTables
 
 spec :: Spec
 spec = do
-    -- TODO: This needs to be refactored BADLY
-
     let trueOnlyForAssignments varSet assignments = foldr (flip setRow True) (allFalseTable varSet) assignments
+    let makeVars number = let vars = generateVars number in (map Atom vars, Set.fromList vars)
     describe "halfAdder" $ do
         it "has the correct truth table" $ do
-            let vars = generateVars 4
-            let varSet = Set.fromList vars
-            let [c,s,y,x] = map Atom vars
+            let ([c,s,y,x],varSet) = makeVars 4
             let ha = halfAdder (x,y) (s,c)
             let trueAssignments = map (assignmentFromString varSet) [
                     "0000",
@@ -30,9 +24,7 @@ spec = do
             toTruthTable ha `shouldBe` trueOnlyForAssignments varSet trueAssignments
 
     describe "fullAdderSegment" $ do
-        let vars = generateVars 5
-        let varSet = Set.fromList vars
-        let [s,cOut,cIn,y,x] = map Atom vars
+        let ([s,cOut,cIn,y,x],varSet) = makeVars 5
         let (s',cOut') = fullAdderSegment (x,y) cIn
         let connectedOutputs = And [Equiv [s,s'], Equiv [cOut,cOut']]
         it "has the correct truth table when the outputs are connected" $ do
@@ -54,18 +46,14 @@ spec = do
 
     describe "summerSegment" $ do
         it "is equivalent to a fullAdderSegment for 1 bit" $ do
-            let vars = generateVars 2
-            let varSet = Set.fromList vars
-            let [y,x] = map Atom vars
+            let ([y,x],varSet) = makeVars 2
             let (s', cOut') = halfAdderSegment (x,y)
             let (s'', cOut'') = summerSegment [x] [y]
             let equiv = And [Equiv [s', head s''], Equiv [cOut', cOut'']]
             toTruthTable equiv `shouldBe` allTrueTable varSet
 
         it "has the correct truth table for 2 bits" $ do
-            let vars = generateVars 7
-            let varSet = Set.fromList vars
-            let [cOut,s0,s1,y0,y1,x0,x1] = map Atom vars
+            let ([cOut,s0,s1,y0,y1,x0,x1],varSet) = makeVars 7
             
             let ([s1',s0'], cOut') = summerSegment [x1,x0] [y1,y0]
             let equiv = And [Equiv [s1, s1'], Equiv [s0, s0'], Equiv [cOut, cOut']]
@@ -76,9 +64,7 @@ spec = do
 
     describe "summer" $ do
         it "has the correct truth table for 1 bit" $ do
-            let vars = generateVars 3
-            let varSet = Set.fromList vars
-            let [s,y,x] = map Atom vars
+            let ([s,y,x],varSet) = makeVars 3
             let dontCare = summer DontCare [x] [y] [s]
             let dontCareAssignments = map (assignmentFromString varSet) [
                     "000",
@@ -97,17 +83,13 @@ spec = do
             
 
         it "has the correct truth table for 3 bits" $ do
-            let vars = generateVars 10
-            let varSet = Set.fromList vars
-            let [s0,s1,s2,cOut,y0,y1,y2,x0,x1,x2] = map Atom vars
+            let ([s0,s1,s2,cOut,y0,y1,y2,x0,x1,x2],varSet) = makeVars 10
             let trueAssignments = map (assignmentFromString varSet) addition3Bit
             let smer = summer (Connect cOut) [x2,x1,x0] [y2,y1,y0] [s2,s1,s0]
             toTruthTable smer `shouldBe` trueOnlyForAssignments varSet trueAssignments
 
         it "can forbid overflow" $ do
-            let vars = generateVars 6
-            let varSet = Set.fromList vars
-            let [s0,s1,y0,y1,x0,x1] = map Atom vars
+            let ([s0,s1,y0,y1,x0,x1],varSet) = makeVars 6
             let ([s1',s0'], cOut') = summerSegment [x1,x0] [y1,y0]
             let equiv = And [Equiv [s1, s1'], Equiv [s0, s0'], Not cOut']
             let smer = summer Forbid [x1,x0] [y1,y0] [s1,s0]
@@ -116,9 +98,7 @@ spec = do
             toTruthTable smer `shouldBe` trueOnlyForAssignments varSet trueAssignments
 
         it "can not care about overflow" $ do
-            let vars = generateVars 6
-            let varSet = Set.fromList vars
-            let [s0,s1,y0,y1,x0,x1] = map Atom vars
+            let ([s0,s1,y0,y1,x0,x1],varSet) = makeVars 6
             let ([s1',s0'], _) = summerSegment [x1,x0] [y1,y0]
             let equiv = And [Equiv [s1, s1'], Equiv [s0, s0']]
             let smer = summer DontCare [x1,x0] [y1,y0] [s1,s0]
@@ -128,9 +108,7 @@ spec = do
 
     describe "multiplierSegmentDontCareOverflow (from Boolector)" $ do
         it "multiplies two one-bit numbers" $ do
-            let vars = generateVars 2
-            let varSet = Set.fromList vars
-            let [x,y] = map Atom vars
+            let ([x,y],varSet) = makeVars 2
             let mulSeg = multiplierSegmentDontCareOverflow [x] [y]
             let prod = last mulSeg
             let trueAssignments = map (assignmentFromString varSet) [
@@ -138,9 +116,7 @@ spec = do
                     ]
             toTruthTable prod `shouldBe` trueOnlyForAssignments varSet trueAssignments
         it "has the correct truth table for 1 bit" $ do
-            let vars = generateVars 3
-            let varSet = Set.fromList vars
-            let [s,y,x] = map Atom vars
+            let ([s,y,x],varSet) = makeVars 3
             let mulSeg = multiplierSegmentDontCareOverflow [x] [y]
             let connectedOutputs = Equiv [s, last mulSeg]
             let trueAssignments = map (assignmentFromString varSet) [
@@ -151,9 +127,7 @@ spec = do
                     ]
             toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments varSet trueAssignments
         it "has the correct truth table for 2 bits" $ do
-            let vars = generateVars 6
-            let varSet = Set.fromList vars
-            let [s0,s1,y0,y1,x0,x1] = map Atom vars
+            let ([s0,s1,y0,y1,x0,x1],varSet) = makeVars 6
             let [s1',s0'] = multiplierSegmentDontCareOverflow [x1,x0] [y1,y0]
             let connectedOutputs = And [
                     Equiv [s0,s0'],
@@ -163,9 +137,7 @@ spec = do
             toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments varSet trueAssignments
 
         it "has the correct truth table for 3 bits" $ do
-            let vars = generateVars 9
-            let varSet = Set.fromList vars
-            let [s0,s1,s2,y0,y1,y2,x0,x1,x2] = map Atom vars
+            let ([s0,s1,s2,y0,y1,y2,x0,x1,x2],varSet) = makeVars 9
             let [s2',s1',s0'] = multiplierSegmentDontCareOverflow [x2,x1,x0] [y2,y1,y0]
             let connectedOutputs = And [
                     Equiv [s0,s0'],
@@ -176,9 +148,7 @@ spec = do
             toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments varSet trueAssignments
 
         it "has the correct truth table for 4 bits" $ do
-            let vars = generateVars 12
-            let varSet = Set.fromList vars
-            let [s0,s1,s2,s3,y0,y1,y2,y3,x0,x1,x2,x3] = map Atom vars
+            let ([s0,s1,s2,s3,y0,y1,y2,y3,x0,x1,x2,x3],varSet) = makeVars 12
             let [s3',s2',s1',s0'] = multiplierSegmentDontCareOverflow [x3,x2,x1,x0] [y3,y2,y1,y0]
             let connectedOutputs = And [
                     Equiv [s0,s0'],
@@ -190,9 +160,7 @@ spec = do
             toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments varSet trueAssignments
 
         it "has the correct truth table for 5 bits" $ do
-            let vars = generateVars 15
-            let varSet = Set.fromList vars
-            let [s0,s1,s2,s3,s4,y0,y1,y2,y3,y4,x0,x1,x2,x3,x4] = map Atom vars
+            let ([s0,s1,s2,s3,s4,y0,y1,y2,y3,y4,x0,x1,x2,x3,x4],varSet) = makeVars 15
             let [s4',s3',s2',s1',s0'] = multiplierSegmentDontCareOverflow [x4,x3,x2,x1,x0] [y4,y3,y2,y1,y0]
             let connectedOutputs = And [
                     Equiv [s0,s0'],
