@@ -66,8 +66,8 @@ packTerm :: Set.Set Variable -> PositionMapping -> Formula -> QmTerm
 packTerm variableSet posMapping term =
     let emptyQmTerm = (QmTerm (0,0))
         appearsInTerm = flip Set.member variableSet
-        selection = filter appearsInTerm posMapping
-        variablesWithPositions = zip [0..] (reverse selection)
+        selection = filter appearsInTerm (Set.toAscList variableSet)
+        variablesWithPositions = zip [0..] selection
         setBitForVariable (i,variable) (QmTerm (bv,mask)) = QmTerm $ case valueForVariable term variable of
             Nothing -> (bv, B.setBit mask i)
             Just bool -> (if bool then B.setBit bv i else B.clearBit bv i, mask)
@@ -76,8 +76,8 @@ packTerm variableSet posMapping term =
 unpackTerm :: Bool -> Set.Set Variable -> PositionMapping -> QmTerm -> Formula
 unpackTerm cnfMode variableSet posMapping (QmTerm (term,mask)) =
     let appearsInTerm = flip Set.member variableSet
-        selection = filter appearsInTerm posMapping
-        variablesWithPositions = zip [0..] (reverse selection)
+        selection = filter appearsInTerm (Set.toAscList variableSet)
+        variablesWithPositions = zip [0..] selection
         op = if cnfMode then Or else And
         invertIfCnf v b = if cnfMode == b then Not (Atom v) else Atom v
         setVariableForBit (i,variable) restLiterals
