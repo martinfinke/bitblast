@@ -13,12 +13,19 @@ spec = do
     let [t0,t1,t2,t3,t4] = drop 10 allVars
     let varSet = Set.fromList vars
     let [x0,x1,x2,x3,x4,x5,x6,x7,x8,x9] = map Atom vars
+    let extractMaybe m = case m of
+            Just v -> v
+            Nothing -> error "Can't extract the value of Nothing"
+    describe "extractMaybe" $ do
+        it "succeeds for a Just value" $ do
+            extractMaybe (Just 1) `shouldBe` 1
+        it "throws an error for Nothing" $ do
+            evaluate (extractMaybe Nothing) `shouldThrow` anyException
     describe "tseitinReplace" $ do
         it "replaces a given sub-formula with a variable" $ do
             let testFormula = Or [Equiv [x3,x4], x0, And [x6,x2]]
-            --let (withReplacement,extraVar) = tseitinReplace varSet (And [x6,x2]) testFormula
-            pending
-            --withReplacement `shouldBe` And [Equiv [Atom extraVar, And [x6,x2]], Equiv [x3,x4], x0, Atom extraVar]
+            let (withReplacement,extraVar) = extractMaybe $ tseitinReplace varSet (And [x6,x2]) testFormula
+            withReplacement `shouldBe` And [Equiv [Atom extraVar, And [x6,x2]], Or [Equiv [x3,x4], x0, Atom extraVar]]
 
     describe "findAndReplace" $ do
         it "replaces a positive literal" $ do
@@ -39,3 +46,6 @@ spec = do
             findAndReplace x2 t0 (And [x1,x2,Xor [x5,Not x2]]) `shouldBe` (True, And [x1,Atom t0,Xor [x5,Not $ Atom t0]])
         it "doesn't replace anything if the search term can't be found" $ do
             findAndReplace x5 t0 (And [x1,x2,x3]) `shouldBe` (False, And [x1,x2,x3])
+        it "replaces an AND inside an OR" $ do
+            let toReplace = And [x2,x3]
+            findAndReplace toReplace t0 (Or [toReplace]) `shouldBe` (True, Or [Atom t0])
