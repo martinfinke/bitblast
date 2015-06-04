@@ -49,26 +49,21 @@ summer overflowMode xs ys sums
 -- Port from Boolector's mul_aigvec. Has DontCare overflow.
 multiplierSegmentDontCareOverflow :: [Formula] -> [Formula] -> [Formula]
 multiplierSegmentDontCareOverflow xs ys =
-    let false = Or []
-        firstRow = [And [x, last ys] | x <- xs]
-        forAllRows i (previousRow,cout) = -- goes over all ys except the last one (which is already covered by firstRow)
-              let y = ys!!i
-                  (currentRow,_) = foldr (innerLoop y i) (previousRow,cout) [0..i]
-              in (currentRow,false)
-        innerLoop y i j (res,cout) =
-              let andGate = And [xs!!(length xs - 1 - i + j), y]
-                  (adderSum,adderCout) = fullAdderSegment (res!!j,andGate) cout
-              in (replaceInList res j adderSum, adderCout)
-    in fst $ foldr forAllRows (firstRow,false) [0..length ys - 2]
-          
-          
+    let firstRow = [And [x, last ys] | x <- xs]
+        forAllRows (i,y) previousRow = -- goes over all ys except the last one (which is already covered by firstRow)
+              let relevantXs = drop (length xs - 1 - i) xs
+                  andGates = [And [x,y] | x <- relevantXs]
+                  (currentRow,_) = foldr innerLoop (drop (i+1) previousRow, Nothing) $ zip andGates previousRow
+              in currentRow
+        innerLoop (andGate,incomingSum) (res,maybeCarry) =
+              let (adderSum,adderCout) = case maybeCarry of
+                    Nothing -> halfAdderSegment (andGate,incomingSum)
+                    Just carry -> fullAdderSegment (andGate,incomingSum) carry
+              in (adderSum : res, Just adderCout)
+    in foldr forAllRows firstRow $ zip [0..length ys - 2] ys
 
-replaceInList :: [a] -> Int -> a -> [a]
-replaceInList ls i el =
-    let (prefix,suffix) = splitAt i ls
-    in prefix ++ [el] ++ tail suffix
-
-
+    
+    
 
 -- See http://www.allsyllabus.com/aj/note/ECE/Digital_System_Design_Using_VHDL/Unit4/4-bit%20Multiplier%20Partial%20Products.php
 
