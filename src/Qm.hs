@@ -32,7 +32,7 @@ import qualified Data.Bits as B
 import Data.List(find)
 import Data.Word(Word64)
 import Control.Exception(assert)
-import qualified Control.Monad.Trans.State.Lazy as State
+import qualified Control.Monad.State.Lazy as State
 import Control.Monad(forM_)
 import Debug.Trace(traceShow)
 

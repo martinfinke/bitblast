@@ -25,7 +25,7 @@ module Variable(
                 allBoolCombinations
                 ) where
 
-import qualified Control.Monad.Trans.State.Lazy as State
+import qualified Control.Monad.State.Lazy as State
 import qualified Data.IntMap as IntMap
 import qualified Data.Map as Map
 import qualified Data.Set as Set
