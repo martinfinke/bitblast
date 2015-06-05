@@ -77,4 +77,22 @@ spec = do
             let options = selectOptions{includeLiterals=False} 
             let f = And [Not $ Implies x0 x2, Not x1]
             possibleReplacementsWith options f `shouldBe` [f, Not $ Implies x0 x2, Implies x0 x2]
+
+    describe "possibleReplacements2" $ do
+        it "only suggests the first replacement if there's only one possible replacement in the formula" $ do
+            let f = x0
+            pending
+            --possibleReplacements2 f `shouldBe` [x0]
+        it "doesn't suggest tuples that are permutations of each other" $ do
+            let f = And [x0]
+            pending
+            --possibleReplacements2 f `shouldBe` [(And [x0], x0)]
+
+    describe "combinationsNoMirror" $ do
+        it "works for one element" $ do
+            combinationsNoMirror 1 [0] `shouldBe` [[0]]
+        it "doesn't do mirrored combinations" $ do
+            combinationsNoMirror 2 [0,1] `shouldBe` [[0,1]]
+
+
             
