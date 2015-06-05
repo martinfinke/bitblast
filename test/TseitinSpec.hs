@@ -114,11 +114,11 @@ spec = do
             let unrelated1 = Or [x4]
             let unrelated2 = Equiv [x1,x5]
             let wrongOrder = [child, unrelated1, grandchild, parent, unrelated2]
-            let rightOrder = orderFormulas wrongOrder
-            let i1 = extractMaybe . findIndex (== grandchild) $ rightOrder
-            let i2 = extractMaybe . findIndex (== child) $ rightOrder
-            let i3 = extractMaybe . findIndex (== parent) $ rightOrder
-            i1 < i2 `shouldBe` True
-            i2 < i3 `shouldBe` True
+            let ordered = orderFormulas wrongOrder
+            let onlyInteresting = filter (`elem` [grandchild,child,parent]) ordered
+            onlyInteresting `shouldBe` [grandchild,child,parent]
         it "sorts parent/child/grandchild even if parent contains grandchild separately" $ do
-            pending
+            let grandchild = x0
+            let child = Or [grandchild, Implies x4 grandchild]
+            let parent = And [x2,child, Equiv [child, grandchild]]
+            orderFormulas [parent, grandchild, child] `shouldBe` [grandchild,child,parent]

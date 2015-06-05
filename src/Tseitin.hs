@@ -3,7 +3,7 @@ module Tseitin where
 import Variable
 import Formula
 import qualified Data.Set as Set
-import Data.List(sortBy,groupBy,partition)
+import Data.List(sortBy,partition)
 
 tseitinReplaceOne :: Set.Set Variable -> Formula -> Formula -> Maybe (Formula,Variable)
 tseitinReplaceOne varSet toReplace formula =
