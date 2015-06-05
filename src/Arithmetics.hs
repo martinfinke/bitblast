@@ -47,6 +47,7 @@ summer overflowMode xs ys sums
                 Connect cOut -> Equiv [cOut,cOut'] : sumEquivs
 
 -- Port from Boolector's mul_aigvec. Has DontCare overflow.
+-- As opposed to Boolector's version, this one uses a half adder for the first (rightmost) element in each row. Boolector uses a full adder with an always-false carry input.
 multiplierSegmentDontCareOverflow :: [Formula] -> [Formula] -> [Formula]
 multiplierSegmentDontCareOverflow xs ys =
     let firstRow = [And [x, last ys] | x <- xs]
