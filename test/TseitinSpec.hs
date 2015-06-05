@@ -10,7 +10,7 @@ import qualified Data.Set as Set
 spec :: Spec
 spec = do
     let allVars = generateVars 15
-    let vars = take 10 allVars
+    let vars@[v0,v1,v2,v3,v4,v5,v6,v7,v8,v9] = take 10 allVars
     let [t0,t1,t2,t3,t4] = drop 10 allVars
     let varSet = Set.fromList vars
     let [x0,x1,x2,x3,x4,x5,x6,x7,x8,x9] = map Atom vars
@@ -85,4 +85,12 @@ spec = do
             let f2 = Equiv [x5,x1, Implies x0 f1]
             parentChildOrdering f1 f2 `shouldBe` LT
             parentChildOrdering f2 f1 `shouldBe` GT
+
+    describe "containsOnlyVarsFrom" $ do
+        it "is True if it contains only vars from the set" $ do
+            And [x0,x1] `containsOnlyVarsFrom` varSet `shouldBe` True
+        it "is False if it contains vars not in the set" $ do
+            And [x0,x3] `containsOnlyVarsFrom` (Set.fromList [v0,v1]) `shouldBe` False
+        it "is True if it contains a (strict) subset" $ do
+            And [x0,x3] `containsOnlyVarsFrom` (Set.fromList [v0,v1,v3]) `shouldBe` True
 
