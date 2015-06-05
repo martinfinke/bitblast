@@ -2,6 +2,7 @@ module Main where
 
 import Arithmetics
 import EspressoInterface
+import CoinCBCInterface
 import Formula
 import MinimizeFormula
 import NormalForm
@@ -12,6 +13,61 @@ import System.Environment(getArgs)
 import Text.Printf(printf)
 import Control.Monad(forM_)
 import qualified Data.Set as Set
+
+import Test.Hspec
+import Test.QuickCheck
+import VariableSpec
+
+
+
+-- | Minimizes a formula using Espresso and Coin CBC
+minimizeFormulaExt :: Formula -> IO Formula
+minimizeFormulaExt formula =
+    let canonical = ensureCanonical formula
+        cnfMode = (getType canonical == CNFType)
+        varSet = variableSet formula
+        numVars = Set.size varSet
+        ones = canonicalToBitVectors varSet canonical
+    in do
+        primes <- fmap parseOutput $ espressoGetPrimes numVars ones
+        let lpFileContents = toLPFile numVars primes ones
+        let lpFileName = "bitblast-cbctemp.lp"
+        writeFile lpFileName lpFileContents
+        let cbcSolutionFileName = "bitblast-cbcsolution.txt"
+        putStrLn "Run CBC in the current working directory and execute these commands:"
+        putStrLn $ ""
+        putStrLn $ "import " ++ lpFileName
+        putStrLn "branchAndCut"
+        putStrLn $ "solution " ++ cbcSolutionFileName
+        putStrLn $ ""
+        putStrLn "After the solution file has been written, press Enter to continue ..."
+        getLine
+        cbcSolution <- readFile cbcSolutionFileName
+        let essentialPrimeIndices = parseSolution cbcSolution
+        let essentialPrimes = map snd $ filter (\(i,_) -> i `elem` essentialPrimeIndices) $ zip [0..] primes
+
+        return $ qmTermsToFormula varSet cnfMode essentialPrimes
+
+runCBC :: Int -> IO ()
+runCBC numBits = do
+    --let (formula,_) = nBitAddition DontCare numBits
+    let (formula,varSet) = nBitMultiplication numBits
+    cnf <- minimizeFormulaExt formula
+
+
+    putStrLn "CNF:"
+    putStrLn $ show cnf
+    putStrLn "----------------------------------------------------------------"
+    putStrLn $ show (getStats cnf)
+    putStrLn "----------------------------------------------------------------"
+    hspec $ do
+        describe "Verifying the generated CNF..." $ do
+            it "has the same value as the original formula (for random assignments)" $ do
+                property $ \assignment ->
+                    let assignment' = expandOrReduce False varSet assignment
+                    in assignment' `isModelOf` formula `shouldBe` assignment' `isModelOf` cnf
+
+
 
 nBitAddition :: OverflowMode -> Int -> (Formula, Set.Set Variable)
 nBitAddition overflowMode numBits =
@@ -88,4 +144,3 @@ runEspressoVerbose numBits = do
             putStrLn $ show cnf
             putStrLn "----------------------------------------------------------------"
             putStrLn $ show (getStats cnf)
-

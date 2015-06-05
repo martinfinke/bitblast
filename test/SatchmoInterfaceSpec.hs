@@ -2,6 +2,7 @@ module SatchmoInterfaceSpec where
 
 import SpecHelper
 import SatchmoInterface
+import CoinCBCInterface(columns)
 import Qm
 
 import qualified Data.Map as Map

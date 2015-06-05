@@ -18,10 +18,12 @@ randomVariables numvars = do
 
 instance Arbitrary Assignment where
     arbitrary = do
-        numvars <- choose (1,10::Int)
+        numvars <- choose (30,100::Int)
         variables <- randomVariables numvars
         bools <- vectorOf numvars (arbitrary::Gen Bool)
         return $ assignmentFromList (zip variables bools)
+
+
 
 spec :: Spec
 spec = do

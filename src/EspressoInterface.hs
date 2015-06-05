@@ -32,6 +32,13 @@ runEspresso (PLA string) args = do
     distance1Merge <- readProcess "espresso" ["-Dd1merge"] string
     readProcess "espresso" args distance1Merge
 
+espressoGetPrimes :: Int -> [BitVector] -> IO String
+espressoGetPrimes numVariables ones = do
+    let onesQm = map (\one -> QmTerm(one,0)) ones
+    let pla = toPLA numVariables onesQm
+    output <- runEspresso pla ["-eness", "-Dexact"]
+    return output
+
 espressoOptimizeDefault, espressoOptimizeExact :: Int -> [QmTerm] -> IO [QmTerm]
 espressoOptimizeDefault = espressoOptimizeWith []
 

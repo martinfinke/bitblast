@@ -15,6 +15,7 @@ module Qm(
           prepareInput,
           compute_primes,
           calculate_complexity,
+          primeComplexity,
           prepareCovers,
           invertedNumvarsMask,
           minimize_complexity,
@@ -218,7 +219,10 @@ minimize_complexity numvars primes covers =
 
 -- | Counts the number of unmasked positions in each 'QmTerm', and returns the sum over all of them. So the result is the number of literals in the resulting CNF/DNF.
 calculate_complexity :: BitVector -> Set.Set QmTerm -> Int
-calculate_complexity invertedNvMask primes = sum $ map (bitcount False . masked) (Set.toList primes)
+calculate_complexity invertedNvMask primes = sum $ map (primeComplexity invertedNvMask) (Set.toList primes)
+
+primeComplexity :: BitVector -> QmTerm -> Int
+primeComplexity invertedNvMask prime = (bitcount False . masked) prime
     where masked qmTerm = getMask qmTerm B..|. invertedNvMask
 
 invertedNumvarsMask :: Int -> BitVector
