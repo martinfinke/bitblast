@@ -3,7 +3,7 @@ module NormalFormSpec(NormalFormSpec.spec) where
 import SpecHelper
 import qualified Variable as V
 import VariableSpec
-import Formula(Formula(..), isModelOf, variableSet)
+import Formula(Formula(..), isModelOf, variableSet, isLiteral)
 import NormalForm
 import qualified Data.Set as Set
 import FormulaSpec

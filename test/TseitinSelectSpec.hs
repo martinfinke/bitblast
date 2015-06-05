@@ -56,3 +56,25 @@ spec = do
                     Not child,
                     Not grandchild
                     ]
+    describe "possibleReplacementsWith" $ do
+        it "doesn't return the root if we don't want it" $ do
+            let options = selectOptions{includeRoot=False}
+            let f = And [x0]
+            possibleReplacementsWith options f `shouldBe` [x0]
+        it "doesn't return Atoms if we don't want them" $ do
+            let options = selectOptions{includeAtoms=False}
+            let f = And [x0]
+            possibleReplacementsWith options f `shouldBe` [f]
+        it "doesn't return literals (atoms and negated atoms) if we don't want them" $ do
+            let options = selectOptions{includeLiterals=False} 
+            let f = And [Not x0, x1]
+            possibleReplacementsWith options f `shouldBe` [f]
+        it "doesn't return the root, even if it's a literal" $ do
+            let options = selectOptions{includeRoot=False}
+            possibleReplacementsWith options (Not x0) `shouldBe` [x0]
+            possibleReplacementsWith options (x0) `shouldBe` []
+        it "returns a negated formula, even if includeLiterals is False" $ do
+            let options = selectOptions{includeLiterals=False} 
+            let f = And [Not $ Implies x0 x2, Not x1]
+            possibleReplacementsWith options f `shouldBe` [f, Not $ Implies x0 x2, Implies x0 x2]
+            

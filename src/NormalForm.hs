@@ -13,8 +13,6 @@ module NormalForm (Canonical,
                    isCanonical,
                    isConjunctionOfLiterals,
                    isDisjunctionOfLiterals,
-                   isLiteral,
-                   isPositiveLiteral,
                    normalFormChildren,
                    termLiterals,
                    getStats,
@@ -109,17 +107,6 @@ isDisjunctionOfLiterals t = case t of
 isConjunctionOfLiterals t = case t of
     (And literals) -> all isLiteral literals
     _ -> False
-
--- | Checks whether a given 'Formula' is a literal. A literal is an 'Formula.Atom' or a negated 'Formula.Atom'.
-isLiteral :: Formula -> Bool
-isLiteral (Atom _) = True
-isLiteral (Not (Atom _)) = True
-isLiteral _ = False
-
--- | Checks whether a literal is positive (i.e. not negated).
-isPositiveLiteral :: Formula -> Bool
-isPositiveLiteral (Atom _) = True
-isPositiveLiteral _ = False
 
 -- | Extract the conjunctions/disjunctions of a DNF/CNF, or the literals of a conjunction/disjunction.
 normalFormChildren :: Formula -> [Formula]

@@ -6,7 +6,9 @@ module Formula (Formula(..),
                 variableSet,
                 toTruthTable,
                 possibleAssignments,
-                allBoolCombinations
+                allBoolCombinations,
+                isLiteral,
+                isPositiveLiteral
                 ) where
 
 import Variable hiding(eval)
@@ -78,3 +80,14 @@ toTruthTable formula = tableFromList outputs
 -- | All possible 'Assignment's for a given 'Formula', i.e. all combinations of true/false values for its 'variableSet'.
 possibleAssignments :: Formula -> [Assignment]
 possibleAssignments = allBoolCombinations . variableSet
+
+-- | Checks whether a given 'Formula' is a literal. A literal is an 'Formula.Atom' or a negated 'Formula.Atom'.
+isLiteral :: Formula -> Bool
+isLiteral (Atom _) = True
+isLiteral (Not (Atom _)) = True
+isLiteral _ = False
+
+-- | Checks whether a literal is positive (i.e. not negated).
+isPositiveLiteral :: Formula -> Bool
+isPositiveLiteral (Atom _) = True
+isPositiveLiteral _ = False

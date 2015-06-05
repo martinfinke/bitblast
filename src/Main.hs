@@ -69,14 +69,14 @@ runVerbose numBits = do
 
 runEspressoVerbose :: Int -> IO ()
 runEspressoVerbose numBits = do
-    let (addition,additionVarSet) = nBitAddition Forbid numBits
+    let (addition,additionVarSet) = nBitAddition DontCare numBits
     let (multiplication,multiplicationVarSet) = nBitMultiplication numBits
 
-    --putStrLn $ printf "Optimizing %d-bit Addition …" numBits
-    --runWith addition additionVarSet
+    putStrLn $ printf "Optimizing %d-bit Addition …" numBits
+    runWith addition additionVarSet
 
-    putStrLn $ printf "Optimizing %d-bit Multiplication …" numBits
-    runWith multiplication multiplicationVarSet
+    --putStrLn $ printf "Optimizing %d-bit Multiplication …" numBits
+    --runWith multiplication multiplicationVarSet
 
     where runWith circuit varSet = do
             let onesQm = map (\one -> QmTerm(one,0)) $ canonicalToBitVectors varSet (ensureCanonical circuit)
