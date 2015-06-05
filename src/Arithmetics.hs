@@ -62,3 +62,10 @@ multiplierSegmentDontCareOverflow xs ys =
               in (adderSum : res, Just adderCout)
     in foldr forAllRemainingRows firstRow $ zip [0..length ys - 2] (init ys)
 
+-- | Doesn't care about overflow.
+multiplier :: [Formula] -> [Formula] -> [Formula] -> Formula
+multiplier xs ys sums
+    | length xs /= length ys = error "The factors must have the same width."
+    | otherwise = And outputFormula
+    where sums' = multiplierSegmentDontCareOverflow xs ys
+          outputFormula = map (\(s,s') -> Equiv [s, s']) $ zip sums' sums
