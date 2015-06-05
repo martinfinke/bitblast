@@ -53,7 +53,8 @@ spec = do
 
     describe "isChildOf" $ do
         it "is True if both formulas are the same" $ do
-            property $ \formula -> formula `isChildOf` formula `shouldBe` True
+            property $ \formula ->
+                formula `isChildOf` formula `shouldBe` True
         it "is False if the formulas are unrelated" $ do
             let f1 = And [x0,x3, Xor [x2]]
             let f2 = And [x0, x3, x2, Xor [x1]]
@@ -71,5 +72,17 @@ spec = do
             f1 `isChildOf` f2 `shouldBe` True
             f2 `isChildOf` f1 `shouldBe` False
 
-    
+    describe "parentChildOrdering" $ do
+        it "is EQ if the formulas are equal" $ do
+            property $ \formula ->
+                parentChildOrdering formula formula `shouldBe` EQ
+        it "is EQ if the formulas are unrelated" $ do
+            let f1 = Or [x1,x2]
+            let f2 = Or [x0,x2]
+            parentChildOrdering f1 f2 `shouldBe` EQ
+        it "is LT/GT if f1 isChildOf f2" $ do
+            let f1 = And [x1,x0, Or [x4,x1]]
+            let f2 = Equiv [x5,x1, Implies x0 f1]
+            parentChildOrdering f1 f2 `shouldBe` LT
+            parentChildOrdering f2 f1 `shouldBe` GT
 
