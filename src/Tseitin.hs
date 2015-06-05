@@ -44,9 +44,12 @@ tseitinReplaceMany varSet toReplaces formula
         newVars = take (length toReplaces) (newVariables varSet)
         withVariables = fst $ foldr assignVariables ([], newVars) groups
         normalized = concatMap normalize withVariables
-        --replaced = foldr replace formula (reverse withVariables)
-        replaced = undefined
-    in (replaced, newVars) -- TODO: Add the Equiv terms
+        replaced = foldr replace formula (reverse normalized)
+        equivs = map makeEquiv normalized
+    in (And (replaced:equivs), newVars)
+
+makeEquiv :: (Formula,Variable) -> Formula
+makeEquiv (f,variable) = Equiv [Atom variable, f]
 
 newVariables :: Set.Set Variable -> [Variable]
 newVariables varSet = [succ (Set.findMax varSet)..]
@@ -65,17 +68,14 @@ assignVariables group (accum, unusedVars) =
     let withVars = zip group unusedVars
     in (withVars:accum, drop (length group) unusedVars)
 
--- we then "normalize" the toReplace terms. starting with the second-but-lowest one, we check if it contains any of the lower terms. if so, we replace any occurrences with the extra variable of the lower term. we then proceed to the next greater term, checking if it contains any lower (already normalized) terms.
 normalize :: [(Formula,Variable)] -> [(Formula,Variable)]
-normalize [] = []
-normalize group = reverse $ foldr normalize' [] (reverse group)
+normalize = reverse . foldr normalize' [] . reverse
 
 normalize' :: (Formula,Variable) -> [(Formula,Variable)] -> [(Formula,Variable)] 
 normalize' current alreadyNormalized =
     let replace' (r,v) (t,v') = (replace (r,v) t, v')
         replaced = foldr replace' current alreadyNormalized :: (Formula,Variable)
     in replaced:alreadyNormalized
-
 
 replace :: (Formula,Variable) -> Formula -> Formula
 replace (toReplace,extraVar) f = snd $ findAndReplace toReplace extraVar f

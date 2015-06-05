@@ -148,3 +148,40 @@ spec = do
             let term = And [x1,x2]
             let group = [(term,t0), (term,t1)]
             normalize group `shouldBe` [(term,t0), (Atom t0, t1)]
+
+    describe "tseitinReplaceMany" $ do
+        it "doesn't change anything if there are no replaces" $ do
+            let f = And [x0,x1]
+            tseitinReplaceMany varSet [] f `shouldBe` (f, [])
+        it "throws an error if a variable isn't in the variable set" $ do
+            let toReplace = Atom t0
+            let call = tseitinReplaceMany varSet [toReplace] x1
+            evaluate call `shouldThrow` anyException
+        it "can replace multiple occurrences" $ do
+            let toReplace = Not x4
+            let f = And [toReplace, x1, Equiv [x2, toReplace]]
+            let result@(_,[newVar]) = tseitinReplaceMany varSet [toReplace] f
+            let expected = And [And [Atom newVar, x1, Equiv [x2, Atom newVar]], Equiv [Atom newVar, Not x4]]
+            result `shouldBe` (expected,[newVar])
+        it "doesn't use variables from the given varSet" $ do
+            let f = And [x0]
+            let (_,[extraVar]) = tseitinReplaceMany varSet [x0] f
+            Set.member extraVar varSet `shouldBe` False
+        it "can replace parent/child/grandchild, even if they are given in a wrong order" $ do
+            let grandchild = x0
+            let child = Or [grandchild, Implies x4 grandchild]
+            let parent = And [x2,child]
+            let unrelated1 = Or [x4]
+            let toReplaces = [child, unrelated1, parent, grandchild]
+            let f = Xor [child, x1, grandchild, Or [Not child, unrelated1, x2], Not parent]
+            let (result,[t0',t1',t2',t3']) = tseitinReplaceMany varSet toReplaces f
+            let replaced = Xor [Atom t2', x1, Atom t1', Or [Not (Atom t2'), Atom t0', x2], Not (Atom t3')]
+            let equivs = [
+                    Equiv [Atom t1', x0],
+                    Equiv [Atom t2', Or [Atom t1', Implies x4 (Atom t1')]],
+                    Equiv [Atom t3', And [x2, Atom t2']],
+                    Equiv [Atom t0', unrelated1]
+                    ]
+            let expected = And (replaced:equivs)
+            result `shouldBe` expected
+            
