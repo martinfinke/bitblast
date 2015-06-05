@@ -3,7 +3,7 @@ module Tseitin where
 import Variable
 import Formula
 import qualified Data.Set as Set
-import Data.List(sortBy)
+import Data.List(sortBy,groupBy,partition)
 
 tseitinReplaceOne :: Set.Set Variable -> Formula -> Formula -> Maybe (Formula,Variable)
 tseitinReplaceOne varSet toReplace formula =
@@ -50,7 +50,15 @@ newVariables :: Set.Set Variable -> [Variable]
 newVariables varSet = [succ (Set.findMax varSet)..]
 
 orderFormulas :: [Formula] -> [Formula]
-orderFormulas = sortBy parentChildOrdering
+orderFormulas fs =
+    let groups = makeRelatedGroups fs
+    in concatMap (sortBy parentChildOrdering) groups
+
+makeRelatedGroups :: [Formula] -> [[Formula]]
+makeRelatedGroups [] = []
+makeRelatedGroups (f:fs) =
+    let (related,others) = partition (isRelatedTo f) fs
+    in (f:related) : makeRelatedGroups others
 
 normalize :: [(Formula,Variable)] -> [(Formula,Variable)] -> [(Formula,Variable)]
 normalize withVariables accum = undefined
@@ -63,6 +71,9 @@ f1 `isChildOf` f2 =
     let [unusedVar] = generateVars 1
     in fst $ findAndReplace f1 unusedVar f2
 
+isRelatedTo :: Formula -> Formula -> Bool
+isRelatedTo f1 f2 = f1 `isChildOf` f2 || f2 `isChildOf` f1
+
 containsOnlyVarsFrom :: Formula -> Set.Set Variable -> Bool
 f `containsOnlyVarsFrom` varSet = (variableSet f) `Set.isSubsetOf` varSet
 
@@ -71,4 +82,4 @@ parentChildOrdering f1 f2
     | f1 == f2 = EQ
     | f1 `isChildOf` f2 = LT
     | f2 `isChildOf` f1 = GT
-    | otherwise = EQ -- f1 and f2 are unrelated
+    | otherwise = error $ "Formulas are unrelated: " ++ show f1 ++ " and " ++ show f2

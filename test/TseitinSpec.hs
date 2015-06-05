@@ -6,6 +6,7 @@ import Formula
 import Variable(generateVars)
 import Tseitin
 import qualified Data.Set as Set
+import Data.List(findIndex,groupBy)
 
 spec :: Spec
 spec = do
@@ -76,10 +77,10 @@ spec = do
         it "is EQ if the formulas are equal" $ do
             property $ \formula ->
                 parentChildOrdering formula formula `shouldBe` EQ
-        it "is EQ if the formulas are unrelated" $ do
+        it "is throws an error if the formulas are unrelated" $ do
             let f1 = Or [x1,x2]
             let f2 = Or [x0,x2]
-            parentChildOrdering f1 f2 `shouldBe` EQ
+            evaluate (parentChildOrdering f1 f2) `shouldThrow` anyException
         it "is LT/GT if f1 isChildOf f2" $ do
             let f1 = And [x1,x0, Or [x4,x1]]
             let f2 = Equiv [x5,x1, Implies x0 f1]
@@ -93,4 +94,31 @@ spec = do
             And [x0,x3] `containsOnlyVarsFrom` (Set.fromList [v0,v1]) `shouldBe` False
         it "is True if it contains a (strict) subset" $ do
             And [x0,x3] `containsOnlyVarsFrom` (Set.fromList [v0,v1,v3]) `shouldBe` True
-
+    describe "orderFormulas" $ do
+        it "sorts two formulas that are related" $ do
+            property $ \child ->
+                let parent = Or [x5, Equiv [child, x0]]
+                    wrongOrder = [parent, child]
+                    rightOrder = [child, parent]
+                in orderFormulas wrongOrder `shouldBe` rightOrder
+        it "is stable for unrelated formulas" $ do
+            let f1 = And [x0]
+            let f2 = Or [x0, And [x1]]
+            let order = [f1,f2]
+            orderFormulas order `shouldBe` order
+            orderFormulas (reverse order) `shouldBe` (reverse order)
+        it "sorts related formulas when there are unrelated ones in between" $ do
+            let grandchild = x0
+            let child = Or [grandchild, Implies x4 grandchild]
+            let parent = And [x2,child]
+            let unrelated1 = Or [x4]
+            let unrelated2 = Equiv [x1,x5]
+            let wrongOrder = [child, unrelated1, grandchild, parent, unrelated2]
+            let rightOrder = orderFormulas wrongOrder
+            let i1 = extractMaybe . findIndex (== grandchild) $ rightOrder
+            let i2 = extractMaybe . findIndex (== child) $ rightOrder
+            let i3 = extractMaybe . findIndex (== parent) $ rightOrder
+            i1 < i2 `shouldBe` True
+            i2 < i3 `shouldBe` True
+        it "sorts parent/child/grandchild even if parent contains grandchild separately" $ do
+            pending
