@@ -1,6 +1,7 @@
 module TseitinSpec where
 
 import SpecHelper
+import FormulaSpec
 import Formula
 import Variable(generateVars)
 import Tseitin
@@ -21,10 +22,10 @@ spec = do
             extractMaybe (Just 1) `shouldBe` 1
         it "throws an error for Nothing" $ do
             evaluate (extractMaybe Nothing) `shouldThrow` anyException
-    describe "tseitinReplace" $ do
+    describe "tseitinReplaceOne" $ do
         it "replaces a given sub-formula with a variable" $ do
             let testFormula = Or [Equiv [x3,x4], x0, And [x6,x2]]
-            let (withReplacement,extraVar) = extractMaybe $ tseitinReplace varSet (And [x6,x2]) testFormula
+            let (withReplacement,extraVar) = extractMaybe $ tseitinReplaceOne varSet (And [x6,x2]) testFormula
             withReplacement `shouldBe` And [Equiv [Atom extraVar, And [x6,x2]], Or [Equiv [x3,x4], x0, Atom extraVar]]
 
     describe "findAndReplace" $ do
@@ -49,3 +50,26 @@ spec = do
         it "replaces an AND inside an OR" $ do
             let toReplace = And [x2,x3]
             findAndReplace toReplace t0 (Or [toReplace]) `shouldBe` (True, Or [Atom t0])
+
+    describe "isChildOf" $ do
+        it "is True if both formulas are the same" $ do
+            property $ \formula -> formula `isChildOf` formula `shouldBe` True
+        it "is False if the formulas are unrelated" $ do
+            let f1 = And [x0,x3, Xor [x2]]
+            let f2 = And [x0, x3, x2, Xor [x1]]
+            f1 `isChildOf` f2 `shouldBe` False
+            f2 `isChildOf` f1 `shouldBe` False
+        it "is False if the formulas have a common subtree" $ do
+            let common = Xor [x1]
+            let f1 = And [x0,x3, common]
+            let f2 = And [x0, x3, x2, common]
+            f1 `isChildOf` f2 `shouldBe` False
+            f2 `isChildOf` f1 `shouldBe` False
+        it "is true if one is the child of the other" $ do
+            let f1 = Xor [And [x0,x2]]
+            let f2 = Or [x5, f1]
+            f1 `isChildOf` f2 `shouldBe` True
+            f2 `isChildOf` f1 `shouldBe` False
+
+    
+
