@@ -17,7 +17,7 @@ import qualified Data.Set as Set
 nBitAddition :: OverflowMode -> Int -> (Formula, Set.Set Variable)
 nBitAddition overflowMode numBits =
     -- Variable ordering is [x2,x1,x0] + [x5,x4,x3] = [x8,x7,x6]
-    let vars = generateVars (3*numBits)
+    let vars = makeVars (3*numBits)
         atoms = map Atom vars
         first = reverse $ take numBits atoms
         second = reverse $ take numBits $ drop numBits atoms
@@ -77,7 +77,7 @@ runEspressoVerbose numBits = do
 
 
 
-vars = generateVars 11
+vars = makeVars 11
 [x0,x1,x2,x3,x4,x5,x6,x7,x8, t1,t2] = map Atom vars
 -- -(0 && 1) && ((0 XOR 1) <=> 2)
 (oneBit,varSet') = nBitAddition Forbid 1 -- TODO: This won't work because nBitAddition does its own position mapping.

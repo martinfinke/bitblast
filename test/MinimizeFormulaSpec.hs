@@ -13,7 +13,7 @@ import qualified Data.Set as Set
 
 spec :: Spec
 spec = do
-    let vars@[v0,v1,v2,v3] = generateVars 4
+    let vars@[v0,v1,v2,v3] = makeVars 4
     let [x0,x1,x2,x3] = map Atom vars
     let _0pos3neg = [Not x0, Not x1, Not x2]
     let _1pos2neg = [x0, Not x1, Not x2]

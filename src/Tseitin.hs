@@ -37,38 +37,52 @@ findAndReplace toReplace extraVar formula
 
 tseitinReplaceMany :: Set.Set Variable -> [Formula] -> Formula -> (Formula, [Variable])
 tseitinReplaceMany varSet toReplaces formula
-    | not (all (`containsOnlyVarsFrom` varSet) toReplaces) = error "..."
+    | null toReplaces = (formula,[])
+    | not (all (`containsOnlyVarsFrom` varSet) toReplaces) = error "The terms to replace must contain only variables from the variable set. Otherwise, the introduced extra variables might clash."
     | otherwise =
-    let ordered = orderFormulas toReplaces
-        withVariables = zip ordered (newVariables varSet)
-        newVars = map snd withVariables
-        normalized = normalize withVariables []
-        replaced = foldr replace formula (reverse normalized)
-    in (replaced, newVars)
+    let groups = orderedGroups toReplaces
+        newVars = take (length toReplaces) (newVariables varSet)
+        withVariables = fst $ foldr assignVariables ([], newVars) groups
+        normalized = concatMap normalize withVariables
+        --replaced = foldr replace formula (reverse withVariables)
+        replaced = undefined
+    in (replaced, newVars) -- TODO: Add the Equiv terms
 
 newVariables :: Set.Set Variable -> [Variable]
 newVariables varSet = [succ (Set.findMax varSet)..]
 
-orderFormulas :: [Formula] -> [Formula]
-orderFormulas fs =
-    let groups = makeRelatedGroups fs
-    in concatMap (sortBy parentChildOrdering) groups
-
-makeRelatedGroups :: [Formula] -> [[Formula]]
-makeRelatedGroups [] = []
-makeRelatedGroups (f:fs) =
+relatedGroups :: [Formula] -> [[Formula]]
+relatedGroups [] = []
+relatedGroups (f:fs) =
     let (related,others) = partition (isRelatedTo f) fs
-    in (f:related) : makeRelatedGroups others
+    in (f:related) : relatedGroups others
 
-normalize :: [(Formula,Variable)] -> [(Formula,Variable)] -> [(Formula,Variable)]
-normalize withVariables accum = undefined
+orderedGroups :: [Formula] -> [[Formula]]
+orderedGroups = map (sortBy parentChildOrdering) . relatedGroups
+
+assignVariables :: [Formula] -> ([[(Formula,Variable)]], [Variable]) -> ([[(Formula,Variable)]], [Variable])
+assignVariables group (accum, unusedVars) =
+    let withVars = zip group unusedVars
+    in (withVars:accum, drop (length group) unusedVars)
+
+-- we then "normalize" the toReplace terms. starting with the second-but-lowest one, we check if it contains any of the lower terms. if so, we replace any occurrences with the extra variable of the lower term. we then proceed to the next greater term, checking if it contains any lower (already normalized) terms.
+normalize :: [(Formula,Variable)] -> [(Formula,Variable)]
+normalize [] = []
+normalize group = reverse $ foldr normalize' [] (reverse group)
+
+normalize' :: (Formula,Variable) -> [(Formula,Variable)] -> [(Formula,Variable)] 
+normalize' current alreadyNormalized =
+    let replace' (r,v) (t,v') = (replace (r,v) t, v')
+        replaced = foldr replace' current alreadyNormalized :: (Formula,Variable)
+    in replaced:alreadyNormalized
+
 
 replace :: (Formula,Variable) -> Formula -> Formula
 replace (toReplace,extraVar) f = snd $ findAndReplace toReplace extraVar f
 
 isChildOf :: Formula -> Formula -> Bool
 f1 `isChildOf` f2 =
-    let [unusedVar] = generateVars 1
+    let [unusedVar] = makeVars 1
     in fst $ findAndReplace f1 unusedVar f2
 
 isRelatedTo :: Formula -> Formula -> Bool

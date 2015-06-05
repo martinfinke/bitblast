@@ -10,10 +10,10 @@ import ArithmeticTruthTables
 spec :: Spec
 spec = do
     let trueOnlyForAssignments varSet assignments = foldr (flip setRow True) (allFalseTable varSet) assignments
-    let makeVars number = let vars = generateVars number in (map Atom vars, Set.fromList vars)
+    let mkVars number = let vars = makeVars number in (map Atom vars, Set.fromList vars)
     describe "halfAdder" $ do
         it "has the correct truth table" $ do
-            let ([c,s,y,x],varSet) = makeVars 4
+            let ([c,s,y,x],varSet) = mkVars 4
             let ha = halfAdder (x,y) (s,c)
             let trueAssignments = map (assignmentFromString varSet) [
                     "0000",
@@ -24,7 +24,7 @@ spec = do
             toTruthTable ha `shouldBe` trueOnlyForAssignments varSet trueAssignments
 
     describe "fullAdderSegment" $ do
-        let ([s,cOut,cIn,y,x],varSet) = makeVars 5
+        let ([s,cOut,cIn,y,x],varSet) = mkVars 5
         let (s',cOut') = fullAdderSegment (x,y) cIn
         let connectedOutputs = And [Equiv [s,s'], Equiv [cOut,cOut']]
         it "has the correct truth table when the outputs are connected" $ do
@@ -46,14 +46,14 @@ spec = do
 
     describe "summerSegment" $ do
         it "is equivalent to a fullAdderSegment for 1 bit" $ do
-            let ([y,x],varSet) = makeVars 2
+            let ([y,x],varSet) = mkVars 2
             let (s', cOut') = halfAdderSegment (x,y)
             let (s'', cOut'') = summerSegment [x] [y]
             let equiv = And [Equiv [s', head s''], Equiv [cOut', cOut'']]
             toTruthTable equiv `shouldBe` allTrueTable varSet
 
         it "has the correct truth table for 2 bits" $ do
-            let ([cOut,s0,s1,y0,y1,x0,x1],varSet) = makeVars 7
+            let ([cOut,s0,s1,y0,y1,x0,x1],varSet) = mkVars 7
             
             let ([s1',s0'], cOut') = summerSegment [x1,x0] [y1,y0]
             let equiv = And [Equiv [s1, s1'], Equiv [s0, s0'], Equiv [cOut, cOut']]
@@ -64,7 +64,7 @@ spec = do
 
     describe "summer" $ do
         it "has the correct truth table for 1 bit" $ do
-            let ([s,y,x],varSet) = makeVars 3
+            let ([s,y,x],varSet) = mkVars 3
             let dontCare = summer DontCare [x] [y] [s]
             let dontCareAssignments = map (assignmentFromString varSet) [
                     "000",
@@ -83,13 +83,13 @@ spec = do
             
 
         it "has the correct truth table for 3 bits" $ do
-            let ([s0,s1,s2,cOut,y0,y1,y2,x0,x1,x2],varSet) = makeVars 10
+            let ([s0,s1,s2,cOut,y0,y1,y2,x0,x1,x2],varSet) = mkVars 10
             let trueAssignments = map (assignmentFromString varSet) addition3Bit
             let smer = summer (Connect cOut) [x2,x1,x0] [y2,y1,y0] [s2,s1,s0]
             toTruthTable smer `shouldBe` trueOnlyForAssignments varSet trueAssignments
 
         it "can forbid overflow" $ do
-            let ([s0,s1,y0,y1,x0,x1],varSet) = makeVars 6
+            let ([s0,s1,y0,y1,x0,x1],varSet) = mkVars 6
             let ([s1',s0'], cOut') = summerSegment [x1,x0] [y1,y0]
             let equiv = And [Equiv [s1, s1'], Equiv [s0, s0'], Not cOut']
             let smer = summer Forbid [x1,x0] [y1,y0] [s1,s0]
@@ -98,7 +98,7 @@ spec = do
             toTruthTable smer `shouldBe` trueOnlyForAssignments varSet trueAssignments
 
         it "can not care about overflow" $ do
-            let ([s0,s1,y0,y1,x0,x1],varSet) = makeVars 6
+            let ([s0,s1,y0,y1,x0,x1],varSet) = mkVars 6
             let ([s1',s0'], _) = summerSegment [x1,x0] [y1,y0]
             let equiv = And [Equiv [s1, s1'], Equiv [s0, s0']]
             let smer = summer DontCare [x1,x0] [y1,y0] [s1,s0]
@@ -108,7 +108,7 @@ spec = do
 
     describe "multiplierSegmentDontCareOverflow (from Boolector)" $ do
         it "multiplies two one-bit numbers" $ do
-            let ([x,y],varSet) = makeVars 2
+            let ([x,y],varSet) = mkVars 2
             let mulSeg = multiplierSegmentDontCareOverflow [x] [y]
             let prod = last mulSeg
             let trueAssignments = map (assignmentFromString varSet) [
@@ -116,7 +116,7 @@ spec = do
                     ]
             toTruthTable prod `shouldBe` trueOnlyForAssignments varSet trueAssignments
         it "has the correct truth table for 1 bit" $ do
-            let ([s,y,x],varSet) = makeVars 3
+            let ([s,y,x],varSet) = mkVars 3
             let mulSeg = multiplierSegmentDontCareOverflow [x] [y]
             let connectedOutputs = Equiv [s, last mulSeg]
             let trueAssignments = map (assignmentFromString varSet) [
@@ -127,7 +127,7 @@ spec = do
                     ]
             toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments varSet trueAssignments
         it "has the correct truth table for 2 bits" $ do
-            let ([s0,s1,y0,y1,x0,x1],varSet) = makeVars 6
+            let ([s0,s1,y0,y1,x0,x1],varSet) = mkVars 6
             let [s1',s0'] = multiplierSegmentDontCareOverflow [x1,x0] [y1,y0]
             let connectedOutputs = And [
                     Equiv [s0,s0'],
@@ -137,7 +137,7 @@ spec = do
             toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments varSet trueAssignments
 
         it "has the correct truth table for 3 bits" $ do
-            let ([s0,s1,s2,y0,y1,y2,x0,x1,x2],varSet) = makeVars 9
+            let ([s0,s1,s2,y0,y1,y2,x0,x1,x2],varSet) = mkVars 9
             let [s2',s1',s0'] = multiplierSegmentDontCareOverflow [x2,x1,x0] [y2,y1,y0]
             let connectedOutputs = And [
                     Equiv [s0,s0'],
@@ -148,7 +148,7 @@ spec = do
             toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments varSet trueAssignments
 
         it "has the correct truth table for 4 bits" $ do
-            let ([s0,s1,s2,s3,y0,y1,y2,y3,x0,x1,x2,x3],varSet) = makeVars 12
+            let ([s0,s1,s2,s3,y0,y1,y2,y3,x0,x1,x2,x3],varSet) = mkVars 12
             let [s3',s2',s1',s0'] = multiplierSegmentDontCareOverflow [x3,x2,x1,x0] [y3,y2,y1,y0]
             let connectedOutputs = And [
                     Equiv [s0,s0'],
@@ -160,7 +160,7 @@ spec = do
             toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments varSet trueAssignments
 
         it "has the correct truth table for 5 bits" $ do
-            let ([s0,s1,s2,s3,s4,y0,y1,y2,y3,y4,x0,x1,x2,x3,x4],varSet) = makeVars 15
+            let ([s0,s1,s2,s3,s4,y0,y1,y2,y3,y4,x0,x1,x2,x3,x4],varSet) = mkVars 15
             let [s4',s3',s2',s1',s0'] = multiplierSegmentDontCareOverflow [x4,x3,x2,x1,x0] [y4,y3,y2,y1,y0]
             let connectedOutputs = And [
                     Equiv [s0,s0'],

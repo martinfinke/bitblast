@@ -2,7 +2,7 @@ module Variable(
                 Variable,
                 initial,
                 eval,
-                generateVars,
+                makeVars,
                 var,
                 Assignment,
                 emptyAssignment,
@@ -52,9 +52,9 @@ initial = VarMem {currentVarIndex=0}
 eval :: VarMem -> VarState a -> a
 eval = flip State.evalState
 
-generateVars :: Int -- ^ How many 'Variable's to create
+makeVars :: Int -- ^ How many 'Variable's to create
              -> [Variable]
-generateVars numvars = eval initial $ do
+makeVars numvars = eval initial $ do
     forM [0..numvars-1] $ const var
 
 var :: Monad m => VarStateTransformer m Variable

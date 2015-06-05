@@ -25,7 +25,7 @@ instance Arbitrary Assignment where
 
 spec :: Spec
 spec = do
-    let [test1,test2,test3] = generateVars 3
+    let [test1,test2,test3] = makeVars 3
 
     describe "var" $ do
         it "can create variables and keep them separate" $ do

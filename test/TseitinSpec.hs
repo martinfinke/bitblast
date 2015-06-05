@@ -3,14 +3,14 @@ module TseitinSpec where
 import SpecHelper
 import FormulaSpec
 import Formula
-import Variable(generateVars)
+import Variable(makeVars)
 import Tseitin
 import qualified Data.Set as Set
 import Data.List(findIndex,groupBy)
 
 spec :: Spec
 spec = do
-    let allVars = generateVars 15
+    let allVars = makeVars 15
     let vars@[v0,v1,v2,v3,v4,v5,v6,v7,v8,v9] = take 10 allVars
     let [t0,t1,t2,t3,t4] = drop 10 allVars
     let varSet = Set.fromList vars
@@ -94,31 +94,57 @@ spec = do
             And [x0,x3] `containsOnlyVarsFrom` (Set.fromList [v0,v1]) `shouldBe` False
         it "is True if it contains a (strict) subset" $ do
             And [x0,x3] `containsOnlyVarsFrom` (Set.fromList [v0,v1,v3]) `shouldBe` True
-    describe "orderFormulas" $ do
-        it "sorts two formulas that are related" $ do
+    describe "orderedGroups" $ do
+        it "orders two formulas that are related" $ do
             property $ \child ->
                 let parent = Or [x5, Equiv [child, x0]]
                     wrongOrder = [parent, child]
-                    rightOrder = [child, parent]
-                in orderFormulas wrongOrder `shouldBe` rightOrder
-        it "is stable for unrelated formulas" $ do
+                    expected = [[child, parent]]
+                in orderedGroups wrongOrder `shouldBe` expected
+        it "doesn't group unrelated formulas" $ do
             let f1 = And [x0]
             let f2 = Or [x0, And [x1]]
-            let order = [f1,f2]
-            orderFormulas order `shouldBe` order
-            orderFormulas (reverse order) `shouldBe` (reverse order)
-        it "sorts related formulas when there are unrelated ones in between" $ do
+            orderedGroups [f1,f2] `shouldBe` [[f1],[f2]]
+        it "groups related formulas when there are unrelated ones in between" $ do
             let grandchild = x0
             let child = Or [grandchild, Implies x4 grandchild]
             let parent = And [x2,child]
             let unrelated1 = Or [x4]
             let unrelated2 = Equiv [x1,x5]
             let wrongOrder = [child, unrelated1, grandchild, parent, unrelated2]
-            let ordered = orderFormulas wrongOrder
-            let onlyInteresting = filter (`elem` [grandchild,child,parent]) ordered
-            onlyInteresting `shouldBe` [grandchild,child,parent]
+            let groups = orderedGroups wrongOrder
+            [grandchild,child,parent] `elem` groups `shouldBe` True
         it "sorts parent/child/grandchild even if parent contains grandchild separately" $ do
             let grandchild = x0
             let child = Or [grandchild, Implies x4 grandchild]
             let parent = And [x2,child, Equiv [child, grandchild]]
-            orderFormulas [parent, grandchild, child] `shouldBe` [grandchild,child,parent]
+            orderedGroups [parent, grandchild, child] `shouldBe` [[grandchild,child,parent]]
+    describe "normalize" $ do
+        it "does nothing to an empty group" $ do
+            normalize [] `shouldBe` []
+        it "does nothing to a group with only one element" $ do
+            let group = [(And [x0],t0)]
+            normalize group `shouldBe` group
+        it "normalizes a group with a parent and a child" $ do
+            let child = And [x1, x2]
+            let parent = Or [Implies x0 child]
+            let group = [(child,t0), (parent,t1)]
+            normalize group `shouldBe` [(child,t0), (Or [Implies x0 $ Atom t0], t1)]
+        it "works for a chain of 3 related formulas" $ do
+            let grandchild = Equiv [x0]
+            let child = And [x1, grandchild]
+            let parent = Or [Implies x0 child]
+            let group = [(grandchild,t0), (child,t1), (parent,t2)]
+            let expected = [(grandchild,t0), (And [x1, Atom t0], t1), (Or [Implies x0 $ Atom t1], t2)]
+            normalize group `shouldBe` expected
+        it "works when parent contains grandchild and child" $ do
+            let grandchild = Equiv [x0]
+            let child = And [x1, grandchild]
+            let parent = Or [x0, Implies grandchild child, grandchild]
+            let group = [(grandchild,t0), (child,t1), (parent,t2)]
+            let expected = [(grandchild,t0), (And [x1, Atom t0], t1), (Or [x0, Implies (Atom t0) (Atom t1), Atom t0], t2)]
+            normalize group `shouldBe` expected
+        it "works when one term normalizes to the other" $ do
+            let term = And [x1,x2]
+            let group = [(term,t0), (term,t1)]
+            normalize group `shouldBe` [(term,t0), (Atom t0, t1)]
