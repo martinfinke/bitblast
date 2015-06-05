@@ -27,7 +27,10 @@ parseOutput output =
 
 runEspresso :: PLA -> [String] -> IO String
 runEspresso (PLA string) args = do
-    readProcess "espresso" args string
+    -- First, perform a quick distance-1-merge
+    -- This is useful because the input generally has a lot of terms
+    distance1Merge <- readProcess "espresso" ["-Dd1merge"] string
+    readProcess "espresso" args distance1Merge
 
 espressoOptimizeDefault, espressoOptimizeExact :: Int -> [QmTerm] -> IO [QmTerm]
 espressoOptimizeDefault = espressoOptimizeWith []
