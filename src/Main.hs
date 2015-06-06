@@ -12,30 +12,16 @@ import TseitinSelect
 import Variable
 
 import System.Environment(getArgs)
+import qualified Data.Set as Set
+import Data.List(sortBy)
+import Data.Ord(comparing)
 
 import Test.Hspec
 import Test.QuickCheck
 import VariableSpec
 
-
-main :: IO ()
-main = do
-    args <- getArgs
-    let bitWidth = read (head args) :: Int
-    runCBC bitWidth
-
-
-runCBC :: Int -> IO ()
-runCBC numBits = do
-    --let (formula,varSet) = nBitAddition Forbid numBits
-    let (formula,varSet) = nBitMultiplication numBits
-    cnf <- minimizeFormula formula
-    putStrLn "CNF:"
-    putStrLn $ show cnf
-    putStrLn "----------------------------------------------------------------"
-    putStrLn $ show (getStats cnf)
-    putStrLn "----------------------------------------------------------------"
-    quickCheck $ property $ \assignment ->
-        let assignment' = expandOrReduce False varSet assignment
-        in assignment' `isModelOf` formula `shouldBe` assignment' `isModelOf` cnf
-
+vars@[v0,v1,v2,v3,v4,v5,v6,v7,v8,v9] = makeVars 10
+varSet = Set.fromList vars
+[x0,x1,x2,x3,x4,x5,x6,x7,x8,x9] = map Atom vars
+-- -(0 XOR 1) && ((0 XOR 1) <=> 2)
+testF = And [Not $ Xor [x0,x1], Equiv [Xor [x0,x1], x2]]

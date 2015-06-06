@@ -39,6 +39,21 @@ parseSolutionLine line =
         number = takeWhile isDigit numberAndRest
     in read number
 
+runCBC :: Int -> [QmTerm] -> [BitVector] -> IO [QmTerm]
+runCBC numVars primes ones = do
+    let numThreads = 4
+    let lpFileContents = toLPFile numVars primes ones
+    let lpFileName = "bitblast-cbctemp.lp"
+    writeFile lpFileName lpFileContents
+    let cbcSolutionFileName = "bitblast-cbcsolution.txt"
+    let cbcCommands = "import " ++ lpFileName ++ "\nbranchAndCut" ++ "\nsolution " ++ cbcSolutionFileName ++ "\n"
+    readProcess "cbc" ["-threads", show numThreads, "-"] cbcCommands
+
+    cbcSolution <- readFile cbcSolutionFileName
+    let essentialPrimeIndices = parseSolution cbcSolution
+    let essentialPrimes = map snd $ filter (\(i,_) -> i `elem` essentialPrimeIndices) $ zip [0..] primes
+    return essentialPrimes
+
 toLPFile :: Int -> [QmTerm] -> [BitVector] -> String
 toLPFile numVars primes ones =
     let cols = columns primes ones

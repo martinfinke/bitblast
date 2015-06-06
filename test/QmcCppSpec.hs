@@ -4,17 +4,15 @@ import SpecHelper
 import QmcCpp
 
 import QmcTypes(QmTerm(..))
+import System.IO.Unsafe (unsafePerformIO)
 
 import qualified Data.Set as Set
 
 spec :: Spec
 spec = do
     describe "qmcCppComputePrimes" $ do
-        it "works for an empty list of ones" $ do
-            qmcCppComputePrimes [] `shouldBe` []
-
         it "behaves as the python version" $ do
-            let test cubes expected = Set.fromList (qmcCppComputePrimes cubes) `shouldBe` Set.fromList (map QmTerm expected)
+            let test cubes expected = Set.fromList (unsafePerformIO (qmcCppComputePrimes cubes)) `shouldBe` Set.fromList (map QmTerm expected)
             test [] []
             test [0] [(0, 0)]
             test [1] [(1, 0)]

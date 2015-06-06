@@ -5,58 +5,79 @@ import Formula
 import NormalForm
 import qualified Data.Set as Set
 import qualified Data.Bits as B
+import Data.List(sortBy)
+import Data.Ord(comparing)
 import QmcCpp
 import QmcTypes
 import Variable
+import Tseitin
+import TseitinSelect
 
-import Control.Monad(when)
+import Control.Monad(when, forM)
 import System.Info(os)
 import System.Process(readProcess)
 import Test.Hspec
 import Test.QuickCheck
 import VariableSpec
 
-minimizeFormula :: Formula -> IO Formula
-minimizeFormula formula =
+data MinimizeFormulaOptions = MinimizeFormulaOptions {
+    verboseOutput :: Bool,
+    verifyPrimes :: Bool,
+    verifyResult :: Bool
+    }
+
+defaultMinimizeFormulaOptions = MinimizeFormulaOptions {
+    verboseOutput = False,
+    verifyPrimes = False,
+    verifyResult = False
+}
+
+minimizeFormulaWith :: MinimizeFormulaOptions -> Formula -> IO Formula
+minimizeFormulaWith options formula =
     let canonical = ensureCanonical formula
         cnfMode = (getType canonical == CNFType)
         varSet = variableSet formula
         numVars = Set.size varSet
         ones = canonicalToBitVectors varSet canonical
     in do
-        putStrLn $ show (length ones) ++ " ones."
-        let primes = qmcCppComputePrimes ones
-        putStrLn $ "Found " ++ show (length primes) ++ " primes."
-        putStrLn "Validating that a formula created from the primes has the same value as the original one (for random assignments)..."
-
+        when (verboseOutput options) $ putStrLn $ show (length ones) ++ " ones."
+        primes <- qmcCppComputePrimes ones
+        when (verboseOutput options) $ putStrLn $ "Found " ++ show (length primes) ++ " primes."
         let primesFormula = qmTermsToFormula varSet cnfMode primes
-        quickCheck $ property $ \assignment ->
-            let assignment' = expandOrReduce False varSet assignment
-            in assignment' `isModelOf` formula `shouldBe` assignment' `isModelOf` primesFormula
 
-        let lpFileContents = toLPFile numVars primes ones
-        let lpFileName = "bitblast-cbctemp.lp"
-        writeFile lpFileName lpFileContents
-        let cbcSolutionFileName = "bitblast-cbcsolution.txt"
-        let cbcCommands = "import " ++ lpFileName ++ "\nbranchAndCut" ++ "\nsolution " ++ cbcSolutionFileName ++ "\n"
-        putStrLn "Run CBC in the current working directory and execute these commands:"
-        putStrLn ""
-        putStrLn cbcCommands
-        copyToClipboard cbcCommands
-        putStrLn "After the solution file has been written, press Enter to continue ..."
-        getLine
-        cbcSolution <- readFile cbcSolutionFileName
-        let essentialPrimeIndices = parseSolution cbcSolution
-        let essentialPrimes = map snd $ filter (\(i,_) -> i `elem` essentialPrimeIndices) $ zip [0..] primes
-        return $ qmTermsToFormula varSet cnfMode essentialPrimes
+        when (verifyPrimes options) $ do
+            putStrLn "Verifying Primes Formula..."
+            quickCheck $ property $ \assignment ->
+                let assignment' = expandOrReduce False varSet assignment
+                in assignment' `isModelOf` formula `shouldBe` assignment' `isModelOf` primesFormula
+        
+        essentialPrimes <- runCBC numVars primes ones
+        let cnf = qmTermsToFormula varSet cnfMode essentialPrimes
+
+        when (verifyResult options) $ do
+            putStrLn "Validating minimized Formula..."
+            quickCheck $ property $ \assignment ->
+                let assignment' = expandOrReduce False varSet assignment
+                in assignment' `isModelOf` formula `shouldBe` assignment' `isModelOf` cnf
+
+        return cnf
+
+minimizeFormula :: Formula -> IO Formula
+minimizeFormula = minimizeFormulaWith defaultMinimizeFormulaOptions
 
 
--- | Only on OSX for now
-copyToClipboard :: String -> IO ()
-copyToClipboard str = do
-    when (os == "darwin") $ do
-        readProcess "pbcopy" [] str
-        putStrLn "The commands have been copied to the clipboard."
+minimizeWithExtraVars :: Int -> Formula -> IO (Formula, [Variable])
+minimizeWithExtraVars numExtraVars f =
+    let varSet = variableSet f
+        possibilities = possibleReplacementsNWith numExtraVars selectOptions f
+        replaced = map (\rs -> tseitinReplace varSet rs f) possibilities :: [(Formula, [Variable])]
+    in do
+        optimized <- forM replaced $ \(f, varSet) -> do
+            f' <- minimizeFormula f
+            return (f', varSet)
+        let sorted = sortBy (comparing $ numLiterals . getStats . fst) optimized
+        return $ head sorted
+
 
 canonicalToBitVectors :: Set.Set Variable -> Canonical -> [BitVector]
 canonicalToBitVectors varSet canonical = concatMap (convertDashes . packTerm varSet) terms
