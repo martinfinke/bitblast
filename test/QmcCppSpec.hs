@@ -9,10 +9,6 @@ import qualified Data.Set as Set
 
 spec :: Spec
 spec = do
-    describe "answer to everything" $ do
-        it "works" $ do
-            answer_to_everything 1 `shouldBe` 42
-            answer_to_everything 2 `shouldBe` 2*42
     describe "qmcCppComputePrimes" $ do
         it "works for an empty list of ones" $ do
             qmcCppComputePrimes [] `shouldBe` []

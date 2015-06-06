@@ -5,6 +5,8 @@ import Data.List(zip4)
 import Debug.Trace(traceShow)
 import Data.List(zip3)
 import Text.Printf(printf)
+import qualified Data.Set as Set
+import Variable
 
 halfAdderSegment :: (Formula,Formula) -> (Formula,Formula)
 halfAdderSegment (x,y) = (s,c)
@@ -70,3 +72,24 @@ multiplier xs ys sums
     | otherwise = And outputFormula
     where sums' = multiplierSegmentDontCareOverflow xs ys
           outputFormula = map (\(s,s') -> Equiv [s, s']) $ zip sums' sums
+
+nBitAddition :: OverflowMode -> Int -> (Formula, Set.Set Variable)
+nBitAddition overflowMode numBits =
+    -- Variable ordering is [x2,x1,x0] + [x5,x4,x3] = [x8,x7,x6]
+    let vars = makeVars (3*numBits)
+        atoms = map Atom vars
+        first = reverse $ take numBits atoms
+        second = reverse $ take numBits $ drop numBits atoms
+        sums = reverse $ take numBits $ drop (2*numBits) atoms
+        summerCircuit = summer overflowMode first second sums
+    in (summerCircuit,Set.fromList vars)
+
+nBitMultiplication :: Int -> (Formula, Set.Set Variable)
+nBitMultiplication numBits = 
+    let vars = makeVars (3*numBits)
+        atoms = map Atom vars
+        first = reverse $ take numBits atoms
+        second = reverse $ take numBits $ drop numBits atoms
+        sums = reverse $ take numBits $ drop (2*numBits) atoms
+        multiplierCircuit = multiplier first second sums
+    in (multiplierCircuit,Set.fromList vars)

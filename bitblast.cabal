@@ -55,7 +55,7 @@ executable bitblast
     extra-lib-dirs:     "/Users/martin/Documents/studium/4. Semester/Masterarbeit/Code/qmc-cpp"
 
 library
-    exposed-modules:    Arithmetics, EspressoInterface, Formula, MinimizeFormula, NormalForm, Qm, SatchmoInterface
+    exposed-modules:    Arithmetics, Formula, MinimizeFormula, NormalForm, Qm
 
     -- Modules included in this library but not exported.
     -- other-modules:       
