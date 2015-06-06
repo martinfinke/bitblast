@@ -13,10 +13,6 @@ instance Arbitrary QmTerm where
 
 spec :: Spec
 spec = do
-    describe "QmTerm Show instance" $ do
-        it "is inverse to fromString" $ do
-            property $ \qmTerm -> (fromString . show) qmTerm `shouldBe` qmTerm
-
     describe "merge" $ do
         it "behaves as the python version" $ do
             merge (fromString "0") (fromString "0") `shouldBe` Just (fromString "0")

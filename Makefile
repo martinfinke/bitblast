@@ -1,15 +1,16 @@
-all: qmccpp
-	LIBRARY_PATH=$(LIB_DIRS) cabal build
+all: qmccpp-static
+	cabal build
 
 MOD=Main
 
-LIB_DIRS="`pwd`/qmc-cpp"
+qmccpp-static:
+	$(MAKE) -C qmc-cpp static
 
-qmccpp:
-	$(MAKE) -C qmc-cpp lib
+qmccpp-dynamic:
+		$(MAKE) -C qmc-cpp dynamic
 
-tests : qmccpp
+test: qmccpp-static
 	cabal test
 
-ghci: qmccpp
-	cabal exec -- ghci $(MOD) -isrc -itest -lqmc -Lqmc-cpp
+ghci: qmccpp-dynamic
+	cabal exec -- ghci $(MOD) -isrc -itest -lqmc-dynamic -Lqmc-cpp

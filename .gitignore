@@ -8,8 +8,9 @@ src/*.o
 src/Main
 bitblast-cbcsolution.txt
 bitblast-cbctemp.lp
-qmc-cpp/libqmc.a
 qmc-cpp/build/*
 *.xcuserstate
 *.xcbkptlist
-qmc-cpp/libqmc.dylib
+qmc-cpp/libqmc-dynamic.dylib
+qmc-cpp/libqmc-static.a
+qmc-cpp/libqmc-dynamic.dylib.dSYM

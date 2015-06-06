@@ -10,6 +10,7 @@ module Qm(
           getMask,
           getMaskedTerm,
           fromString,
+          printTerm,
           printAsNumbers,
           qm,
           prepareInput,
@@ -64,11 +65,12 @@ instance Eq QmTerm where
         | getMask term1 /= getMask term2 = False
         | otherwise = getMaskedTerm term1 == getMaskedTerm term2
 
---instance Show QmTerm where
---    show (QmTerm (term, mask)) = dropWhile (== '0') $ map printBit $ reverse [0..B.finiteBitSize term - 1]
---        where printBit i = case B.testBit mask i of
---                True -> '-'
---                False -> if B.testBit term i then '1' else '0'
+printTerm :: Int -> QmTerm -> String
+printTerm len qmTerm  = (replicate (len - (length $ printTerm' qmTerm)) '0') ++ printTerm' qmTerm ++ " 1"
+    where printTerm' (QmTerm (term, mask)) = dropWhile (== '0') $ map (printBit term mask) $ reverse [0..B.finiteBitSize term - 1]
+          printBit term mask i = case B.testBit mask i of
+                True -> '-'
+                False -> if B.testBit term i then '1' else '0'
 
 printAsNumbers :: QmTerm -> String
 printAsNumbers (QmTerm (bv,mask)) = show (bv,mask)

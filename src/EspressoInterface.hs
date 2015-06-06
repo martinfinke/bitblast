@@ -1,6 +1,6 @@
 module EspressoInterface where
 
-import Qm(QmTerm(..), BitVector, fromString)
+import Qm(QmTerm(..), BitVector, fromString, printTerm)
 import System.Process(readProcess)
 import Debug.Trace(traceShow)
 
@@ -13,9 +13,8 @@ instance Show PLA where
 toPLA :: Int -> [QmTerm] -> PLA
 toPLA numVariables qmTerms =
     let header = unlines [".i " ++ show numVariables, ".o 1"]
-        printTerm qmTerm = (replicate (numVariables - (length $ show qmTerm)) '0') ++ show qmTerm ++ " 1"
         footer = ".e\n"
-    in PLA $ header ++ unlines (map printTerm qmTerms) ++ footer
+    in PLA $ header ++ unlines (map (printTerm numVariables) qmTerms) ++ footer
 
 parseOutput :: String -> [QmTerm]
 parseOutput output =

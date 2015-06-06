@@ -30,7 +30,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		5B7119441B22DE26003594C3 /* libqmc.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libqmc.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		5B7119441B22DE26003594C3 /* libqmc-static.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libqmc-static.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		5B7119471B22DE26003594C3 /* qmc.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = qmc.h; sourceTree = "<group>"; };
 		5B71194B1B22DE26003594C3 /* qmc.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = qmc.cpp; sourceTree = "<group>"; };
 		5B7119561B230A6F003594C3 /* Tests */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Tests; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -39,7 +39,7 @@
 		5B7119601B230AEB003594C3 /* tests_main.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tests_main.h; sourceTree = "<group>"; };
 		5B7119621B230B11003594C3 /* googlemock.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = googlemock.framework; sourceTree = "<group>"; };
 		5B7119641B230BE7003594C3 /* qmc_priv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = qmc_priv.h; sourceTree = "<group>"; };
-		5BCB17F21B2352200062E9FB /* libqmc.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libqmc.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		5BCB17F21B2352200062E9FB /* libqmc-dynamic.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = "libqmc-dynamic.dylib"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -81,9 +81,9 @@
 		5B7119451B22DE26003594C3 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				5B7119441B22DE26003594C3 /* libqmc.a */,
+				5B7119441B22DE26003594C3 /* libqmc-static.a */,
 				5B7119561B230A6F003594C3 /* Tests */,
-				5BCB17F21B2352200062E9FB /* libqmc.dylib */,
+				5BCB17F21B2352200062E9FB /* libqmc-dynamic.dylib */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -144,7 +144,7 @@
 			);
 			name = "qmc-static";
 			productName = qmc;
-			productReference = 5B7119441B22DE26003594C3 /* libqmc.a */;
+			productReference = 5B7119441B22DE26003594C3 /* libqmc-static.a */;
 			productType = "com.apple.product-type.library.static";
 		};
 		5B7119551B230A6F003594C3 /* Tests */ = {
@@ -178,7 +178,7 @@
 			);
 			name = "qmc-dynamic";
 			productName = "qmc-dynamic";
-			productReference = 5BCB17F21B2352200062E9FB /* libqmc.dylib */;
+			productReference = 5BCB17F21B2352200062E9FB /* libqmc-dynamic.dylib */;
 			productType = "com.apple.product-type.library.dynamic";
 		};
 /* End PBXNativeTarget section */
@@ -334,7 +334,7 @@
 				GCC_ENABLE_CPP_RTTI = YES;
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				PRODUCT_MODULE_NAME = "$(PRODUCT_NAME:c99extidentifier)";
-				PRODUCT_NAME = qmc;
+				PRODUCT_NAME = "qmc-static";
 			};
 			name = Debug;
 		};
@@ -347,7 +347,7 @@
 				GCC_ENABLE_CPP_RTTI = YES;
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				PRODUCT_MODULE_NAME = "$(PRODUCT_NAME:c99extidentifier)";
-				PRODUCT_NAME = qmc;
+				PRODUCT_NAME = "qmc-static";
 			};
 			name = Release;
 		};
@@ -406,7 +406,7 @@
 				);
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.9;
-				PRODUCT_NAME = qmc;
+				PRODUCT_NAME = "qmc-dynamic";
 			};
 			name = Debug;
 		};
@@ -421,7 +421,7 @@
 				GCC_ENABLE_CPP_RTTI = YES;
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.9;
-				PRODUCT_NAME = qmc;
+				PRODUCT_NAME = "qmc-dynamic";
 			};
 			name = Release;
 		};
