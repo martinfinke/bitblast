@@ -12,3 +12,4 @@ qmc-cpp/libqmc.a
 qmc-cpp/build/*
 *.xcuserstate
 *.xcbkptlist
+qmc-cpp/libqmc.dylib

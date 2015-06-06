@@ -12,4 +12,4 @@ tests : qmccpp
 	cabal test
 
 ghci: qmccpp
-	cabal exec -- ghci $(MOD) -isrc -itest
+	cabal exec -- ghci $(MOD) -isrc -itest -lqmc -Lqmc-cpp

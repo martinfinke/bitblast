@@ -1,4 +1,4 @@
 all: lib
 
 lib:
-	xcodebuild -configuration Release
+	xcodebuild -target qmc-dynamic -configuration Release

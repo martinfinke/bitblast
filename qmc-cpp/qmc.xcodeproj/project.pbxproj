@@ -14,6 +14,7 @@
 		5B7119631B230B11003594C3 /* googlemock.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B7119621B230B11003594C3 /* googlemock.framework */; };
 		5B7119651B230BE7003594C3 /* qmc_priv.h in Headers */ = {isa = PBXBuildFile; fileRef = 5B7119641B230BE7003594C3 /* qmc_priv.h */; };
 		5B7119661B230D93003594C3 /* qmc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5B71194B1B22DE26003594C3 /* qmc.cpp */; };
+		5BCB17FD1B2352380062E9FB /* qmc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5B71194B1B22DE26003594C3 /* qmc.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -38,6 +39,7 @@
 		5B7119601B230AEB003594C3 /* tests_main.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tests_main.h; sourceTree = "<group>"; };
 		5B7119621B230B11003594C3 /* googlemock.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = googlemock.framework; sourceTree = "<group>"; };
 		5B7119641B230BE7003594C3 /* qmc_priv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = qmc_priv.h; sourceTree = "<group>"; };
+		5BCB17F21B2352200062E9FB /* libqmc.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libqmc.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -53,6 +55,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				5B7119631B230B11003594C3 /* googlemock.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5BCB17EF1B2352200062E9FB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -74,6 +83,7 @@
 			children = (
 				5B7119441B22DE26003594C3 /* libqmc.a */,
 				5B7119561B230A6F003594C3 /* Tests */,
+				5BCB17F21B2352200062E9FB /* libqmc.dylib */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -110,12 +120,19 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		5BCB17F01B2352200062E9FB /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
-		5B7119431B22DE26003594C3 /* qmc */ = {
+		5B7119431B22DE26003594C3 /* qmc-static */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 5B71194F1B22DE26003594C3 /* Build configuration list for PBXNativeTarget "qmc" */;
+			buildConfigurationList = 5B71194F1B22DE26003594C3 /* Build configuration list for PBXNativeTarget "qmc-static" */;
 			buildPhases = (
 				5B7119401B22DE26003594C3 /* Sources */,
 				5B7119411B22DE26003594C3 /* Frameworks */,
@@ -125,7 +142,7 @@
 			);
 			dependencies = (
 			);
-			name = qmc;
+			name = "qmc-static";
 			productName = qmc;
 			productReference = 5B7119441B22DE26003594C3 /* libqmc.a */;
 			productType = "com.apple.product-type.library.static";
@@ -147,6 +164,23 @@
 			productReference = 5B7119561B230A6F003594C3 /* Tests */;
 			productType = "com.apple.product-type.tool";
 		};
+		5BCB17F11B2352200062E9FB /* qmc-dynamic */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5BCB17FC1B2352200062E9FB /* Build configuration list for PBXNativeTarget "qmc-dynamic" */;
+			buildPhases = (
+				5BCB17EE1B2352200062E9FB /* Sources */,
+				5BCB17EF1B2352200062E9FB /* Frameworks */,
+				5BCB17F01B2352200062E9FB /* Headers */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "qmc-dynamic";
+			productName = "qmc-dynamic";
+			productReference = 5BCB17F21B2352200062E9FB /* libqmc.dylib */;
+			productType = "com.apple.product-type.library.dynamic";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -160,6 +194,9 @@
 						CreatedOnToolsVersion = 6.1.1;
 					};
 					5B7119551B230A6F003594C3 = {
+						CreatedOnToolsVersion = 6.1.1;
+					};
+					5BCB17F11B2352200062E9FB = {
 						CreatedOnToolsVersion = 6.1.1;
 					};
 				};
@@ -176,7 +213,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				5B7119431B22DE26003594C3 /* qmc */,
+				5B7119431B22DE26003594C3 /* qmc-static */,
+				5BCB17F11B2352200062E9FB /* qmc-dynamic */,
 				5B7119551B230A6F003594C3 /* Tests */,
 			);
 		};
@@ -198,6 +236,14 @@
 				5B7119611B230AEB003594C3 /* tests_main.cpp in Sources */,
 				5B71195E1B230AC7003594C3 /* qmc_Tests.cpp in Sources */,
 				5B7119661B230D93003594C3 /* qmc.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5BCB17EE1B2352200062E9FB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5BCB17FD1B2352380062E9FB /* qmc.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -287,7 +333,8 @@
 				GCC_ENABLE_CPP_EXCEPTIONS = YES;
 				GCC_ENABLE_CPP_RTTI = YES;
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_MODULE_NAME = "$(PRODUCT_NAME:c99extidentifier)";
+				PRODUCT_NAME = qmc;
 			};
 			name = Debug;
 		};
@@ -299,7 +346,8 @@
 				GCC_ENABLE_CPP_EXCEPTIONS = YES;
 				GCC_ENABLE_CPP_RTTI = YES;
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_MODULE_NAME = "$(PRODUCT_NAME:c99extidentifier)";
+				PRODUCT_NAME = qmc;
 			};
 			name = Release;
 		};
@@ -343,6 +391,40 @@
 			};
 			name = Release;
 		};
+		5BCB17FA1B2352200062E9FB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CONFIGURATION_BUILD_DIR = "$(SRCROOT)";
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				EXECUTABLE_PREFIX = lib;
+				GCC_ENABLE_CPP_EXCEPTIONS = YES;
+				GCC_ENABLE_CPP_RTTI = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				PRODUCT_NAME = qmc;
+			};
+			name = Debug;
+		};
+		5BCB17FB1B2352200062E9FB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CONFIGURATION_BUILD_DIR = "$(SRCROOT)";
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				EXECUTABLE_PREFIX = lib;
+				GCC_ENABLE_CPP_EXCEPTIONS = YES;
+				GCC_ENABLE_CPP_RTTI = YES;
+				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				PRODUCT_NAME = qmc;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -355,7 +437,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		5B71194F1B22DE26003594C3 /* Build configuration list for PBXNativeTarget "qmc" */ = {
+		5B71194F1B22DE26003594C3 /* Build configuration list for PBXNativeTarget "qmc-static" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				5B7119501B22DE26003594C3 /* Debug */,
@@ -369,6 +451,15 @@
 			buildConfigurations = (
 				5B71195B1B230A6F003594C3 /* Debug */,
 				5B71195C1B230A6F003594C3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		5BCB17FC1B2352200062E9FB /* Build configuration list for PBXNativeTarget "qmc-dynamic" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5BCB17FA1B2352200062E9FB /* Debug */,
+				5BCB17FB1B2352200062E9FB /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 		};

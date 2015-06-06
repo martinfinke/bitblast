@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "5B7119431B22DE26003594C3"
-               BuildableName = "libqmc-static.a"
-               BlueprintName = "qmc-static"
+               BlueprintIdentifier = "5BCB17F11B2352200062E9FB"
+               BuildableName = "libqmc-dynamic.dylib"
+               BlueprintName = "qmc-dynamic"
                ReferencedContainer = "container:qmc.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -42,9 +42,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "5B7119431B22DE26003594C3"
-            BuildableName = "libqmc-static.a"
-            BlueprintName = "qmc-static"
+            BlueprintIdentifier = "5BCB17F11B2352200062E9FB"
+            BuildableName = "libqmc-dynamic.dylib"
+            BlueprintName = "qmc-dynamic"
             ReferencedContainer = "container:qmc.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -60,9 +60,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "5B7119431B22DE26003594C3"
-            BuildableName = "libqmc-static.a"
-            BlueprintName = "qmc-static"
+            BlueprintIdentifier = "5BCB17F11B2352200062E9FB"
+            BuildableName = "libqmc-dynamic.dylib"
+            BlueprintName = "qmc-dynamic"
             ReferencedContainer = "container:qmc.xcodeproj">
          </BuildableReference>
       </MacroExpansion>

@@ -9,6 +9,11 @@
 			<key>orderHint</key>
 			<integer>1</integer>
 		</dict>
+		<key>qmc-dynamic.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>2</integer>
+		</dict>
 		<key>qmc.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
@@ -23,6 +28,11 @@
 			<true/>
 		</dict>
 		<key>5B7119551B230A6F003594C3</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>5BCB17F11B2352200062E9FB</key>
 		<dict>
 			<key>primary</key>
 			<true/>
