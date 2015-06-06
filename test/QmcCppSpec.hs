@@ -3,7 +3,7 @@ module QmcCppSpec where
 import SpecHelper
 import QmcCpp
 
-import Qm(QmTerm(..))
+import QmcTypes(QmTerm(..))
 
 import qualified Data.Set as Set
 

@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP, ForeignFunctionInterface #-}
 module QmcCpp where
 
-import Qm(BitVector,QmTerm(..))
+import QmcTypes(BitVector,QmTerm(..))
 
 import Foreign
 import Foreign.C.Types

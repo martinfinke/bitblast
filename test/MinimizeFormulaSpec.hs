@@ -7,7 +7,7 @@ import Formula
 import FormulaSpec
 import NormalForm
 import NormalFormSpec
-import Qm
+import QmcTypes
 import qualified Data.Set as Set
 
 
@@ -52,70 +52,6 @@ spec = do
             Set.fromList (canonicalToBitVectors varSet testCnf) `shouldBe` Set.fromList (map (getTerm . fromString) [
                 "0111", "0110", "0010", "0001", "0000"
                 ])
-
-    describe "minimizeCanonical" $ do
-        it "doesn't minimize XOR (because it's impossible)" $ do
-            let xor = ensureCanonical $ Xor [x0,x1]
-            let minimized = minimizeCanonical xor
-            property $ \assignment -> 
-                let a1 = expandOrReduce False (variableSet (getFormula xor)) assignment
-                    a2 = expandOrReduce False (variableSet minimized) assignment
-                in a2 `isModelOf` minimized `shouldBe` a1 `isModelOf` getFormula xor
-
-        it "minimizes a CNF with redundancies" $ do
-            let redundant = ensureCanonical $ And [Or [x0, x1], Or [x0, Not x1]]
-            minimizeCanonical redundant `shouldBe` And [Or [x0]]
-
-        it "doesn't minimize an empty Or (=False)" $ do
-            let emptyOr = ensureCanonical (Or [])
-            getFormula emptyOr `shouldBe` Or []
-            minimizeCanonical emptyOr `shouldBe` Or []
-
-        it "doesn't minimize an empty And (=True)" $ do
-            let emptyAnd = ensureCanonical (And [])
-            getFormula emptyAnd `shouldBe` And []
-            minimizeCanonical emptyAnd `shouldBe` And []
-
-        it "creates the correct minimized CNF" $ do
-            -- ((0 || 1 || 3) && (0 || -1 || 3) && (0 || 1 || -3))
-            let example = And [
-                    Or [x0, x1, x3],
-                    Or [x0, Not x1, x3],
-                    Or [x0, x1, Not x3]
-                    ]
-            let canonical = ensureCanonical example
-            getFormula canonical `shouldBe` example
-            let varSet = variableSet (getFormula canonical)
-            let canonicalBitVectors = canonicalToBitVectors varSet canonical
-            canonicalBitVectors `shouldBe` map (getTerm . fromString) [
-                    "000",
-                    "010",
-                    "100"
-                    ]
-            let minimumCover = qm canonicalBitVectors [] []
-            minimumCover `shouldBe` map fromString ["0-0", "-00"]
-            let minimized = minimizeCanonical canonical
-            minimized `shouldBe` And [Or [x0, x3], Or [x0, x1]]
-
-        it "creates a correct minimized DNF" $ do
-            -- (0 && 1 && 3) || (0 && -1 && 3) || (0 && 1 && -3)
-            let example = Or [
-                    And [x0, x1, x3],
-                    And [x0, Not x1, x3],
-                    And [x0, x1, Not x3]
-                    ]
-            let canonical = ensureCanonical example
-            getFormula canonical `shouldBe` example
-            let minimized = minimizeCanonical canonical
-            minimized `shouldBe` Or [And [x0, x1], And [x0, x3]]
-
-
-        it "minimizes any canonical to a formula that has the same value (for a random assignment)" $ do
-            property $ \canonical assignment ->
-                let minimized = minimizeCanonical canonical
-                    a1 = expandOrReduce False (variableSet (getFormula canonical)) assignment
-                    a2 = expandOrReduce False (variableSet minimized) assignment
-                in a2 `isModelOf` minimized `shouldBe` a1 `isModelOf` getFormula canonical
 
     describe "convertDashes" $ do
         it "converts dashes to 0 and 1" $ do

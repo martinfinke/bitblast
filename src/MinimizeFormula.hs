@@ -5,26 +5,7 @@ import Formula
 import NormalForm
 import qualified Data.Set as Set
 import qualified Data.Bits as B
-import Qm
-
-type QmTermEl = Maybe Bool
-
--- | Minimizes an arbitrary 'Formula' to an equivalent CNF/DNF, which consists of the minimal cover of primes.
-minimizeFormula :: Formula -> Formula
-minimizeFormula formula =
-    let canonical = ensureCanonical formula
-    in minimizeCanonical canonical
-
--- | Minimizes a 'Canonical' CNF or DNF using the Quine-McCluskey method.
-minimizeCanonical :: Canonical -> Formula
-minimizeCanonical canonical =
-    let terms = canonicalToBitVectors varSet canonical
-        varSet = variableSet (getFormula canonical)
-        cnfMode = (getType canonical == CNFType)
-        minimumCover = qm terms [] []
-    in case terms of
-        [] -> if cnfMode then And [] else Or []
-        _ -> qmTermsToFormula varSet cnfMode minimumCover
+import QmcTypes
 
 canonicalToBitVectors :: Set.Set Variable -> Canonical -> [BitVector]
 canonicalToBitVectors varSet canonical = concatMap (convertDashes . packTerm varSet) terms
@@ -41,7 +22,7 @@ convertDashes qmTerm = foldr forEachBit [term] [0..B.finiteBitSize term - 1]
                 | otherwise = bvs
 
 -- | Extracts the value of a 'Variable' in a term. Used to convert terms to 'QmcTerm's. If the input 'Formula' is a CNF, the values are inverted (i.e. a positive literal results in a 0).
-valueForVariable :: Formula -> Variable -> QmTermEl
+valueForVariable :: Formula -> Variable -> Maybe Bool
 valueForVariable term variable
     | Atom variable `elem` literals = Just $ if cnfMode then False else True
     | Not (Atom variable) `elem` literals = Just $ if cnfMode then True else False
