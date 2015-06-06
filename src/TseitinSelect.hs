@@ -48,8 +48,15 @@ possibleReplacements2With options formula =
     let possibilities = possibleReplacementsWith options formula
     in [(f1,f2) | f1 <- possibilities, f2 <- possibilities]
 
--- Not a very good implementation, but it works
 combinationsNoMirror :: (Eq a, Ord a) => Int -> [a] -> [[a]]
-combinationsNoMirror len xs =
-    let combs = map nub . map sort $ replicateM len xs
-    in nub $ filter ((==) len . length) combs
+combinationsNoMirror i ls = reverse $ combinationsNoMirror' i ls
+
+combinationsNoMirror' :: (Eq a, Ord a) => Int -> [a] -> [[a]]
+combinationsNoMirror' 0 _ = [[]]
+combinationsNoMirror' i xs = 
+    let forOne x xs' = map (x:) $ combinationsNoMirror' (i-1) xs'
+        forAll = foldr (\_ (accum, (x:xs')) ->
+                            let current = forOne x xs'
+                            in (current:accum, xs')
+                        ) ([], xs) xs
+    in concat . fst $ forAll
