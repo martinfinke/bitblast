@@ -5,13 +5,6 @@ import Formula
 import qualified Data.Set as Set
 import Data.List(sortBy,partition)
 
-tseitinReplaceOne :: Set.Set Variable -> Formula -> Formula -> Maybe (Formula,Variable)
-tseitinReplaceOne varSet toReplace formula =
-    let extraVar = succ $ Set.findMax varSet
-    in case findAndReplace toReplace extraVar formula of
-            (False,_) -> Nothing
-            (True,newFormula) -> Just (And [Equiv [Atom extraVar, toReplace], newFormula], extraVar)
-
 findAndReplace :: Formula -> Variable -> Formula -> (Bool,Formula)
 findAndReplace toReplace extraVar formula
     | toReplace == formula = (True, Atom extraVar)
@@ -35,8 +28,8 @@ findAndReplace toReplace extraVar formula
                 then (True, Implies (snd p') (snd c'))
                 else (False, Implies p c)
 
-tseitinReplaceMany :: Set.Set Variable -> [Formula] -> Formula -> (Formula, [Variable])
-tseitinReplaceMany varSet toReplaces formula
+tseitinReplace :: Set.Set Variable -> [Formula] -> Formula -> (Formula, [Variable])
+tseitinReplace varSet toReplaces formula
     | null toReplaces = (formula,[])
     | not (all (`containsOnlyVarsFrom` varSet) toReplaces) = error "The terms to replace must contain only variables from the variable set. Otherwise, the introduced extra variables might clash."
     | otherwise =

@@ -7,6 +7,7 @@ import Variable(makeVars)
 import Tseitin
 import qualified Data.Set as Set
 import Data.List(findIndex,groupBy)
+import Data.Maybe(fromJust)
 
 spec :: Spec
 spec = do
@@ -15,19 +16,7 @@ spec = do
     let [t0,t1,t2,t3,t4] = drop 10 allVars
     let varSet = Set.fromList vars
     let [x0,x1,x2,x3,x4,x5,x6,x7,x8,x9] = map Atom vars
-    let extractMaybe m = case m of
-            Just v -> v
-            Nothing -> error "Can't extract the value of Nothing"
-    describe "extractMaybe" $ do
-        it "succeeds for a Just value" $ do
-            extractMaybe (Just 1) `shouldBe` 1
-        it "throws an error for Nothing" $ do
-            evaluate (extractMaybe Nothing) `shouldThrow` anyException
-    describe "tseitinReplaceOne" $ do
-        it "replaces a given sub-formula with a variable" $ do
-            let testFormula = Or [Equiv [x3,x4], x0, And [x6,x2]]
-            let (withReplacement,extraVar) = extractMaybe $ tseitinReplaceOne varSet (And [x6,x2]) testFormula
-            withReplacement `shouldBe` And [Equiv [Atom extraVar, And [x6,x2]], Or [Equiv [x3,x4], x0, Atom extraVar]]
+
 
     describe "findAndReplace" $ do
         it "replaces a positive literal" $ do
@@ -149,23 +138,27 @@ spec = do
             let group = [(term,t0), (term,t1)]
             normalize group `shouldBe` [(term,t0), (Atom t0, t1)]
 
-    describe "tseitinReplaceMany" $ do
+    describe "tseitinReplace" $ do
         it "doesn't change anything if there are no replaces" $ do
             let f = And [x0,x1]
-            tseitinReplaceMany varSet [] f `shouldBe` (f, [])
+            tseitinReplace varSet [] f `shouldBe` (f, [])
         it "throws an error if a variable isn't in the variable set" $ do
             let toReplace = Atom t0
-            let call = tseitinReplaceMany varSet [toReplace] x1
+            let call = tseitinReplace varSet [toReplace] x1
             evaluate call `shouldThrow` anyException
+        it "replaces a given sub-formula with a variable" $ do
+            let testFormula = Or [Equiv [x3,x4], x0, And [x6,x2]]
+            let (withReplacement,[extraVar]) = tseitinReplace varSet [And [x6,x2]] testFormula
+            withReplacement `shouldBe` And [Or [Equiv [x3,x4], x0, Atom extraVar], Equiv [Atom extraVar, And [x6,x2]]]
         it "can replace multiple occurrences" $ do
             let toReplace = Not x4
             let f = And [toReplace, x1, Equiv [x2, toReplace]]
-            let result@(_,[newVar]) = tseitinReplaceMany varSet [toReplace] f
+            let result@(_,[newVar]) = tseitinReplace varSet [toReplace] f
             let expected = And [And [Atom newVar, x1, Equiv [x2, Atom newVar]], Equiv [Atom newVar, Not x4]]
             result `shouldBe` (expected,[newVar])
         it "doesn't use variables from the given varSet" $ do
             let f = And [x0]
-            let (_,[extraVar]) = tseitinReplaceMany varSet [x0] f
+            let (_,[extraVar]) = tseitinReplace varSet [x0] f
             Set.member extraVar varSet `shouldBe` False
         it "can replace parent/child/grandchild, even if they are given in a wrong order" $ do
             let grandchild = x0
@@ -174,7 +167,7 @@ spec = do
             let unrelated1 = Or [x4]
             let toReplaces = [child, unrelated1, parent, grandchild]
             let f = Xor [child, x1, grandchild, Or [Not child, unrelated1, x2], Not parent]
-            let (result,[t0',t1',t2',t3']) = tseitinReplaceMany varSet toReplaces f
+            let (result,[t0',t1',t2',t3']) = tseitinReplace varSet toReplaces f
             let replaced = Xor [Atom t2', x1, Atom t1', Or [Not (Atom t2'), Atom t0', x2], Not (Atom t3')]
             let equivs = [
                     Equiv [Atom t1', x0],
