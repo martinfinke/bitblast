@@ -41,12 +41,11 @@ possibleReplacementsWith' options formula = case formula of
           rest fs = concatMap (possibleReplacementsWith newOptions) fs
           newOptions = options{includeRoot=True}
 
-possibleReplacements2 :: Formula -> [(Formula,Formula)]
-possibleReplacements2 = possibleReplacements2With selectOptions
-
-possibleReplacements2With options formula = 
-    let possibilities = possibleReplacementsWith options formula
-    in [(f1,f2) | f1 <- possibilities, f2 <- possibilities]
+possibleReplacementsNWith :: Int -> SelectOptions -> Formula -> [[Formula]]
+possibleReplacementsNWith len options f =
+    let replacements = possibleReplacementsWith options f
+        combinations = combinationsNoMirror len replacements
+    in combinations
 
 combinationsNoMirror :: (Eq a, Ord a) => Int -> [a] -> [[a]]
 combinationsNoMirror i ls = reverse $ combinationsNoMirror' i ls
@@ -55,8 +54,5 @@ combinationsNoMirror' :: (Eq a, Ord a) => Int -> [a] -> [[a]]
 combinationsNoMirror' 0 _ = [[]]
 combinationsNoMirror' i xs = 
     let forOne x xs' = map (x:) $ combinationsNoMirror' (i-1) xs'
-        forAll = foldr (\_ (accum, (x:xs')) ->
-                            let current = forOne x xs'
-                            in (current:accum, xs')
-                        ) ([], xs) xs
+        forAll = foldr (\_ (accum, (x:xs')) -> (forOne x xs':accum, xs')) ([], xs) xs
     in concat . fst $ forAll
