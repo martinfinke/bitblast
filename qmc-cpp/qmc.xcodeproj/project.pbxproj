@@ -1,0 +1,378 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		5B7119481B22DE26003594C3 /* qmc.h in Headers */ = {isa = PBXBuildFile; fileRef = 5B7119471B22DE26003594C3 /* qmc.h */; };
+		5B71194C1B22DE26003594C3 /* qmc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5B71194B1B22DE26003594C3 /* qmc.cpp */; };
+		5B71195E1B230AC7003594C3 /* qmc_Tests.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5B71195D1B230AC7003594C3 /* qmc_Tests.cpp */; };
+		5B7119611B230AEB003594C3 /* tests_main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5B71195F1B230AEB003594C3 /* tests_main.cpp */; };
+		5B7119631B230B11003594C3 /* googlemock.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B7119621B230B11003594C3 /* googlemock.framework */; };
+		5B7119651B230BE7003594C3 /* qmc_priv.h in Headers */ = {isa = PBXBuildFile; fileRef = 5B7119641B230BE7003594C3 /* qmc_priv.h */; };
+		5B7119661B230D93003594C3 /* qmc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5B71194B1B22DE26003594C3 /* qmc.cpp */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		5B7119541B230A6F003594C3 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		5B7119441B22DE26003594C3 /* libqmc.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libqmc.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		5B7119471B22DE26003594C3 /* qmc.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = qmc.h; sourceTree = "<group>"; };
+		5B71194B1B22DE26003594C3 /* qmc.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = qmc.cpp; sourceTree = "<group>"; };
+		5B7119561B230A6F003594C3 /* Tests */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Tests; sourceTree = BUILT_PRODUCTS_DIR; };
+		5B71195D1B230AC7003594C3 /* qmc_Tests.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = qmc_Tests.cpp; sourceTree = "<group>"; };
+		5B71195F1B230AEB003594C3 /* tests_main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tests_main.cpp; sourceTree = "<group>"; };
+		5B7119601B230AEB003594C3 /* tests_main.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tests_main.h; sourceTree = "<group>"; };
+		5B7119621B230B11003594C3 /* googlemock.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = googlemock.framework; sourceTree = "<group>"; };
+		5B7119641B230BE7003594C3 /* qmc_priv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = qmc_priv.h; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		5B7119411B22DE26003594C3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5B7119531B230A6F003594C3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5B7119631B230B11003594C3 /* googlemock.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		5B71193B1B22DE26003594C3 = {
+			isa = PBXGroup;
+			children = (
+				5B7119621B230B11003594C3 /* googlemock.framework */,
+				5B7119461B22DE26003594C3 /* qmc */,
+				5B7119571B230A6F003594C3 /* Tests */,
+				5B7119451B22DE26003594C3 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		5B7119451B22DE26003594C3 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				5B7119441B22DE26003594C3 /* libqmc.a */,
+				5B7119561B230A6F003594C3 /* Tests */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		5B7119461B22DE26003594C3 /* qmc */ = {
+			isa = PBXGroup;
+			children = (
+				5B7119471B22DE26003594C3 /* qmc.h */,
+				5B71194B1B22DE26003594C3 /* qmc.cpp */,
+				5B7119641B230BE7003594C3 /* qmc_priv.h */,
+			);
+			path = qmc;
+			sourceTree = "<group>";
+		};
+		5B7119571B230A6F003594C3 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				5B71195F1B230AEB003594C3 /* tests_main.cpp */,
+				5B7119601B230AEB003594C3 /* tests_main.h */,
+				5B71195D1B230AC7003594C3 /* qmc_Tests.cpp */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		5B7119421B22DE26003594C3 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5B7119481B22DE26003594C3 /* qmc.h in Headers */,
+				5B7119651B230BE7003594C3 /* qmc_priv.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		5B7119431B22DE26003594C3 /* qmc */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5B71194F1B22DE26003594C3 /* Build configuration list for PBXNativeTarget "qmc" */;
+			buildPhases = (
+				5B7119401B22DE26003594C3 /* Sources */,
+				5B7119411B22DE26003594C3 /* Frameworks */,
+				5B7119421B22DE26003594C3 /* Headers */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = qmc;
+			productName = qmc;
+			productReference = 5B7119441B22DE26003594C3 /* libqmc.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+		5B7119551B230A6F003594C3 /* Tests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5B71195A1B230A6F003594C3 /* Build configuration list for PBXNativeTarget "Tests" */;
+			buildPhases = (
+				5B7119521B230A6F003594C3 /* Sources */,
+				5B7119531B230A6F003594C3 /* Frameworks */,
+				5B7119541B230A6F003594C3 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Tests;
+			productName = Tests;
+			productReference = 5B7119561B230A6F003594C3 /* Tests */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		5B71193C1B22DE26003594C3 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0610;
+				ORGANIZATIONNAME = "Martin Finke";
+				TargetAttributes = {
+					5B7119431B22DE26003594C3 = {
+						CreatedOnToolsVersion = 6.1.1;
+					};
+					5B7119551B230A6F003594C3 = {
+						CreatedOnToolsVersion = 6.1.1;
+					};
+				};
+			};
+			buildConfigurationList = 5B71193F1B22DE26003594C3 /* Build configuration list for PBXProject "qmc" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 5B71193B1B22DE26003594C3;
+			productRefGroup = 5B7119451B22DE26003594C3 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				5B7119431B22DE26003594C3 /* qmc */,
+				5B7119551B230A6F003594C3 /* Tests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		5B7119401B22DE26003594C3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5B71194C1B22DE26003594C3 /* qmc.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5B7119521B230A6F003594C3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5B7119611B230AEB003594C3 /* tests_main.cpp in Sources */,
+				5B71195E1B230AC7003594C3 /* qmc_Tests.cpp in Sources */,
+				5B7119661B230D93003594C3 /* qmc.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		5B71194D1B22DE26003594C3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		5B71194E1B22DE26003594C3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		5B7119501B22DE26003594C3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CONFIGURATION_BUILD_DIR = "$(SRCROOT)";
+				EXECUTABLE_PREFIX = lib;
+				GCC_ENABLE_CPP_EXCEPTIONS = YES;
+				GCC_ENABLE_CPP_RTTI = YES;
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		5B7119511B22DE26003594C3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CONFIGURATION_BUILD_DIR = "$(SRCROOT)";
+				EXECUTABLE_PREFIX = lib;
+				GCC_ENABLE_CPP_EXCEPTIONS = YES;
+				GCC_ENABLE_CPP_RTTI = YES;
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		5B71195B1B230A6F003594C3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)",
+				);
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"$(PROJECT_DIR)/googlemock.framework/Headers/gtest",
+					"$(PROJECT_DIR)/googlemock.framework/Headers",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		5B71195C1B230A6F003594C3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)",
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"$(PROJECT_DIR)/googlemock.framework/Headers/gtest",
+					"$(PROJECT_DIR)/googlemock.framework/Headers",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		5B71193F1B22DE26003594C3 /* Build configuration list for PBXProject "qmc" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5B71194D1B22DE26003594C3 /* Debug */,
+				5B71194E1B22DE26003594C3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		5B71194F1B22DE26003594C3 /* Build configuration list for PBXNativeTarget "qmc" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5B7119501B22DE26003594C3 /* Debug */,
+				5B7119511B22DE26003594C3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		5B71195A1B230A6F003594C3 /* Build configuration list for PBXNativeTarget "Tests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5B71195B1B230A6F003594C3 /* Debug */,
+				5B71195C1B230A6F003594C3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 5B71193C1B22DE26003594C3 /* Project object */;
+}

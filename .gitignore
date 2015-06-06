@@ -8,3 +8,7 @@ src/*.o
 src/Main
 bitblast-cbcsolution.txt
 bitblast-cbctemp.lp
+qmc-cpp/libqmc.a
+qmc-cpp/build/*
+*.xcuserstate
+*.xcbkptlist

@@ -11,12 +11,14 @@ import Variable hiding(eval)
 
 import System.Environment(getArgs)
 import Text.Printf(printf)
+import Data.List(sort)
 import Control.Monad(forM_)
 import qualified Data.Set as Set
 
 import Test.Hspec
 import Test.QuickCheck
 import VariableSpec
+import QmcCpp
 
 
 
@@ -29,7 +31,23 @@ minimizeFormulaExt formula =
         numVars = Set.size varSet
         ones = canonicalToBitVectors varSet canonical
     in do
-        primes <- fmap parseOutput $ espressoGetPrimes numVars ones
+        --putStrLn $ "Ones: " ++ show ones
+        let primes = qmcCppComputePrimes ones
+        -- compute_primes is slower than espresso, so use espresso:
+        --primes' <- fmap parseOutput $ espressoGetPrimes numVars ones
+        --let primes' = Set.toList $ compute_primes (Set.fromList ones)
+
+        putStrLn $ "Found " ++ show (length primes) ++ " primes."
+        --putStrLn $ if Set.fromList primes == Set.fromList primes'
+        --    then "OK: Primes from C++ are as they should be."
+        --    else "ERROR: Primes from C++ are wrong!\nPrimes from qmcCpp:\n" ++ show (sort primes) ++ "\n\nShould be:\n" ++ show (sort primes')
+        putStrLn "Validating that a formula created from the primes has the same value as the original one (for random assignments)..."
+
+        let primesFormula = qmTermsToFormula varSet cnfMode primes
+        quickCheck $ property $ \assignment ->
+                        let assignment' = expandOrReduce False varSet assignment
+                        in assignment' `isModelOf` formula `shouldBe` assignment' `isModelOf` primesFormula
+
         let lpFileContents = toLPFile numVars primes ones
         let lpFileName = "bitblast-cbctemp.lp"
         writeFile lpFileName lpFileContents
@@ -50,7 +68,7 @@ minimizeFormulaExt formula =
 
 runCBC :: Int -> IO ()
 runCBC numBits = do
-    --let (formula,_) = nBitAddition DontCare numBits
+    --let (formula,varSet) = nBitAddition Forbid numBits
     let (formula,varSet) = nBitMultiplication numBits
     cnf <- minimizeFormulaExt formula
 
@@ -60,10 +78,7 @@ runCBC numBits = do
     putStrLn "----------------------------------------------------------------"
     putStrLn $ show (getStats cnf)
     putStrLn "----------------------------------------------------------------"
-    hspec $ do
-        describe "Verifying the generated CNF..." $ do
-            it "has the same value as the original formula (for random assignments)" $ do
-                property $ \assignment ->
+    quickCheck $ property $ \assignment ->
                     let assignment' = expandOrReduce False varSet assignment
                     in assignment' `isModelOf` formula `shouldBe` assignment' `isModelOf` cnf
 
@@ -94,7 +109,7 @@ main :: IO ()
 main = do
     args <- getArgs
     let bitWidth = read (head args) :: Int
-    runEspressoVerbose bitWidth
+    runCBC bitWidth
     
 runVerbose :: Int -> IO ()
 runVerbose numBits = do

@@ -42,7 +42,7 @@ type BitVector = Word64
 
 -- | A min- or maxterm consisting of a tuple (variables, mask). The variables 'BitVector' contains the 'True'/'False' values of the variables. The mask 'BitVector' contains the dashes, i.e. for each 1 in the mask, the variable at that position can take any value.
 newtype QmTerm = QmTerm (BitVector, BitVector) -- ^ Construct a 'QmTerm' out of a tuple (variables, mask).
-    deriving(Ord)
+    deriving(Ord, Show)
 
 -- | Extract the variables 'BitVector'.
 getTerm :: QmTerm -> BitVector
@@ -64,11 +64,11 @@ instance Eq QmTerm where
         | getMask term1 /= getMask term2 = False
         | otherwise = getMaskedTerm term1 == getMaskedTerm term2
 
-instance Show QmTerm where
-    show (QmTerm (term, mask)) = dropWhile (== '0') $ map printBit $ reverse [0..B.finiteBitSize term - 1]
-        where printBit i = case B.testBit mask i of
-                True -> '-'
-                False -> if B.testBit term i then '1' else '0'
+--instance Show QmTerm where
+--    show (QmTerm (term, mask)) = dropWhile (== '0') $ map printBit $ reverse [0..B.finiteBitSize term - 1]
+--        where printBit i = case B.testBit mask i of
+--                True -> '-'
+--                False -> if B.testBit term i then '1' else '0'
 
 printAsNumbers :: QmTerm -> String
 printAsNumbers (QmTerm (bv,mask)) = show (bv,mask)
