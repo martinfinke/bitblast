@@ -10,11 +10,20 @@ import qualified Data.Set as Set
 import Data.List(findIndex,groupBy)
 import Data.Maybe(fromJust)
 
+
+
+
+allVars = makeVars 15
+vars@[v0,v1,v2,v3,v4,v5,v6,v7,v8,v9] = take 10 allVars
+tseitinVars@[t0,t1,t2,t3,t4] = drop 10 allVars
+varSet = Set.fromList vars
+[x0,x1,x2,x3,x4,x5,x6,x7,x8,x9] = map Atom vars
+
 spec :: Spec
 spec = do
     let allVars = makeVars 15
     let vars@[v0,v1,v2,v3,v4,v5,v6,v7,v8,v9] = take 10 allVars
-    let [t0,t1,t2,t3,t4] = drop 10 allVars
+    let tseitinVars@[t0,t1,t2,t3,t4] = drop 10 allVars
     let varSet = Set.fromList vars
     let [x0,x1,x2,x3,x4,x5,x6,x7,x8,x9] = map Atom vars
 
@@ -170,23 +179,13 @@ spec = do
             let toReplaces = [child, unrelated1, parent, grandchild]
             let f = Xor [child, x1, grandchild, Or [Not child, unrelated1, x2], Not parent]
             let (result,[t0',t1',t2',t3']) = tseitinReplace varSet toReplaces f
-            let replaced = Xor [Atom t2', x1, Atom t1', Or [Not (Atom t2'), Atom t0', x2], Not (Atom t3')]
+            let replaced = Xor [Atom t1', x1, Atom t0', Or [Not (Atom t1'), Atom t2', x2], Not (Atom t3')]
             let equivs = [
-                    Equiv [Atom t1', x0],
-                    Equiv [Atom t2', Or [Atom t1', Implies x4 (Atom t1')]],
-                    Equiv [Atom t3', And [x2, Atom t2']],
-                    Equiv [Atom t0', unrelated1]
+                    Equiv [Atom t0', x0],
+                    Equiv [Atom t1', Or [Atom t0', Implies x4 (Atom t0')]],
+                    Equiv [Atom t2', unrelated1],
+                    Equiv [Atom t3', And [x2, Atom t1']]
                     ]
             let expected = And (replaced:equivs)
             result `shouldBe` expected
             
-    describe "relatedGroups" $ do
-        it "works if the first element contains others, which are themselves unrelated" $ do
-            let f = And [x0,x1,x2]
-            let poss = possibleReplacements f
-            poss `shouldBe` [And [x0,x1,x2],x0,x1,x2]
-            relatedGroups poss `shouldBe` [] -- TODO: What should it be? 
-        it "works if the first element is related to the second, but not the third" $ do
-            let example = [x0, And [x0,x1], x1]
-            let groups = relatedGroups example
-            groups `shouldBe` [example] -- TODO: How to handle this?

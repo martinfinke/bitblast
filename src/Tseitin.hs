@@ -4,6 +4,9 @@ import Variable
 import Formula
 import qualified Data.Set as Set
 import Data.List(sortBy,partition)
+import Data.Maybe(catMaybes)
+import Utils(mapWithRest)
+import Debug.Trace(traceShow)
 
 findAndReplace :: Formula -> Variable -> Formula -> (Bool,Formula)
 findAndReplace toReplace extraVar formula
@@ -33,10 +36,10 @@ tseitinReplace varSet toReplaces formula
     | null toReplaces = (formula,[])
     | not (all (`containsOnlyVarsFrom` varSet) toReplaces) = error "The terms to replace must contain only variables from the variable set. Otherwise, the introduced extra variables might clash."
     | otherwise =
-    let groups = orderedGroups toReplaces
-        newVars = take (length toReplaces) (newVariables varSet)
-        withVariables = fst $ foldr assignVariables ([], newVars) groups
-        normalized = concatMap normalize withVariables
+    let hierarchical = reverse . concat . map Set.toList $ hierarchy (Set.fromList toReplaces)
+        newVars = take (length hierarchical) (newVariables varSet)
+        withVariables = zip hierarchical newVars
+        normalized = normalize withVariables
         replaced = foldr replace formula (reverse normalized)
         equivs = map makeEquiv normalized
     in (And (replaced:equivs), newVars)
@@ -46,6 +49,13 @@ makeEquiv (f,variable) = Equiv [Atom variable, f]
 
 newVariables :: Set.Set Variable -> [Variable]
 newVariables varSet = [succ (Set.findMax varSet)..]
+
+
+
+
+
+
+
 
 relatedGroups :: [Formula] -> [[Formula]]
 relatedGroups [] = []
@@ -90,3 +100,11 @@ parentChildOrdering f1 f2
     | f1 `isChildOf` f2 = LT
     | f2 `isChildOf` f1 = GT
     | otherwise = error $ "Formulas are unrelated: " ++ show f1 ++ " and " ++ show f2
+
+hierarchy :: Set.Set Formula -> [Set.Set Formula]
+hierarchy remainingTerms
+    | Set.null remainingTerms = []
+    | otherwise = 
+        let currentLevel = Set.filter (\t -> not $ any (\t' -> t /= t' && t `isChildOf` t') remainingTerms) remainingTerms
+            rest = Set.difference remainingTerms currentLevel
+        in currentLevel : hierarchy rest
