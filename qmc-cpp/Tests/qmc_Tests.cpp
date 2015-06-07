@@ -17,7 +17,7 @@ auto test = [](std::vector<BitVector> cubes, std::vector<QmTerm> expected) {
     auto primes = computePrimes(cubes);
     std::unordered_set<QmTerm, QmTermHash> _expected(expected.begin(), expected.end());
     
-    EXPECT_EQ(primes, _expected);
+    EXPECT_EQ(_expected, primes);
 };
 auto term = [](int _term, int _mask) {QmTerm term = {.term=_term, .mask=_mask}; return term;};
 

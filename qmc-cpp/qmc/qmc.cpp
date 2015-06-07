@@ -15,13 +15,19 @@
 #include <vector>
 #include <bitset>
 #include <utility> // std::pair
-#include <algorithm> // std::set_union
-#import <cstdlib>
+#include <algorithm> // std::for_each
+#include <cstdlib>
+#include <iostream>
+#include <limits>
+#include <thread>
+#include <functional>
+
+#include "concurrentqueue.h"
+
+using moodycamel::ConcurrentQueue;
 
 
 #pragma GCC visibility push(hidden)
-
-int answer_to_everything(int i) {return i*42;}
 
 size_t bitcount(BitVector i) {
     size_t res = 0;
@@ -51,8 +57,59 @@ inline std::pair<bool,QmTerm> merge(const QmTerm& i, const QmTerm& j) {
     }};
 }
 
+void dequeueRedundant(ConcurrentQueue<QmTerm>& redundantQueue, std::unordered_set<QmTerm, QmTermHash>& redundant) {
+    bool empty = false;
+    do {
+        QmTerm current;
+        empty = !redundantQueue.try_dequeue(current);
+        if (!empty) {
+            redundant.insert(std::move(current));
+        }
+    } while (!empty);
+}
+
+void dequeueSigma(ConcurrentQueue<std::pair<size_t, std::unordered_set<QmTerm, QmTermHash> > >& nsigma, std::vector<std::unordered_set<QmTerm, QmTermHash> >& sigma) {
+    bool empty = false;
+    do {
+        std::pair<size_t, std::unordered_set<QmTerm, QmTermHash> > current;
+        empty = !nsigma.try_dequeue(current);
+        if (!empty) {
+            if (current.first >= sigma.size()) {
+                sigma.resize(current.first+1);
+            }
+            sigma[current.first] = std::move(current.second);
+        }
+    } while (!empty);
+}
+
+template<typename FunctionType>
+void parallel_for(int numThreads, size_t begin, size_t end, FunctionType func)
+{
+    size_t delta = (end - begin) / numThreads;
+    std::vector<std::thread> threads;
+    for (size_t i = 0; i < numThreads; ++i) {
+        threads.push_back(std::thread([=]{
+            size_t localbegin = begin + i*delta;
+            size_t localend = (i == numThreads - 1) ? end : localbegin + delta;
+            for (size_t it = localbegin; it < localend; ++it) {
+                func(it);
+            }
+        }));
+    }
+    for (size_t i = 0; i < numThreads; ++i) {
+        threads[i].join();
+    }
+}
+
+bool compareBitcount(const QmTerm& a, const QmTerm& b) {
+    return bitcount(a.term) < bitcount(b.term);
+}
+
 // https://github.com/prekageo/optistate/blob/master/qm.py
 std::unordered_set<QmTerm, QmTermHash> computePrimes(std::vector<BitVector> cubes) {
+    const int numThreads = 10;
+    
+    
     std::vector<std::unordered_set<QmTerm, QmTermHash> > sigma;
     for (int i : cubes) {
         auto bc = bitcount(i);
@@ -61,11 +118,13 @@ std::unordered_set<QmTerm, QmTermHash> computePrimes(std::vector<BitVector> cube
         }
         sigma[bc].insert({.term=i,.mask=0});
     }
+    
     std::unordered_set<QmTerm, QmTermHash> primes;
     while (!sigma.empty()) {
-        std::vector<std::unordered_set<QmTerm, QmTermHash> > nsigma;
-        std::unordered_set<QmTerm, QmTermHash> redundant;
-        for (int i = 0; i < sigma.size() - 1; i++) {
+        ConcurrentQueue<std::pair<size_t, std::unordered_set<QmTerm, QmTermHash> > > nsigma;
+        ConcurrentQueue<QmTerm> redundantQueue;
+        
+        auto lambda = [&sigma, &nsigma, &redundantQueue](size_t i) {
             auto c1 = sigma[i];
             auto c2 = sigma[i+1];
             std::unordered_set<QmTerm, QmTermHash> nc;
@@ -74,13 +133,18 @@ std::unordered_set<QmTerm, QmTermHash> computePrimes(std::vector<BitVector> cube
                     auto result = merge(a,b);
                     if (result.first) {
                         nc.insert(result.second);
-                        redundant.insert(a);
-                        redundant.insert(b);
+                        redundantQueue.enqueue(a);
+                        redundantQueue.enqueue(b);
                     }
                 }
             }
-            nsigma.push_back(nc);
-        }
+            nsigma.enqueue({i, std::move(nc)});
+        };
+        
+        parallel_for<std::function<void(size_t)> >(numThreads, 0, sigma.size() - 1, lambda);
+        
+        std::unordered_set<QmTerm, QmTermHash> redundant;
+        dequeueRedundant(redundantQueue, redundant);
         
         for (auto _cubes : sigma) {
             for (auto c : _cubes) {
@@ -89,7 +153,9 @@ std::unordered_set<QmTerm, QmTermHash> computePrimes(std::vector<BitVector> cube
                 }
             }
         }
-        sigma = nsigma;
+        
+        sigma.clear();
+        dequeueSigma(nsigma, sigma);
     }
     return primes;
 }

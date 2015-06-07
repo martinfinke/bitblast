@@ -30,6 +30,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		5B452DC71B24494F00161A24 /* lib */ = {isa = PBXFileReference; lastKnownFileType = folder; path = lib; sourceTree = "<group>"; };
 		5B7119441B22DE26003594C3 /* libqmc-static.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libqmc-static.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		5B7119471B22DE26003594C3 /* qmc.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = qmc.h; sourceTree = "<group>"; };
 		5B71194B1B22DE26003594C3 /* qmc.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = qmc.cpp; sourceTree = "<group>"; };
@@ -71,6 +72,7 @@
 		5B71193B1B22DE26003594C3 = {
 			isa = PBXGroup;
 			children = (
+				5B452DC71B24494F00161A24 /* lib */,
 				5B7119621B230B11003594C3 /* googlemock.framework */,
 				5B7119461B22DE26003594C3 /* qmc */,
 				5B7119571B230A6F003594C3 /* Tests */,
@@ -287,6 +289,7 @@
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
+				USER_HEADER_SEARCH_PATHS = $PROJECT_DIR/lib;
 			};
 			name = Debug;
 		};
@@ -322,6 +325,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.7;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = macosx;
+				USER_HEADER_SEARCH_PATHS = $PROJECT_DIR/lib;
 			};
 			name = Release;
 		};
@@ -462,6 +466,7 @@
 				5BCB17FB1B2352200062E9FB /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
