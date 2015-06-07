@@ -5,8 +5,6 @@ import Formula
 import qualified Data.Set as Set
 import Data.List(sortBy,partition)
 import Data.Maybe(catMaybes)
-import Utils(mapWithRest)
-import Debug.Trace(traceShow)
 
 findAndReplace :: Formula -> Variable -> Formula -> (Bool,Formula)
 findAndReplace toReplace extraVar formula
@@ -50,27 +48,6 @@ makeEquiv (f,variable) = Equiv [Atom variable, f]
 newVariables :: Set.Set Variable -> [Variable]
 newVariables varSet = [succ (Set.findMax varSet)..]
 
-
-
-
-
-
-
-
-relatedGroups :: [Formula] -> [[Formula]]
-relatedGroups [] = []
-relatedGroups (f:fs) =
-    let (related,others) = partition (isRelatedTo f) fs
-    in (f:related) : relatedGroups others
-
-orderedGroups :: [Formula] -> [[Formula]]
-orderedGroups = map (sortBy parentChildOrdering) . relatedGroups
-
-assignVariables :: [Formula] -> ([[(Formula,Variable)]], [Variable]) -> ([[(Formula,Variable)]], [Variable])
-assignVariables group (accum, unusedVars) =
-    let withVars = zip group unusedVars
-    in (withVars:accum, drop (length group) unusedVars)
-
 normalize :: [(Formula,Variable)] -> [(Formula,Variable)]
 normalize = reverse . foldr normalize' [] . reverse
 
@@ -88,18 +65,8 @@ f1 `isChildOf` f2 =
     let [unusedVar] = makeVars 1
     in fst $ findAndReplace f1 unusedVar f2
 
-isRelatedTo :: Formula -> Formula -> Bool
-isRelatedTo f1 f2 = f1 `isChildOf` f2 || f2 `isChildOf` f1
-
 containsOnlyVarsFrom :: Formula -> Set.Set Variable -> Bool
 f `containsOnlyVarsFrom` varSet = (variableSet f) `Set.isSubsetOf` varSet
-
-parentChildOrdering :: Formula -> Formula -> Ordering
-parentChildOrdering f1 f2
-    | f1 == f2 = EQ
-    | f1 `isChildOf` f2 = LT
-    | f2 `isChildOf` f1 = GT
-    | otherwise = error $ "Formulas are unrelated: " ++ show f1 ++ " and " ++ show f2
 
 hierarchy :: Set.Set Formula -> [Set.Set Formula]
 hierarchy remainingTerms

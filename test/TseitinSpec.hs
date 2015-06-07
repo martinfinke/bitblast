@@ -5,19 +5,7 @@ import FormulaSpec
 import Formula
 import Variable(makeVars)
 import Tseitin
-import TseitinSelect
 import qualified Data.Set as Set
-import Data.List(findIndex,groupBy)
-import Data.Maybe(fromJust)
-
-
-
-
-allVars = makeVars 15
-vars@[v0,v1,v2,v3,v4,v5,v6,v7,v8,v9] = take 10 allVars
-tseitinVars@[t0,t1,t2,t3,t4] = drop 10 allVars
-varSet = Set.fromList vars
-[x0,x1,x2,x3,x4,x5,x6,x7,x8,x9] = map Atom vars
 
 spec :: Spec
 spec = do
@@ -72,20 +60,6 @@ spec = do
             f1 `isChildOf` f2 `shouldBe` True
             f2 `isChildOf` f1 `shouldBe` False
 
-    describe "parentChildOrdering" $ do
-        it "is EQ if the formulas are equal" $ do
-            property $ \formula ->
-                parentChildOrdering formula formula `shouldBe` EQ
-        it "is throws an error if the formulas are unrelated" $ do
-            let f1 = Or [x1,x2]
-            let f2 = Or [x0,x2]
-            evaluate (parentChildOrdering f1 f2) `shouldThrow` anyException
-        it "is LT/GT if f1 isChildOf f2" $ do
-            let f1 = And [x1,x0, Or [x4,x1]]
-            let f2 = Equiv [x5,x1, Implies x0 f1]
-            parentChildOrdering f1 f2 `shouldBe` LT
-            parentChildOrdering f2 f1 `shouldBe` GT
-
     describe "containsOnlyVarsFrom" $ do
         it "is True if it contains only vars from the set" $ do
             And [x0,x1] `containsOnlyVarsFrom` varSet `shouldBe` True
@@ -93,32 +67,7 @@ spec = do
             And [x0,x3] `containsOnlyVarsFrom` (Set.fromList [v0,v1]) `shouldBe` False
         it "is True if it contains a (strict) subset" $ do
             And [x0,x3] `containsOnlyVarsFrom` (Set.fromList [v0,v1,v3]) `shouldBe` True
-    describe "orderedGroups" $ do
-        it "orders two formulas that are related" $ do
-            property $ \child ->
-                let parent = Or [x5, Equiv [child, x0]]
-                    wrongOrder = [parent, child]
-                    expected = [[child, parent]]
-                in orderedGroups wrongOrder `shouldBe` expected
-        it "doesn't group unrelated formulas" $ do
-            let f1 = And [x0]
-            let f2 = Or [x0, And [x1]]
-            orderedGroups [f1,f2] `shouldBe` [[f1],[f2]]
-        it "groups related formulas when there are unrelated ones in between" $ do
-            let grandchild = x0
-            let child = Or [grandchild, Implies x4 grandchild]
-            let parent = And [x2,child]
-            let unrelated1 = Or [x4]
-            let unrelated2 = Equiv [x1,x5]
-            let wrongOrder = [child, unrelated1, grandchild, parent, unrelated2]
-            let groups = orderedGroups wrongOrder
-            [grandchild,child,parent] `elem` groups `shouldBe` True
-        it "sorts parent/child/grandchild even if parent contains grandchild separately" $ do
-            let grandchild = x0
-            let child = Or [grandchild, Implies x4 grandchild]
-            let parent = And [x2,child, Equiv [child, grandchild]]
-            orderedGroups [parent, grandchild, child] `shouldBe` [[grandchild,child,parent]]
-
+    
     describe "normalize" $ do
         it "does nothing to an empty group" $ do
             normalize [] `shouldBe` []
