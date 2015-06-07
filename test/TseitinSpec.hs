@@ -5,6 +5,7 @@ import FormulaSpec
 import Formula
 import Variable(makeVars)
 import Tseitin
+import TseitinSelect
 import qualified Data.Set as Set
 import Data.List(findIndex,groupBy)
 import Data.Maybe(fromJust)
@@ -108,6 +109,7 @@ spec = do
             let child = Or [grandchild, Implies x4 grandchild]
             let parent = And [x2,child, Equiv [child, grandchild]]
             orderedGroups [parent, grandchild, child] `shouldBe` [[grandchild,child,parent]]
+
     describe "normalize" $ do
         it "does nothing to an empty group" $ do
             normalize [] `shouldBe` []
@@ -178,3 +180,13 @@ spec = do
             let expected = And (replaced:equivs)
             result `shouldBe` expected
             
+    describe "relatedGroups" $ do
+        it "works if the first element contains others, which are themselves unrelated" $ do
+            let f = And [x0,x1,x2]
+            let poss = possibleReplacements f
+            poss `shouldBe` [And [x0,x1,x2],x0,x1,x2]
+            relatedGroups poss `shouldBe` [] -- TODO: What should it be? 
+        it "works if the first element is related to the second, but not the third" $ do
+            let example = [x0, And [x0,x1], x1]
+            let groups = relatedGroups example
+            groups `shouldBe` [example] -- TODO: How to handle this?

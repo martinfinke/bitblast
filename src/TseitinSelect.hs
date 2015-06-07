@@ -2,8 +2,6 @@ module TseitinSelect where
 
 import Formula
 import Data.List(nub,sort)
-import Control.Monad
-import qualified Control.Monad.State.Lazy as State
 
 data SelectOptions = SelectOptions {
     includeRoot::Bool, -- ^ Include the root in the results?

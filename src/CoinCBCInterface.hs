@@ -11,7 +11,7 @@ import Data.List(intercalate)
 import System.Process
 import System.IO.Temp
 import System.IO(hPutStr)
-import System.Directory(getTemporaryDirectory)
+import System.Directory(getTemporaryDirectory, removeFile)
 import System.FilePath
 import Text.Regex.Posix
 import Debug.Trace(traceShow)
@@ -43,13 +43,15 @@ runCBC :: Int -> [QmTerm] -> [BitVector] -> IO [QmTerm]
 runCBC numVars primes ones = do
     let numThreads = 4
     let lpFileContents = toLPFile numVars primes ones
-    let lpFileName = "bitblast-cbctemp.lp"
+    let lpFileName = ".bitblast-cbctemp-D88D5681-02C5-4662-82D6-3998CCB91D1C.lp"
     writeFile lpFileName lpFileContents
-    let cbcSolutionFileName = "bitblast-cbcsolution.txt"
+    let cbcSolutionFileName = ".bitblast-cbcsolution-D88D5681-02C5-4662-82D6-3998CCB91D1C.txt"
     let cbcCommands = "import " ++ lpFileName ++ "\nbranchAndCut" ++ "\nsolution " ++ cbcSolutionFileName ++ "\n"
     readProcess "cbc" ["-threads", show numThreads, "-"] cbcCommands
 
     cbcSolution <- readFile cbcSolutionFileName
+    removeFile cbcSolutionFileName
+    removeFile lpFileName
     let essentialPrimeIndices = parseSolution cbcSolution
     let essentialPrimes = map snd $ filter (\(i,_) -> i `elem` essentialPrimeIndices) $ zip [0..] primes
     return essentialPrimes
