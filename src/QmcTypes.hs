@@ -1,8 +1,3 @@
-{-|
-The Quine-McCluskey Algorithm for Minimization of Boolean Functions.
-
-Ported to Haskell from the Python qm Package (<http://pypi.python.org/pypi/qm>) and its improved version (including Petrick's method) by George Prekas (<http://github.com/prekageo/optistate>).
--}
 module QmcTypes(
           BitVector,
           QmTerm(..),

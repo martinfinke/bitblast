@@ -99,13 +99,6 @@ spec = do
             normalize group `shouldBe` [(term,t0), (Atom t0, t1)]
 
     describe "tseitinReplace" $ do
-        it "doesn't change anything if there are no replaces" $ do
-            let f = And [x0,x1]
-            tseitinReplace varSet [] f `shouldBe` (f, [])
-        it "throws an error if a variable isn't in the variable set" $ do
-            let toReplace = Atom t0
-            let call = tseitinReplace varSet [toReplace] x1
-            evaluate call `shouldThrow` anyException
         it "replaces a given sub-formula with a variable" $ do
             let testFormula = Or [Equiv [x3,x4], x0, And [x6,x2]]
             let (withReplacement,[extraVar]) = tseitinReplace varSet [And [x6,x2]] testFormula
@@ -137,4 +130,14 @@ spec = do
                     ]
             let expected = And (replaced:equivs)
             result `shouldBe` expected
+
+    describe "tseitin" $ do
+        it "doesn't change anything if there are no replaces" $ do
+            let f = And [x0,x1]
+            let result = tseitin varSet [] f
+            result `shouldBe` TseitinFormula f [] []
+        it "throws an error if a variable isn't in the variable set" $ do
+            let toReplace = Atom t0
+            let call = tseitin varSet [toReplace] x1
+            evaluate call `shouldThrow` anyException
             

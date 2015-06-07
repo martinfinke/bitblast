@@ -48,7 +48,7 @@ runCBC numVars primes ones = do
     let cbcSolutionFileName = ".bitblast-cbcsolution-D88D5681-02C5-4662-82D6-3998CCB91D1C.txt"
     let cbcCommands = "import " ++ lpFileName ++ "\nbranchAndCut" ++ "\nsolution " ++ cbcSolutionFileName ++ "\n"
     readProcess "cbc" ["-threads", show numThreads, "-"] cbcCommands
-
+    
     cbcSolution <- readFile cbcSolutionFileName
     removeFile cbcSolutionFileName
     removeFile lpFileName

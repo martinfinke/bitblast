@@ -46,7 +46,9 @@ possibleReplacementsNWith len options f =
     in combinations
 
 combinationsNoMirror :: (Eq a, Ord a) => Int -> [a] -> [[a]]
-combinationsNoMirror i ls = reverse $ combinationsNoMirror' i ls
+combinationsNoMirror i ls =
+    let i' = min i (length ls)
+    in reverse $ combinationsNoMirror' i' ls
 
 combinationsNoMirror' :: (Eq a, Ord a) => Int -> [a] -> [[a]]
 combinationsNoMirror' 0 _ = [[]]

@@ -8,6 +8,7 @@ import FormulaSpec
 import NormalForm
 import NormalFormSpec
 import QmcTypes
+import System.IO.Unsafe(unsafePerformIO)
 import qualified Data.Set as Set
 
 

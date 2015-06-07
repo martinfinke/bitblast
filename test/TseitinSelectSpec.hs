@@ -56,6 +56,7 @@ spec = do
                     Not child,
                     Not grandchild
                     ]
+
     describe "possibleReplacementsWith" $ do
         it "doesn't return the root if we don't want it" $ do
             let options = selectOptions{includeRoot=False}
@@ -84,7 +85,7 @@ spec = do
         it "doesn't do mirrored combinations" $ do
             combinationsNoMirror 2 [0,1] `shouldBe` [[0,1]]
         it "works for length 3" $ do
-            combinationsNoMirror 3 [0,1] `shouldBe` []
+            combinationsNoMirror 3 [0,1] `shouldBe` [[0,1]]
             combinationsNoMirror 3 [0,1,2] `shouldBe` [[0,1,2]]
             combinationsNoMirror 3 [0,1,2,3] `shouldBe` [[0,1,2],[0,1,3],[0,2,3],[1,2,3]]
 

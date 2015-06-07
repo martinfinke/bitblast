@@ -6,6 +6,13 @@ import qualified Data.Set as Set
 import Data.List(sortBy,partition)
 import Data.Maybe(catMaybes)
 
+data TseitinFormula = TseitinFormula {
+    modFormula :: Formula,
+    extraVars :: [Variable],
+    equivTerms :: [Formula]
+    }
+    deriving(Eq, Show)
+
 findAndReplace :: Formula -> Variable -> Formula -> (Bool,Formula)
 findAndReplace toReplace extraVar formula
     | toReplace == formula = (True, Atom extraVar)
@@ -30,8 +37,16 @@ findAndReplace toReplace extraVar formula
                 else (False, Implies p c)
 
 tseitinReplace :: Set.Set Variable -> [Formula] -> Formula -> (Formula, [Variable])
-tseitinReplace varSet toReplaces formula
-    | null toReplaces = (formula,[])
+tseitinReplace varSet toReplaces formula =
+    let result = tseitin varSet toReplaces formula
+    in (And (modFormula result : equivTerms result), extraVars result)
+
+
+
+
+tseitin :: Set.Set Variable -> [Formula] -> Formula -> TseitinFormula
+tseitin varSet toReplaces formula
+    | null toReplaces = TseitinFormula formula [] []
     | not (all (`containsOnlyVarsFrom` varSet) toReplaces) = error "The terms to replace must contain only variables from the variable set. Otherwise, the introduced extra variables might clash."
     | otherwise =
     let hierarchical = reverse . concat . map Set.toList $ hierarchy (Set.fromList toReplaces)
@@ -40,7 +55,7 @@ tseitinReplace varSet toReplaces formula
         normalized = normalize withVariables
         replaced = foldr replace formula (reverse normalized)
         equivs = map makeEquiv normalized
-    in (And (replaced:equivs), newVars)
+    in TseitinFormula replaced newVars equivs
 
 makeEquiv :: (Formula,Variable) -> Formula
 makeEquiv (f,variable) = Equiv [Atom variable, f]

@@ -66,17 +66,27 @@ minimizeFormula :: Formula -> IO Formula
 minimizeFormula = minimizeFormulaWith defaultMinimizeFormulaOptions
 
 
-minimizeWithExtraVars :: Int -> Formula -> IO (Formula, [Variable])
-minimizeWithExtraVars numExtraVars f =
+minimizeWithNExtraVars :: Int -> Formula -> IO (Formula, [Variable])
+minimizeWithNExtraVars numExtraVars f =
     let varSet = variableSet f
         possibilities = possibleReplacementsNWith numExtraVars selectOptions f
-        replaced = map (\rs -> tseitinReplace varSet rs f) possibilities :: [(Formula, [Variable])]
+        replaced = map (\rs -> tseitin varSet rs f) possibilities :: [TseitinFormula]
     in do
-        optimized <- forM replaced $ \(f, varSet) -> do
-            f' <- minimizeFormula f
-            return (f', varSet)
-        let sorted = sortBy (comparing $ numLiterals . getStats . fst) optimized
+        optimized <- forM replaced $ \(TseitinFormula f newVars equivTerms) -> do
+            And clauses <- minimizeFormula f
+            equivClauses <- fmap (concat . map removeAnd) $ forM equivTerms minimizeFormula
+            return $ (And (clauses ++ equivClauses), newVars)
+        let sorted = sortByNumLiterals optimized
         return $ head sorted
+    where removeAnd (And fs) = fs
+
+minimizeWithMaxNExtraVars :: Int -> Formula -> IO (Formula, [Variable])
+minimizeWithMaxNExtraVars maxNumExtraVars f = do
+    bestForEveryAllowedNumber <- forM [0..maxNumExtraVars] (flip minimizeWithNExtraVars f)
+    let sorted = sortByNumLiterals bestForEveryAllowedNumber
+    return $ head sorted
+
+sortByNumLiterals = sortBy (comparing $ numLiterals . getStats . fst)
 
 
 canonicalToBitVectors :: Set.Set Variable -> Canonical -> [BitVector]
