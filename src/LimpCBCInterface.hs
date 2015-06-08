@@ -1,6 +1,5 @@
 module LimpCBCInterface where
 
-import CoinCBCInterface(columns)
 import QmcTypes
 import qualified Data.Map as Map
 
@@ -13,6 +12,17 @@ import Numeric.Limp.Program
 import Numeric.Limp.Program.ResultKind
 
 import Numeric.Limp.Solvers.Cbc
+
+
+columns :: [QmTerm] -> [BitVector] -> Map.Map BitVector [Int]
+columns primes ones =
+    let indexedPrimes = zip [0..] primes
+        cols = Map.fromList [(one, [i | (i,prime) <- indexedPrimes, primeCoversOne prime one]) | one <- ones]
+        uncoveredMinterms = Map.filter null cols
+    in if Map.null uncoveredMinterms
+        then cols
+        else error $ "Uncovered minterms: " ++ show (Map.keys uncoveredMinterms)
+
 
 
 toLimpProgram :: Int -> [QmTerm] -> [BitVector] -> Program Int Int IntDouble

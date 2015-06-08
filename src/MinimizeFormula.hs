@@ -1,6 +1,5 @@
 module MinimizeFormula where
 
-import CoinCBCInterface
 import LimpCBCInterface
 import Formula
 import NormalForm
