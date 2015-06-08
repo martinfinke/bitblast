@@ -1,6 +1,7 @@
 module MinimizeFormula where
 
 import CoinCBCInterface
+import LimpCBCInterface
 import Formula
 import NormalForm
 import qualified Data.Set as Set
@@ -43,15 +44,15 @@ minimizeFormulaWith options formula =
         when (verboseOutput options) $ putStrLn $ show (length ones) ++ " ones."
         primes <- qmcCppComputePrimes ones
         when (verboseOutput options) $ putStrLn $ "Found " ++ show (length primes) ++ " primes."
-        let primesFormula = qmTermsToFormula varSet cnfMode primes
 
         when (verifyPrimes options) $ do
             putStrLn "Verifying Primes Formula..."
+            let primesFormula = qmTermsToFormula varSet cnfMode primes
             quickCheck $ property $ \assignment ->
                 let assignment' = expandOrReduce False varSet assignment
                 in assignment' `isModelOf` formula `shouldBe` assignment' `isModelOf` primesFormula
         
-        essentialPrimes <- runCBC numVars primes ones
+        let essentialPrimes = runLimpCBC numVars primes ones
         let cnf = qmTermsToFormula varSet cnfMode essentialPrimes
 
         when (verifyResult options) $ do

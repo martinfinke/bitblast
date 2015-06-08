@@ -3,6 +3,7 @@ module Main where
 import Arithmetics
 import CoinCBCInterface
 import Formula
+import LimpCBCInterface
 import MinimizeFormula
 import NormalForm
 import QmcCpp
@@ -25,3 +26,14 @@ varSet = Set.fromList vars
 [x0,x1,x2,x3,x4,x5,x6,x7,x8,x9] = map Atom vars
 -- -(0 XOR 1) && ((0 XOR 1) <=> 2)
 testF = And [Not $ Xor [x0,x1], Equiv [Xor [x0,x1], x2]]
+
+
+main =
+    let canonical = ensureCanonical testF
+        cnfMode = (getType canonical == CNFType)
+        varSet = variableSet testF
+        numVars = Set.size varSet
+        ones = canonicalToBitVectors varSet canonical
+    in do
+        primes <- qmcCppComputePrimes ones
+        runCBC numVars primes ones >>= (putStrLn . show)
