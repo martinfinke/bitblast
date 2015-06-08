@@ -80,9 +80,9 @@ minimizeWithNExtraVars numExtraVars f =
         return $ head sorted
     where removeAnd (And fs) = fs
 
-minimizeWithMaxNExtraVars :: Int -> Formula -> IO (Formula, [Variable])
-minimizeWithMaxNExtraVars maxNumExtraVars f = do
-    bestForEveryAllowedNumber <- forM [0..maxNumExtraVars] (flip minimizeWithNExtraVars f)
+minimizeWithExtraVarRange :: (Int,Int) -> Formula -> IO (Formula, [Variable])
+minimizeWithExtraVarRange (min',max') f = do
+    bestForEveryAllowedNumber <- forM [min'..max'] (flip minimizeWithNExtraVars f)
     let sorted = sortByNumLiterals bestForEveryAllowedNumber
     return $ head sorted
 
