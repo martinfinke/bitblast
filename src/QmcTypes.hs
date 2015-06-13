@@ -8,11 +8,13 @@ module QmcTypes(
           printTerm,
           primeComplexity,
           invertedNumvarsMask,
-          primeCoversOne
+          primeCoversOne,
+          columns
           ) where
 
 
 import qualified Data.Bits as B
+import qualified Data.Map as Map
 import Data.Word(Word64)
 
 -- | A fixed-width vector of 64 Bits.
@@ -73,3 +75,12 @@ primeComplexity invertedNvMask prime = (bitcount False . masked) prime
 
 invertedNumvarsMask :: Int -> BitVector
 invertedNumvarsMask numvars = B.complement $ (B.shiftL 1 numvars) - 1
+
+columns :: [QmTerm] -> [BitVector] -> Map.Map BitVector [Int]
+columns primes ones =
+    let indexedPrimes = zip [0..] primes
+        cols = Map.fromList [(one, [i | (i,prime) <- indexedPrimes, primeCoversOne prime one]) | one <- ones]
+        uncoveredMinterms = Map.filter null cols
+    in if Map.null uncoveredMinterms
+        then cols
+        else error $ "Uncovered minterms: " ++ show (Map.keys uncoveredMinterms)
