@@ -51,12 +51,21 @@ optimize base maxNumPrimes = do
         Nothing -> return Nothing
         Just bools -> do
             let usedPrimes = length . filter id $ bools
-            maybeBetterSolution <- optimize base (usedPrimes-1)
-            return . Just $ maybe bools id maybeBetterSolution
+            putStrLn $ "Found solution with " ++ show usedPrimes ++ " primes."
+            let improve = do
+                putStrLn $ "Trying with " ++ show (usedPrimes-1) ++ " primes."
+                optimize base (usedPrimes-1)
+            if usedPrimes > 0 then improve else return (Just bools)
     return solutionOrBetter
-
-
 
 main = do
     primes <- runSatchmo [] []
     putStrLn $ show primes
+
+endless = do
+    solution <- solve $ do
+        vars <- forM [0..5] (const boolean)
+        C.atmost (-1) vars -- das hier macht Probleme
+        return $ decode vars
+    case solution of
+        Just bools -> print (bools::[Bool])
