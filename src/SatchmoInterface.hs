@@ -34,8 +34,8 @@ assertCover primeVars coveringPrimeIndices = do
     let coveringPrimeVars = [primeVars!!i | i <- coveringPrimeIndices]
     assertOr coveringPrimeVars
 
-runSatchmo :: [QmTerm] -> [BitVector] -> IO [QmTerm]
-runSatchmo primes ones = do
+runSatchmo :: Int -> [QmTerm] -> [BitVector] -> IO [QmTerm]
+runSatchmo numVars primes ones = do
     let cols = columns primes ones
     let base = makePrimeVars primes cols
     solution <- optimize base (length primes)
@@ -54,13 +54,29 @@ optimize base maxNumPrimes = do
             putStrLn $ "Found solution with " ++ show usedPrimes ++ " primes."
             let improve = do
                 putStrLn $ "Trying with " ++ show (usedPrimes-1) ++ " primes."
-                optimize base (usedPrimes-1)
+                result <- optimize base (usedPrimes-1)
+                case result of
+                    Nothing -> do
+                        putStrLn $ "Didn't find a solution with " ++ show (usedPrimes-1) ++ " primes."
+                    Just _ -> putStrLn $ "Found a solution with " ++ show (usedPrimes-1) ++ " primes."
+                return result
             if usedPrimes > 0 then improve else return (Just bools)
     return solutionOrBetter
 
-main = do
-    primes <- runSatchmo [] []
+test = do
+    primes <- runSatchmo 0 [] []
     putStrLn $ show primes
+
+
+tooMany = do
+    solution <- solve $ do
+        vars <- forM [0..5] (const boolean)
+        C.atmost 1 vars
+        assertAnd vars
+        return $ decode vars
+    case solution of
+        Just bools -> print (bools::[Bool]) -- [True,True,True,True,True,True]
+
 
 endless = do
     solution <- solve $ do

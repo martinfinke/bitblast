@@ -2,6 +2,7 @@ module VariableSpec where
 
 import SpecHelper
 import Variable
+import Formula
 import Control.Monad(forM)
 import qualified Data.Set as Set
 
@@ -122,3 +123,18 @@ spec = do
             getRow assignment1 (setRow assignment2 True emptyTable) `shouldBe` Nothing
         it "creates two different tables if the rows being modified are different" $ do
             (table1 == table2) `shouldBe` False
+
+    describe "tableFromString" $ do
+        let allVars = makeVars 15
+        let vars@[v0,v1,v2,v3,v4,v5,v6,v7,v8,v9] = take 10 allVars
+        let [t0,t1,t2,t3,t4] = drop 10 allVars
+        let varSet = Set.fromList vars
+        it "reads a table with one variable" $ do
+            let string = unlines ["0 | 1", "1 | 1"]
+            let varSet' = Set.fromList [v0]
+            tableFromString varSet' string `shouldBe` allTrueTable varSet'
+
+        it "reads a table with two variables" $ do
+            let xorString = unlines ["00 | 0", "01 | 1", "10 | 1", "11 | 0"]
+            let varSet' = Set.fromList [v0, v1]
+            tableFromString varSet' xorString `shouldBe` toTruthTable (Xor [Atom v0, Atom v1])

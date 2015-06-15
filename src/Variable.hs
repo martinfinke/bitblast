@@ -20,6 +20,7 @@ module Variable(
                 setRow,
                 tableFromList,
                 truthTableToString,
+                tableFromString,
                 allFalseTable,
                 allTrueTable,
                 allBoolCombinations
@@ -125,6 +126,18 @@ truthTableToString varSet (TruthTable rows) =
     unlines . sort . map printRow $ Map.toList rows
     where printRow (assignment,b) = assignmentToString varSet assignment ++ " | " ++ printBool b
           printBool b = if b then "1" else "0"
+
+tableFromString :: Set.Set Variable -> String -> TruthTable
+tableFromString varSet str =
+    let rows = lines str
+        assignments = map (assignmentFromString varSet . assignment) rows
+        outputs = map (readOutput . output) rows
+        list = zip assignments outputs
+    in tableFromList list
+    where parse str = undefined
+          assignment = takeWhile (/= ' ')
+          output = last
+          readOutput c = if c == '1' then True else False
 
 emptyTable :: TruthTable
 emptyTable = TruthTable Map.empty

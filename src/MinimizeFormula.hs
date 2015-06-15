@@ -21,12 +21,15 @@ import Test.QuickCheck
 import VariableSpec
 
 data MinimizeFormulaOptions = MinimizeFormulaOptions {
+    useSolver :: Int -> [QmTerm] -> [BitVector] -> IO [QmTerm],
     verboseOutput :: Bool,
     verifyPrimes :: Bool,
     verifyResult :: Bool
     }
 
+defaultMinimizeFormulaOptions :: MinimizeFormulaOptions
 defaultMinimizeFormulaOptions = MinimizeFormulaOptions {
+    useSolver = runLimpCBC,
     verboseOutput = False,
     verifyPrimes = False,
     verifyResult = False
@@ -51,7 +54,7 @@ minimizeFormulaWith options formula =
                 let assignment' = expandOrReduce False varSet assignment
                 in assignment' `isModelOf` formula `shouldBe` assignment' `isModelOf` primesFormula
         
-        let essentialPrimes = runLimpCBC numVars primes ones
+        essentialPrimes <- (useSolver options) numVars primes ones
         let cnf = qmTermsToFormula varSet cnfMode essentialPrimes
 
         when (verifyResult options) $ do

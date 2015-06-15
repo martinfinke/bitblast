@@ -27,7 +27,7 @@ toLimpProgram numVars primes ones =
         binaryBounds = map (\i -> lowerUpperZ 0 i 1) varNames
     in program Minimise objective constraints binaryBounds :: Program Int Int IntDouble
 
-runLimpCBC :: Int -> [QmTerm] -> [BitVector] -> [QmTerm]
+runLimpCBC :: Int -> [QmTerm] -> [BitVector] -> IO [QmTerm]
 runLimpCBC numVars primes ones =
     let program = toLimpProgram numVars primes ones
         solution = solve program
@@ -35,7 +35,7 @@ runLimpCBC numVars primes ones =
             Left _ -> error "No solution."
             Right assignment -> filter (\i -> zOf assignment i /= 0) (variableNames primes)
         essentialPrimes = map snd $ filter (\(i,_) -> i `elem` essentialPrimeIndices) $ zip [0..] primes
-    in essentialPrimes
+    in return essentialPrimes
 
 
 variableNames :: [QmTerm] -> [Int]
