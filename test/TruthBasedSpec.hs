@@ -31,11 +31,15 @@ spec = do
                         segmentOne ++ ["011 | 1"] ++ segmentTwo ++ ["111 | 1"]
                         ]
                 result `shouldBe` expected
+            it "doesn't matter if called twice with 1, or once with 2" $ do
+                let whenCalledTwice = concatMap (expand 1 (Set.insert v2 testVarSet)) $ expand 1 testVarSet testTable
+                let whenCalledOnce = expand 2 testVarSet testTable
+                whenCalledTwice `shouldBe` whenCalledOnce
         describe "when given a table with just one variable" $ do
             it "returns 15 tables if 2 extra variables are allowed" $ do
                 let testVarSet = Set.singleton v0
                 let smallTable = tableFromString testVarSet . unlines $ ["0 | 1", "1 | 0"]
-                let withExtraVars = Set.insert v3 $ Set.insert v2 testVarSet
+                let withExtraVars = Set.insert v2 $ Set.insert v1 testVarSet
                 let result = sort $ expand 2 testVarSet smallTable
                 let common = ["011 | 0", "101 | 0", "111 | 0", "001 | 0"]
                 let expected = sort $ map (tableFromString withExtraVars . unlines) [
@@ -55,5 +59,4 @@ spec = do
                         ["000 | 1", "010 | 1", "100 | 1", "110 | 0"] ++ common,
                         ["000 | 1", "010 | 1", "100 | 1", "110 | 1"] ++ common
                         ]
-                pending -- TODO
-                --truthTableToString withExtraVars (result!!0) `shouldBe` truthTableToString withExtraVars (expected!!0)
+                result `shouldBe` expected
