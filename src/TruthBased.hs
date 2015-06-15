@@ -13,9 +13,10 @@ expand numExtraVars varSet table =
 expandOnOne :: TruthTable -> Set.Set Variable -> ([TruthTable], Set.Set Variable)
 expandOnOne table varSet =
     let list = tableToList table
+        newVar = head $ newVariables varSet
         trueAssignments = map fst . filter snd $ list
         falseAssignments = map fst . filter (not . snd) $ list
-        (branches,_,addedVars) = foldr (\trueAssignment (bs, newVar:newVars, addedVars) -> (concatMap (expandOne trueAssignment newVar) bs, newVars, Set.insert newVar addedVars)) ([[]], newVariables varSet, Set.empty) trueAssignments
+        branches = foldr (\trueAssignment bs -> concatMap (expandOne trueAssignment newVar) bs) [[]] trueAssignments
         expandOne trueAssignment newVar branch =
             let extraVarFalse = setVar newVar False trueAssignment
                 extraVarTrue = setVar newVar True trueAssignment
@@ -24,6 +25,6 @@ expandOnOne table varSet =
                 (extraVarFalse, True) : (extraVarTrue, False) : branch,
                 (extraVarFalse, True) : (extraVarTrue, True) : branch
                 ]
-        falseRowsWithExtraVars = concat [[(setVar addedVar False falseAssignment, False), (setVar addedVar True falseAssignment, False)] | falseAssignment <- falseAssignments, addedVar <- Set.toAscList addedVars]
+        falseRowsWithExtraVars = concat [[(setVar newVar False falseAssignment, False), (setVar newVar True falseAssignment, False)] | falseAssignment <- falseAssignments]
         withZeros branch = branch ++ falseRowsWithExtraVars
-    in (map (tableFromList . withZeros) branches, addedVars)
+    in (map (tableFromList . withZeros) branches, Set.singleton newVar) -- TODO remove second component

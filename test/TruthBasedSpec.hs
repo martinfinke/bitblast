@@ -5,6 +5,7 @@ import TruthBased
 import Variable
 import Formula
 import qualified Data.Set as Set
+import Data.List(sort)
 
 spec :: Spec
 spec = do
@@ -22,10 +23,37 @@ spec = do
             it "returns 3 tables if 1 extra variable is allowed" $ do
                 let withExtraVar = Set.insert v2 testVarSet
                 let result = expand 1 testVarSet testTable
+                let segmentOne = ["000 | 0", "001 | 0", "010 | 0"]
+                let segmentTwo = ["100 | 0", "101 | 0", "110 | 0"]
                 let expected = map (tableFromString withExtraVar . unlines) [
-                        ["000 | 0", "001 | 0", "010 | 0", "011 | 0", "100 | 0", "101 | 0", "110 | 0", "111 | 1"],
-                        ["000 | 0", "001 | 0", "010 | 0", "011 | 1", "100 | 0", "101 | 0", "110 | 0", "111 | 0"],
-                        ["000 | 0", "001 | 0", "010 | 0", "011 | 1", "100 | 0", "101 | 0", "110 | 0", "111 | 1"]
+                        segmentOne ++ ["011 | 0"] ++ segmentTwo ++ ["111 | 1"],
+                        segmentOne ++ ["011 | 1"] ++ segmentTwo ++ ["111 | 0"],
+                        segmentOne ++ ["011 | 1"] ++ segmentTwo ++ ["111 | 1"]
                         ]
-                map (truthTableToString withExtraVar) result `shouldBe` map (truthTableToString withExtraVar) expected
                 result `shouldBe` expected
+        describe "when given a table with just one variable" $ do
+            it "returns 15 tables if 2 extra variables are allowed" $ do
+                let testVarSet = Set.singleton v0
+                let smallTable = tableFromString testVarSet . unlines $ ["0 | 1", "1 | 0"]
+                let withExtraVars = Set.insert v3 $ Set.insert v2 testVarSet
+                let result = sort $ expand 2 testVarSet smallTable
+                let common = ["011 | 0", "101 | 0", "111 | 0", "001 | 0"]
+                let expected = sort $ map (tableFromString withExtraVars . unlines) [
+                        ["000 | 0", "010 | 0", "100 | 0", "110 | 1"] ++ common,
+                        ["000 | 0", "010 | 0", "100 | 1", "110 | 0"] ++ common,
+                        ["000 | 0", "010 | 0", "100 | 1", "110 | 1"] ++ common,
+                        ["000 | 0", "010 | 1", "100 | 0", "110 | 0"] ++ common,
+                        ["000 | 0", "010 | 1", "100 | 0", "110 | 1"] ++ common,
+                        ["000 | 0", "010 | 1", "100 | 1", "110 | 0"] ++ common,
+                        ["000 | 0", "010 | 1", "100 | 1", "110 | 1"] ++ common,
+                        ["000 | 1", "010 | 0", "100 | 0", "110 | 0"] ++ common,
+                        ["000 | 1", "010 | 0", "100 | 0", "110 | 1"] ++ common,
+                        ["000 | 1", "010 | 0", "100 | 1", "110 | 0"] ++ common,
+                        ["000 | 1", "010 | 0", "100 | 1", "110 | 1"] ++ common,
+                        ["000 | 1", "010 | 1", "100 | 0", "110 | 0"] ++ common,
+                        ["000 | 1", "010 | 1", "100 | 0", "110 | 1"] ++ common,
+                        ["000 | 1", "010 | 1", "100 | 1", "110 | 0"] ++ common,
+                        ["000 | 1", "010 | 1", "100 | 1", "110 | 1"] ++ common
+                        ]
+                pending -- TODO
+                --truthTableToString withExtraVars (result!!0) `shouldBe` truthTableToString withExtraVars (expected!!0)

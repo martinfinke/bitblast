@@ -124,7 +124,7 @@ expandOrReduce b variableSet assignment@(Assignment intMap) =
     in Assignment added
 
 newtype TruthTable = TruthTable (Map.Map Assignment Bool)
-    deriving(Eq, Show)
+    deriving(Eq, Show, Ord)
 
 truthTableToString :: Set.Set Variable -> TruthTable -> String
 truthTableToString varSet (TruthTable rows) =
