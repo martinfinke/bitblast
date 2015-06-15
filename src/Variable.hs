@@ -4,6 +4,7 @@ module Variable(
                 eval,
                 makeVars,
                 var,
+                newVariables,
                 Assignment,
                 emptyAssignment,
                 allTrue,
@@ -19,6 +20,7 @@ module Variable(
                 getRow,
                 setRow,
                 tableFromList,
+                tableToList,
                 truthTableToString,
                 tableFromString,
                 allFalseTable,
@@ -109,6 +111,9 @@ setVar (Variable i) b (Assignment intMap) = Assignment $ IntMap.insert i b intMa
 assignedVars :: Assignment -> Set.Set Variable
 assignedVars (Assignment intMap) = Set.fromList $ map Variable (IntMap.keys intMap)
 
+newVariables :: Set.Set Variable -> [Variable]
+newVariables varSet = [succ (Set.findMax varSet)..]
+
 expandOrReduce :: Bool -> Set.Set Variable -> Assignment -> Assignment
 expandOrReduce b variableSet assignment@(Assignment intMap) =
     let alreadyAssigned = assignedVars assignment
@@ -134,8 +139,7 @@ tableFromString varSet str =
         outputs = map (readOutput . output) rows
         list = zip assignments outputs
     in tableFromList list
-    where parse str = undefined
-          assignment = takeWhile (/= ' ')
+    where assignment = takeWhile (/= ' ')
           output = last
           readOutput c = if c == '1' then True else False
 
@@ -151,6 +155,9 @@ setRow assignment b (TruthTable assignmentMap) = TruthTable $ Map.insert assignm
 tableFromList :: [(Assignment, Bool)] -> TruthTable
 tableFromList ls = foldr (uncurry setRow) emptyTable ls
 
+tableToList :: TruthTable -> [(Assignment, Bool)]
+tableToList (TruthTable assignmentMap) = Map.toAscList assignmentMap
+
 allTrueTable, allFalseTable :: Set.Set Variable
               -> TruthTable
 allFalseTable = allSetTable False
@@ -161,8 +168,6 @@ allSetTable b varSet =
     let allAssignments = allBoolCombinations varSet
         allSetToBool = zip allAssignments (repeat b)
     in tableFromList allSetToBool
-
-
 
 -- | All possible 'Assignment's for a 'Set.Set' of 'Variable's.
 allBoolCombinations :: Set.Set Variable -> [Assignment]

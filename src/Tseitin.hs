@@ -60,9 +60,6 @@ tseitin varSet toReplaces formula
 makeEquiv :: (Formula,Variable) -> Formula
 makeEquiv (f,variable) = Equiv [Atom variable, f]
 
-newVariables :: Set.Set Variable -> [Variable]
-newVariables varSet = [succ (Set.findMax varSet)..]
-
 normalize :: [(Formula,Variable)] -> [(Formula,Variable)]
 normalize = reverse . foldr normalize' [] . reverse
 

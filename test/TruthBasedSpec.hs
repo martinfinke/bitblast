@@ -15,9 +15,17 @@ spec = do
     let [x0,x1,x2,x3,x4,x5,x6,x7,x8,x9] = map Atom vars
     describe "expand" $ do
         describe "when given a table with one true output" $ do
-            let testTable = tableFromList $ zip (allBoolCombinations (Set.fromList [v0,v1])) [False, False, False, True]
+            let testVarSet = Set.fromList [v0,v1]
+            let testTable = tableFromString testVarSet . unlines $ ["00 | 0", "01 | 0", "10 | 0", "11 | 1"]
             it "returns the input if no extra variables are allowed" $ do
-                expand 0 testTable `shouldBe` [testTable]
+                expand 0 testVarSet testTable `shouldBe` [testTable]
             it "returns 3 tables if 1 extra variable is allowed" $ do
-                pending -- TODO
-                --expand 1 testTable `shouldBe` []
+                let withExtraVar = Set.insert v2 testVarSet
+                let result = expand 1 testVarSet testTable
+                let expected = map (tableFromString withExtraVar . unlines) [
+                        ["000 | 0", "001 | 0", "010 | 0", "011 | 0", "100 | 0", "101 | 0", "110 | 0", "111 | 1"],
+                        ["000 | 0", "001 | 0", "010 | 0", "011 | 1", "100 | 0", "101 | 0", "110 | 0", "111 | 0"],
+                        ["000 | 0", "001 | 0", "010 | 0", "011 | 1", "100 | 0", "101 | 0", "110 | 0", "111 | 1"]
+                        ]
+                map (truthTableToString withExtraVar) result `shouldBe` map (truthTableToString withExtraVar) expected
+                result `shouldBe` expected
