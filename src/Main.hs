@@ -32,13 +32,13 @@ testF = And [Not $ Xor [x0,x1], Equiv [Xor [x0,x1], x2]]
 main :: IO ()
 main = do
     args <- getArgs
-    let circuitType = args!!1
+    let circuitType = args!!0
     let circuit
             | circuitType == "add_forbid" = nBitAddition Forbid
             | circuitType == "add_dontcare" = nBitAddition DontCare
             | circuitType == "mul" = nBitMultiplication
-    let numBits = read (args!!2)
-    let extraVarRange = read (args!!3) :: (Int,Int)
+    let numBits = read (args!!1)
+    let extraVarRange = read (args!!2) :: (Int,Int)
     putStrLn $ printf "Optimizing %s (%d bit)..." (circuitType) numBits
     let f = fst $ circuit numBits
     optimized <- minimizeTruthBasedWithExtraVarRange extraVarRange f
