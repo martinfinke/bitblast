@@ -10,7 +10,7 @@ expand :: Int -> Set.Set Variable -> TruthTable -> ([TruthTable], Set.Set Variab
 expand numExtraVars varSet table =
     let result = expand' numExtraVars varSet table
         newVars = Set.fromList $ take numExtraVars $ newVariables varSet
-    in traceShow newVars $ (result, newVars)
+    in (result, newVars)
 
 expand' :: Int -> Set.Set Variable -> TruthTable -> [TruthTable]
 expand' numExtraVars varSet table
@@ -52,8 +52,10 @@ expandOne newVar trueAssignment branch =
         (extraVarFalse, True) : (extraVarTrue, True) : branch
         ]
 
-possibleCnfs :: Int -> Formula -> [Canonical]
+possibleCnfs :: Int -> Formula -> [(Canonical, [Variable])]
 possibleCnfs numExtraVars f =
     let varSet = variableSet f
         (tables, addedVars) = expand numExtraVars varSet (toTruthTable f)
-    in map (tableToCnf (Set.union varSet addedVars)) tables
+        cnfs = map (tableToCnf (Set.union varSet addedVars)) tables
+    in zip cnfs $ repeat (Set.toAscList addedVars)
+

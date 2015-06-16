@@ -12,6 +12,7 @@ import QmcTypes
 import Variable
 import Tseitin
 import TseitinSelect
+import TruthBased
 
 import Control.Monad(when, forM)
 import System.Info(os)
@@ -83,14 +84,23 @@ minimizeWithNExtraVars numExtraVars f =
         return $ head sorted
     where removeAnd (And fs) = fs
 
-minimizeWithExtraVarRange :: (Int,Int) -> Formula -> IO (Formula, [Variable])
-minimizeWithExtraVarRange (min',max') f = do
-    bestForEveryAllowedNumber <- forM [min'..max'] (flip minimizeWithNExtraVars f)
-    let sorted = sortByNumLiterals bestForEveryAllowedNumber
+minimizeTruthBasedWithNExtraVars :: Int -> Formula -> IO (Formula, [Variable])
+minimizeTruthBasedWithNExtraVars numExtraVars f = do
+    let possibles = possibleCnfs numExtraVars f
+    optimized <- forM possibles $ \(canonical, addedVars) -> do
+        minimized <- minimizeFormula . getFormula $ canonical
+        return (minimized, addedVars)
+    let sorted = sortByNumLiterals optimized
     return $ head sorted
 
-sortByNumLiterals = sortBy (comparing $ numLiterals . getStats . fst)
+minimizeWithExtraVarRange, minimizeTruthBasedWithExtraVarRange :: (Int,Int) -> Formula -> IO (Formula, [Variable])
+(minimizeWithExtraVarRange, minimizeTruthBasedWithExtraVarRange) = (common minimizeWithNExtraVars, common minimizeTruthBasedWithNExtraVars)
+    where common minimize (min',max') f = do
+            bestForEveryAllowedNumber <- forM [min'..max'] (flip minimize f)
+            let sorted = sortByNumLiterals bestForEveryAllowedNumber
+            return $ head sorted
 
+sortByNumLiterals = sortBy (comparing $ numLiterals . getStats . fst)
 
 canonicalToBitVectors :: Set.Set Variable -> Canonical -> [BitVector]
 canonicalToBitVectors varSet canonical = concatMap (convertDashes . packTerm varSet) terms

@@ -52,10 +52,10 @@ spec = do
     describe "possibleFormulas" $ do
         it "returns only one CNF if no extra variables are allowed" $ do
             let f = Equiv [x0, Not x0]
-            possibleCnfs 0 f `shouldBe` [toCanonicalCnf f]
+            map fst (possibleCnfs 0 f) `shouldBe` [toCanonicalCnf f]
         it "returns three CNFs for a formula with one true output, and one allowed extra variable" $ do
             let f = x0
-            let possibles = possibleCnfs 1 f
+            let possibles = map fst $ possibleCnfs 1 f
             let expected = map ensureCanonical [
                     And [Or [x0, x1], Or [x0, Not x1], Or [Not x0, x1]],
                     And [Or [x0, x1], Or [x0, Not x1], Or [Not x0, Not x1]],
