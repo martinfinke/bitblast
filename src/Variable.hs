@@ -25,7 +25,8 @@ module Variable(
                 tableFromString,
                 allFalseTable,
                 allTrueTable,
-                allBoolCombinations
+                allBoolCombinations,
+                allAssignments
                 ) where
 
 import qualified Control.Monad.State.Lazy as State
@@ -157,6 +158,9 @@ tableFromList ls = foldr (uncurry setRow) emptyTable ls
 
 tableToList :: TruthTable -> [(Assignment, Bool)]
 tableToList (TruthTable assignmentMap) = Map.toAscList assignmentMap
+
+allAssignments :: TruthTable -> [Assignment]
+allAssignments (TruthTable assignmentMap) = Map.keys assignmentMap
 
 allTrueTable, allFalseTable :: Set.Set Variable
               -> TruthTable

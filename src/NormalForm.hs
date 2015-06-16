@@ -16,6 +16,8 @@ module NormalForm (Canonical,
                    normalFormChildren,
                    termLiterals,
                    getStats,
+                   tableToCnf,
+                   tableToDnf,
                    FormulaStats(..)) where
 
 import Formula
@@ -49,13 +51,20 @@ toCanonicalCnf = toNormalForm CNFType
 toCanonicalDnf = toNormalForm DNFType
 
 toNormalForm :: FormType -> Formula -> Canonical
-toNormalForm formType formula = operator terms
-    where truthTable = toTruthTable formula
-          assignments = possibleAssignments formula
-          terms = map (assignmentToTerm formType $ variableSet formula) onlyRelevantOutput
-          relevantOutput = if formType == CNFType then Just False else Just True
-          operator = if formType == CNFType then CNF . And else DNF . Or
-          onlyRelevantOutput = filter (\assignment -> getRow assignment truthTable == relevantOutput) assignments
+toNormalForm formType formula = tableToNormalForm formType (variableSet formula) (toTruthTable formula)
+
+tableToCnf, tableToDnf :: Set.Set Variable -> TruthTable -> Canonical
+tableToCnf = tableToNormalForm CNFType
+tableToDnf = tableToNormalForm DNFType
+
+tableToNormalForm :: FormType -> Set.Set Variable -> TruthTable -> Canonical
+tableToNormalForm formType varSet table =
+    let assignments = allAssignments table
+        relevantOutput = if formType == CNFType then Just False else Just True
+        onlyRelevantOutput = filter (\assignment -> getRow assignment table == relevantOutput) assignments
+        terms = map (assignmentToTerm formType $ varSet) onlyRelevantOutput
+        operator = if formType == CNFType then CNF . And else DNF . Or
+    in operator terms
 
 -- | Extract the type of a 'Canonical' formula.
 getType :: Canonical -> FormType
