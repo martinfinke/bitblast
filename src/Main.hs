@@ -42,4 +42,5 @@ main = do
     putStrLn $ printf "Optimizing %s (%d bit)..." (circuitType) numBits
     let f = fst $ circuit numBits
     optimized <- minimizeTruthBasedWithExtraVarRange extraVarRange f
+    putStrLn $ printf "Smallest formula for k `elem` [%d..%d]:" (fst extraVarRange) (snd extraVarRange)
     putStrLn $ show optimized

@@ -13,13 +13,15 @@ import Variable
 import Tseitin
 import TseitinSelect
 import TruthBased
+import VariableSpec
 
 import Control.Monad(when, forM)
 import System.Info(os)
 import System.Process(readProcess)
+import System.IO.Unsafe
 import Test.Hspec
 import Test.QuickCheck
-import VariableSpec
+import Control.Parallel.Strategies
 
 data MinimizeFormulaOptions = MinimizeFormulaOptions {
     useSolver :: Int -> [QmTerm] -> [BitVector] -> IO [QmTerm],
@@ -87,10 +89,15 @@ minimizeWithNExtraVars numExtraVars f =
 minimizeTruthBasedWithNExtraVars :: Int -> Formula -> IO (Formula, [Variable])
 minimizeTruthBasedWithNExtraVars numExtraVars f = do
     let possibles = possibleCnfs numExtraVars f
-    optimized <- forM possibles $ \(canonical, addedVars) -> do
-        minimized <- minimizeFormula . getFormula $ canonical
-        return (minimized, addedVars)
+    putStrLn $ show (length possibles) ++ " possible formulas for k=" ++ show numExtraVars
+    let optimizeOne (canonical, addedVars) = unsafePerformIO $ do
+            minimized <- minimizeFormula . getFormula $ canonical
+            let stats = getStats minimized
+            return (minimized, addedVars)
+    let optimized = parMap rpar optimizeOne possibles
     let sorted = sortByNumLiterals optimized
+    putStrLn $ "Smallest formula for k=" ++ show numExtraVars ++ ":"
+    putStrLn $ show (fst $ head sorted)
     return $ head sorted
 
 minimizeWithExtraVarRange, minimizeTruthBasedWithExtraVarRange :: (Int,Int) -> Formula -> IO (Formula, [Variable])
