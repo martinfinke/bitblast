@@ -17,6 +17,7 @@ import System.Environment(getArgs)
 import qualified Data.Set as Set
 import Data.List(sortBy)
 import Data.Ord(comparing)
+import Text.Printf(printf)
 
 import Test.Hspec
 import Test.QuickCheck
@@ -28,4 +29,17 @@ varSet = Set.fromList vars
 -- -(0 XOR 1) && ((0 XOR 1) <=> 2)
 testF = And [Not $ Xor [x0,x1], Equiv [Xor [x0,x1], x2]]
 
-
+main :: IO ()
+main = do
+    args <- getArgs
+    let circuitType = args!!1
+    let circuit
+            | circuitType == "add_forbid" = nBitAddition Forbid
+            | circuitType == "add_dontcare" = nBitAddition DontCare
+            | circuitType == "mul" = nBitMultiplication
+    let numBits = read (args!!2)
+    let extraVarRange = read (args!!3) :: (Int,Int)
+    putStrLn $ printf "Optimizing %s (%d bit)..." (circuitType) numBits
+    let f = fst $ circuit numBits
+    optimized <- minimizeTruthBasedWithExtraVarRange extraVarRange f
+    putStrLn $ show optimized
