@@ -28,6 +28,7 @@ import Text.Printf(printf)
 -- | This type wraps a 'Formula' that is (or has been converted to) a canonical CNF or DNF. The only way to create a 'Canonical' value is through the 'ensureCanonical' \/ 'toCanonicalCnf' \/ 'toCanonicalDnf' functions.
 data Canonical = CNF Formula
                | DNF Formula
+    deriving(Eq)
 
 instance Show Canonical where
     show = show . getFormula
