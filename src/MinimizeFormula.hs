@@ -14,7 +14,7 @@ import Tseitin
 import TseitinSelect
 import TruthBased
 import VariableSpec
-import Utils(divideList)
+import Utils
 
 import Control.Monad(when, forM, foldM)
 import System.Info(os)
@@ -92,7 +92,7 @@ minimizeTruthBasedWithNExtraVars numExtraVars f = do
     let possibles = possibleCnfs numExtraVars f
     putStrLn $ show (length possibles) ++ " possible formulas for k=" ++ show numExtraVars
     let divided = divideList numThreads possibles
-    winners <- forM divided winnerInList
+    winners <- parallelForM divided winnerInList
     let winner = minimumBy byNumLiterals winners
     
     putStrLn $ "Smallest formula for k=" ++ show numExtraVars ++ ":"

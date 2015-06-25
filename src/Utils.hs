@@ -2,6 +2,9 @@ module Utils where
 
 import qualified Data.Set as Set
 
+import Control.Monad
+import Control.Concurrent
+
 
 divideList :: Int -> [a] -> [[a]]
 divideList numSublists list =
@@ -15,3 +18,11 @@ divideList numSublists list =
                     then current : helper nonEmpty
                     else [current ++ nonEmpty]
     in helper list
+
+parallelForM :: [a] -> (a -> IO b) -> IO [b]
+parallelForM list action = do
+    mvars <- forM list $ \x -> do
+        m <- newEmptyMVar
+        forkIO $ action x >>= putMVar m
+        return m
+    forM mvars takeMVar
