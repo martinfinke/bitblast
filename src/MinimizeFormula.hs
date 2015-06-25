@@ -15,7 +15,7 @@ import TseitinSelect
 import TruthBased
 import VariableSpec
 
-import Control.Monad(when, forM)
+import Control.Monad(when, forM, foldM)
 import System.Info(os)
 import System.Process(readProcess)
 import System.IO.Unsafe
@@ -90,15 +90,24 @@ minimizeTruthBasedWithNExtraVars :: Int -> Formula -> IO (Formula, [Variable])
 minimizeTruthBasedWithNExtraVars numExtraVars f = do
     let possibles = possibleCnfs numExtraVars f
     putStrLn $ show (length possibles) ++ " possible formulas for k=" ++ show numExtraVars
-    let optimizeOne (canonical, addedVars) = unsafePerformIO $ do
+    
+    let calculateWinner best (canonical, addedVars) = do
             minimized <- minimizeFormula . getFormula $ canonical
-            let stats = getStats minimized
+            let currentStats = getStats minimized
+            let bestStats = getStats (fst best)
+            if numLiterals currentStats < numLiterals bestStats
+                then return (minimized, addedVars)
+                else return best
             return (minimized, addedVars)
-    let optimized = parMap rpar optimizeOne possibles
-    let sorted = sortByNumLiterals optimized
+    first <- minimizeFormula . getFormula . fst $ head possibles
+    winner <- foldM calculateWinner (first, snd $ head possibles) (tail possibles)
+
     putStrLn $ "Smallest formula for k=" ++ show numExtraVars ++ ":"
-    putStrLn $ show (fst $ head sorted)
-    return $ head sorted
+    putStrLn $ show (fst winner)
+    return winner
+
+
+
 
 minimizeWithExtraVarRange, minimizeTruthBasedWithExtraVarRange :: (Int,Int) -> Formula -> IO (Formula, [Variable])
 (minimizeWithExtraVarRange, minimizeTruthBasedWithExtraVarRange) = (common minimizeWithNExtraVars, common minimizeTruthBasedWithNExtraVars)
