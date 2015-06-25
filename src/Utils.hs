@@ -2,14 +2,16 @@ module Utils where
 
 import qualified Data.Set as Set
 
-parallelForM :: Int -> (a -> IO b) -> [a] -> IO [b]
-parallelForM numThreads action elements = do
 
-    return []
-
--- teile die Liste in Sub-Listen der Größe n
--- erstelle numThreads Threads. 
--- erstelle für jede Sub-Liste einen Thread, der:
--- 1. 
-
--- Eingabe: Eine sehr lange Liste und eine Funktion, die darüber zu machen ist. 
+divideList :: Int -> [a] -> [[a]]
+divideList numSublists list =
+    let sublistLength = max 1 $ length list `div` numSublists
+        helper list' =
+            let current = take sublistLength list'
+                rest = drop sublistLength list'
+            in case rest of
+                [] -> [current]
+                nonEmpty -> if length nonEmpty >= sublistLength
+                    then current : helper nonEmpty
+                    else [current ++ nonEmpty]
+    in helper list

@@ -5,7 +5,7 @@ import Formula
 import NormalForm
 import qualified Data.Set as Set
 import qualified Data.Bits as B
-import Data.List(sortBy)
+import Data.List(sortBy, minimumBy)
 import Data.Ord(comparing)
 import QmcCpp
 import QmcTypes
@@ -14,6 +14,7 @@ import Tseitin
 import TseitinSelect
 import TruthBased
 import VariableSpec
+import Utils(divideList)
 
 import Control.Monad(when, forM, foldM)
 import System.Info(os)
@@ -82,16 +83,24 @@ minimizeWithNExtraVars numExtraVars f =
             And clauses <- minimizeFormula f
             equivClauses <- fmap (concat . map removeAnd) $ forM equivTerms minimizeFormula
             return $ (And (clauses ++ equivClauses), newVars)
-        let sorted = sortByNumLiterals optimized
-        return $ head sorted
+        return $ minimumBy byNumLiterals optimized
     where removeAnd (And fs) = fs
 
 minimizeTruthBasedWithNExtraVars :: Int -> Formula -> IO (Formula, [Variable])
 minimizeTruthBasedWithNExtraVars numExtraVars f = do
+    let numThreads = 10
     let possibles = possibleCnfs numExtraVars f
     putStrLn $ show (length possibles) ++ " possible formulas for k=" ++ show numExtraVars
+    let divided = divideList numThreads possibles
+    winners <- forM divided winnerInList
+    let winner = minimumBy byNumLiterals winners
     
-    let calculateWinner best (canonical, addedVars) = do
+    putStrLn $ "Smallest formula for k=" ++ show numExtraVars ++ ":"
+    print $ fst winner
+    print $ getStats . fst $ winner
+
+    return winner
+    where calculateWinner best (canonical, addedVars) = do
             minimized <- minimizeFormula . getFormula $ canonical
             let currentStats = getStats minimized
             let bestStats = getStats (fst best)
@@ -99,24 +108,18 @@ minimizeTruthBasedWithNExtraVars numExtraVars f = do
                 then return (minimized, addedVars)
                 else return best
             return (minimized, addedVars)
-    first <- minimizeFormula . getFormula . fst $ head possibles
-    winner <- foldM calculateWinner (first, snd $ head possibles) (tail possibles)
-
-    putStrLn $ "Smallest formula for k=" ++ show numExtraVars ++ ":"
-    putStrLn $ show (fst winner)
-    return winner
-
-
-
+          winnerInList list = case list of
+            (firstElem:rest) -> do
+                first <- minimizeFormula . getFormula . fst $ firstElem
+                foldM calculateWinner (first, snd firstElem) rest
 
 minimizeWithExtraVarRange, minimizeTruthBasedWithExtraVarRange :: (Int,Int) -> Formula -> IO (Formula, [Variable])
 (minimizeWithExtraVarRange, minimizeTruthBasedWithExtraVarRange) = (common minimizeWithNExtraVars, common minimizeTruthBasedWithNExtraVars)
     where common minimize (min',max') f = do
             bestForEveryAllowedNumber <- forM [min'..max'] (flip minimize f)
-            let sorted = sortByNumLiterals bestForEveryAllowedNumber
-            return $ head sorted
+            return $ minimumBy byNumLiterals bestForEveryAllowedNumber
 
-sortByNumLiterals = sortBy (comparing $ numLiterals . getStats . fst)
+byNumLiterals = comparing $ numLiterals . getStats . fst
 
 canonicalToBitVectors :: Set.Set Variable -> Canonical -> [BitVector]
 canonicalToBitVectors varSet canonical = concatMap (convertDashes . packTerm varSet) terms
