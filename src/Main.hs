@@ -30,8 +30,8 @@ varSet = Set.fromList vars
 -- -(0 XOR 1) && ((0 XOR 1) <=> 2)
 testF = And [Not $ Xor [x0,x1], Equiv [Xor [x0,x1], x2]]
 
-main :: IO ()
-main = do
+main' :: IO ()
+main' = do
     args <- getArgs
     let circuitType = args!!0
     let circuit
@@ -45,3 +45,17 @@ main = do
     optimized <- minimizeTruthBasedWithExtraVarRange extraVarRange f
     putStrLn $ printf "Smallest formula for k `elem` [%d..%d]:" (fst extraVarRange) (snd extraVarRange)
     putStrLn $ show optimized
+
+main = do
+    let f = fst $ nBitAddition Forbid 1
+    optimized <- minimizeTruthBasedWithExtraVarRange (2,2) f
+    putStrLn "Smallest formula:"
+    putStrLn $ show optimized
+
+test1 =
+    let varSet = Set.fromList [v0,v1,v2,v3]
+        allFalse = allFalseTable varSet
+        trueAssignments = map (assignmentFromString varSet) $ ["0000", "0101", "1010", "1111"] ++ ["0011", "0110", "1101", "1001"]
+        truthTable = foldr (\assignment table' -> setRow assignment True table') allFalse trueAssignments
+        cnf = getFormula $ tableToCnf varSet truthTable
+    in cnf

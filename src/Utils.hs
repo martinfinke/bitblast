@@ -26,3 +26,16 @@ parallelForM list action = do
         forkIO $ action x >>= putMVar m
         return m
     forM mvars takeMVar
+
+
+combinationsNoMirror :: (Eq a, Ord a) => Int -> [a] -> [[a]]
+combinationsNoMirror i ls =
+    let i' = min i (length ls)
+    in reverse $ combinationsNoMirror' i' ls
+
+combinationsNoMirror' :: (Eq a, Ord a) => Int -> [a] -> [[a]]
+combinationsNoMirror' 0 _ = [[]]
+combinationsNoMirror' i xs = 
+    let forOne x xs' = map (x:) $ combinationsNoMirror' (i-1) xs'
+        forAll = foldr (\_ (accum, (x:xs')) -> (forOne x xs':accum, xs')) ([], xs) xs
+    in concat . fst $ forAll

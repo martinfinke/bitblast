@@ -34,8 +34,8 @@ data MinimizeFormulaOptions = MinimizeFormulaOptions {
 
 defaultMinimizeFormulaOptions :: MinimizeFormulaOptions
 defaultMinimizeFormulaOptions = MinimizeFormulaOptions {
-    useSolver = runSatchmo,
-    verboseOutput = False,
+    useSolver = runLimpCBC,
+    verboseOutput = True,
     verifyPrimes = False,
     verifyResult = False
 }
@@ -89,7 +89,7 @@ minimizeWithNExtraVars numExtraVars f =
 
 minimizeTruthBasedWithNExtraVars :: Int -> Formula -> IO (Formula, [Variable])
 minimizeTruthBasedWithNExtraVars numExtraVars f = do
-    let numThreads = 10
+    let numThreads = 1
     let possibles = possibleCnfs numExtraVars f
     putStrLn $ show (length possibles) ++ " possible formulas for k=" ++ show numExtraVars
     let divided = divideList numThreads possibles

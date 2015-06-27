@@ -6,6 +6,7 @@ import SpecHelper
 import Formula
 import Variable
 import qualified Data.Set as Set
+import Utils(combinationsNoMirror)
 
 spec :: Spec
 spec = do

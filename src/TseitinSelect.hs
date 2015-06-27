@@ -2,6 +2,7 @@ module TseitinSelect where
 
 import Formula
 import Data.List(nub,sort)
+import Utils(combinationsNoMirror)
 
 data SelectOptions = SelectOptions {
     includeRoot::Bool, -- ^ Include the root in the results?
@@ -44,15 +45,3 @@ possibleReplacementsNWith len options f =
     let replacements = possibleReplacementsWith options f
         combinations = combinationsNoMirror len replacements
     in combinations
-
-combinationsNoMirror :: (Eq a, Ord a) => Int -> [a] -> [[a]]
-combinationsNoMirror i ls =
-    let i' = min i (length ls)
-    in reverse $ combinationsNoMirror' i' ls
-
-combinationsNoMirror' :: (Eq a, Ord a) => Int -> [a] -> [[a]]
-combinationsNoMirror' 0 _ = [[]]
-combinationsNoMirror' i xs = 
-    let forOne x xs' = map (x:) $ combinationsNoMirror' (i-1) xs'
-        forAll = foldr (\_ (accum, (x:xs')) -> (forOne x xs':accum, xs')) ([], xs) xs
-    in concat . fst $ forAll
