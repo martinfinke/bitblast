@@ -26,7 +26,8 @@ makePrimeVars primes cols = do
 withAtMost :: (Decode m Boolean Bool, MonadSAT m) => m [Boolean] -> Int -> m (m [Bool])
 withAtMost base atMost = do
     primeVars <- base
-    C.atmost atMost primeVars
+    limitPrimeVars <- C.atmost atMost primeVars
+    assert [limitPrimeVars]
     return $ decode primeVars
 
 assertCover :: MonadSAT m => [Boolean] -> [Int] -> m ()
@@ -48,40 +49,17 @@ optimize base maxNumPrimes = do
     let problem = withAtMost base maxNumPrimes
     solution <- solve problem
     solutionOrBetter <- case solution of
-        Nothing -> return Nothing
+        Nothing -> do
+            putStrLn $ "Didn't find a solution with " ++ show maxNumPrimes ++ " primes."
+            return Nothing
         Just bools -> do
             let usedPrimes = length . filter id $ bools
             putStrLn $ "Found solution with " ++ show usedPrimes ++ " primes."
             let improve = do
                     putStrLn $ "Trying with " ++ show (usedPrimes-1) ++ " primes."
                     result <- optimize base (usedPrimes-1)
-                    case result of
-                        Nothing -> do
-                            putStrLn $ "Didn't find a solution with " ++ show (usedPrimes-1) ++ " primes."
-                        Just _ -> putStrLn $ "Found a solution with " ++ show (usedPrimes-1) ++ " primes."
-                    return result
+                    return $ case result of
+                        Nothing -> solution
+                        Just _ -> result
             if usedPrimes > 0 then improve else return (Just bools)
     return solutionOrBetter
-
-test = do
-    primes <- runSatchmo 0 [] []
-    putStrLn $ show primes
-
-
-tooMany = do
-    solution <- solve $ do
-        vars <- forM [0..5] (const boolean)
-        C.atmost 1 vars
-        assertAnd vars
-        return $ decode vars
-    case solution of
-        Just bools -> print (bools::[Bool]) -- [True,True,True,True,True,True]
-
-
-endless = do
-    solution <- solve $ do
-        vars <- forM [0..5] (const boolean)
-        C.atmost (-1) vars -- das hier macht Probleme
-        return $ decode vars
-    case solution of
-        Just bools -> print (bools::[Bool])

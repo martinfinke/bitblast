@@ -9,6 +9,7 @@ import Data.List(sortBy, minimumBy)
 import Data.Ord(comparing)
 import QmcCpp
 import QmcTypes
+import SatchmoInterface
 import Variable
 import Tseitin
 import TseitinSelect
@@ -33,7 +34,7 @@ data MinimizeFormulaOptions = MinimizeFormulaOptions {
 
 defaultMinimizeFormulaOptions :: MinimizeFormulaOptions
 defaultMinimizeFormulaOptions = MinimizeFormulaOptions {
-    useSolver = runLimpCBC,
+    useSolver = runSatchmo,
     verboseOutput = False,
     verifyPrimes = False,
     verifyResult = False
