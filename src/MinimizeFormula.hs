@@ -34,7 +34,7 @@ data MinimizeFormulaOptions = MinimizeFormulaOptions {
 
 defaultMinimizeFormulaOptions :: MinimizeFormulaOptions
 defaultMinimizeFormulaOptions = MinimizeFormulaOptions {
-    useSolver = runLimpCBC,
+    useSolver = runSatchmo,
     verboseOutput = False,
     verifyPrimes = False,
     verifyResult = False
