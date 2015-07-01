@@ -39,3 +39,9 @@ combinationsNoMirror' i xs =
     let forOne x xs' = map (x:) $ combinationsNoMirror' (i-1) xs'
         forAll = foldr (\_ (accum, (x:xs')) -> (forOne x xs':accum, xs')) ([], xs) xs
     in concat . fst $ forAll
+
+oneFromEachSublist :: [[a]] -> [[a]]
+oneFromEachSublist [] = [[]]
+oneFromEachSublist (list:lists) =
+    let rest = oneFromEachSublist lists
+    in concatMap (\x -> map (x:) rest) list

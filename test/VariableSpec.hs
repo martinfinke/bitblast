@@ -29,6 +29,10 @@ instance Arbitrary Assignment where
 spec :: Spec
 spec = do
     let [test1,test2,test3] = makeVars 3
+    let allVars = makeVars 15
+    let vars@[v0,v1,v2,v3,v4,v5,v6,v7,v8,v9] = take 10 allVars
+    let [t0,t1,t2,t3,t4] = drop 10 allVars
+    let varSet = Set.fromList vars
 
     describe "var" $ do
         it "can create variables and keep them separate" $ do
@@ -125,10 +129,6 @@ spec = do
             (table1 == table2) `shouldBe` False
 
     describe "tableFromString" $ do
-        let allVars = makeVars 15
-        let vars@[v0,v1,v2,v3,v4,v5,v6,v7,v8,v9] = take 10 allVars
-        let [t0,t1,t2,t3,t4] = drop 10 allVars
-        let varSet = Set.fromList vars
         it "reads a table with one variable" $ do
             let string = unlines ["0 | 1", "1 | 1"]
             let varSet' = Set.fromList [v0]
@@ -138,3 +138,28 @@ spec = do
             let xorString = unlines ["00 | 0", "01 | 1", "10 | 1", "11 | 0"]
             let varSet' = Set.fromList [v0, v1]
             tableFromString varSet' xorString `shouldBe` toTruthTable (Xor [Atom v0, Atom v1])
+
+    describe "merge" $ do
+        let varSet1 = Set.fromList [v0,v1,v2]
+        let varSet2 = Set.fromList [v3,v4]
+        let test s1 s2 expected = merge (assignmentFromString varSet1 s1) (assignmentFromString varSet2 s2) `shouldBe` assignmentFromString (Set.union varSet1 varSet2) expected
+        it "merges two assignments" $ do
+            test "001" "11" "11001"
+            test "111" "00" "00111"
+
+    describe "allBoolCombinations" $ do
+        it "returns two combinations for one variable" $ do
+            let varSet = Set.fromList [v0]
+            allBoolCombinations varSet `shouldBe` map (assignmentFromString varSet) ["0", "1"]
+        it "returns four combinations for two variables" $ do
+            let varSet = Set.fromList [v0,v3]
+            allBoolCombinations varSet `shouldBe` map (assignmentFromString varSet) ["00", "01", "10", "11"]
+
+    describe "merge" $ do
+        it "merges two assignments that have no overlap" $ do
+            let varSet = Set.fromList [v2,v5,v6]
+            let a1 = assignmentFromString (Set.fromList [v2]) "1"
+            let a2 = assignmentFromString (Set.fromList [v5,v6]) "10"
+            merge a1 a2 `shouldBe` assignmentFromString varSet "101"
+
+            

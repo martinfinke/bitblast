@@ -13,6 +13,7 @@ import Tseitin
 import TseitinSelect
 import Variable
 import Utils
+import WorthExtraVariables
 
 import System.Environment(getArgs)
 import qualified Data.Set as Set

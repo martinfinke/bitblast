@@ -15,6 +15,7 @@ module Variable(
                 expandOrReduce,
                 getVar,
                 setVar,
+                assignedVars,
                 TruthTable,
                 emptyTable,
                 getRow,
@@ -26,7 +27,9 @@ module Variable(
                 allFalseTable,
                 allTrueTable,
                 allBoolCombinations,
-                allAssignments
+                allAssignments,
+                merge,
+                tableVariableSet
                 ) where
 
 import qualified Control.Monad.State.Lazy as State
@@ -113,7 +116,9 @@ assignedVars :: Assignment -> Set.Set Variable
 assignedVars (Assignment intMap) = Set.fromList $ map Variable (IntMap.keys intMap)
 
 newVariables :: Set.Set Variable -> [Variable]
-newVariables varSet = [succ (Set.findMax varSet)..]
+newVariables varSet
+    | Set.null varSet = [head (makeVars 1) ..]
+    | otherwise = [succ (Set.findMax varSet)..]
 
 expandOrReduce :: Bool -> Set.Set Variable -> Assignment -> Assignment
 expandOrReduce b variableSet assignment@(Assignment intMap) =
@@ -182,3 +187,11 @@ allBoolCombinations' allFalse' variables
     | otherwise = rest ++ map (setVar variable True) rest
     where variable = Set.findMax variables
           rest = allBoolCombinations' allFalse' (Set.delete variable variables)
+
+merge :: Assignment -> Assignment -> Assignment
+merge (Assignment lhs) (Assignment rhs) = Assignment $ IntMap.union lhs rhs
+
+tableVariableSet :: TruthTable -> Set.Set Variable
+tableVariableSet (TruthTable assignmentMap)
+    | Map.null assignmentMap = Set.empty
+    | otherwise = Set.unions $ map assignedVars $ Map.keys assignmentMap

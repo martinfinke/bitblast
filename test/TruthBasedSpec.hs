@@ -21,22 +21,18 @@ spec = do
             let testVarSet = Set.fromList [v0,v1]
             let testTable = tableFromString testVarSet . unlines $ ["00 | 0", "01 | 0", "10 | 0", "11 | 1"]
             it "returns the input if no extra variables are allowed" $ do
-                expand' 0 testVarSet testTable `shouldBe` [testTable]
+                fst (expand' 0 testVarSet testTable) `shouldBe` [testTable]
             it "returns 3 tables if 1 extra variable is allowed" $ do
                 let withExtraVar = Set.insert v2 testVarSet
-                let result = expand' 1 testVarSet testTable
+                let result = fst $ expand' 1 testVarSet testTable
                 let expected = map (tableFromString withExtraVar . unlines) twoVars_oneOne_oneExtra
                 result `shouldBe` expected
-            it "doesn't matter if called twice with 1, or once with 2" $ do
-                let whenCalledTwice = concatMap (expand' 1 (Set.insert v2 testVarSet)) $ expand' 1 testVarSet testTable
-                let whenCalledOnce = expand' 2 testVarSet testTable
-                whenCalledTwice `shouldBe` whenCalledOnce
         describe "when given a table with one variable and one true output" $ do
             it "returns 15 tables if 2 extra variables are allowed" $ do
                 let testVarSet = Set.singleton v0
                 let smallTable = tableFromString testVarSet . unlines $ ["0 | 1", "1 | 0"]
                 let withExtraVars = Set.insert v2 $ Set.insert v1 testVarSet
-                let result = sort $ expand' 2 testVarSet smallTable
+                let result = sort . fst $ expand' 2 testVarSet smallTable
                 let expected = sort $ map (tableFromString withExtraVars . unlines) oneVar_oneOne_twoExtra
                 result `shouldBe` expected
         describe "when given a table with two ones" $ do
@@ -44,7 +40,7 @@ spec = do
                 let testVarSet = Set.singleton v0
                 let smallTable = tableFromString testVarSet . unlines $ ["0 | 1", "1 | 1"]
                 let withExtraVars = Set.insert v2 $ Set.insert v1 testVarSet
-                let result = sort $ expand' 2 testVarSet smallTable
+                let result = sort . fst $ expand' 2 testVarSet smallTable
                 let expected  = sort $ map (tableFromString withExtraVars . unlines) oneVar_twoOnes_twoExtra
                 result `shouldBe` expected
 
@@ -62,3 +58,19 @@ spec = do
                     And [Or [x0, x1], Or [x0, Not x1]]
                     ]
             possibles `shouldBe` expected
+
+    describe "atLeastOne" $ do
+        it "returns nothing for the empty list" $ do
+            atLeastOne ([]::[Int]) `shouldBe` []
+        it "returns one combination for a list with one element" $ do
+            atLeastOne [17] `shouldBe` [[17]]
+        it "returns three combinations for a list with two elements" $ do
+            atLeastOne [4,7] `shouldBe` [[4], [7], [4,7]]
+
+    describe "combinations" $ do
+        it "returns just one table if no extra variables are allowed" $ do
+            let oldVarSet = Set.fromList [v0,v1]
+            let trues = map (assignmentFromString oldVarSet) ["00", "10"]
+            combinations oldVarSet Set.empty trues `shouldBe` [(tableFromString oldVarSet . unlines) [
+                    "00 | 1", "01 | 0", "10 | 1", "11 | 0"
+                    ]]
