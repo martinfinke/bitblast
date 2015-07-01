@@ -89,6 +89,7 @@ minimizeWithNExtraVars numExtraVars f =
 
 minimizeTruthBasedWithNExtraVars :: Int -> Formula -> IO (Formula, [Variable])
 minimizeTruthBasedWithNExtraVars numExtraVars f = do
+    putStrLn $ "Minimizing " ++ show f ++ " with k=" ++ show numExtraVars
     let numThreads = 10
     let varSet = variableSet f
     let possibles = possibleCnfsFromTable numExtraVars varSet (toTruthTable f)
