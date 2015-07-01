@@ -53,8 +53,8 @@ spec = do
             let f = x0
             let possibles = map fst $ possibleCnfs 1 f
             let expected = map ensureCanonical [
-                    And [Or [x0, x1], Or [x0, Not x1], Or [Not x0, x1]],
                     And [Or [x0, x1], Or [x0, Not x1], Or [Not x0, Not x1]],
+                    And [Or [x0, x1], Or [x0, Not x1], Or [Not x0, x1]],
                     And [Or [x0, x1], Or [x0, Not x1]]
                     ]
             possibles `shouldBe` expected
