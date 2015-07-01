@@ -62,10 +62,10 @@ possibleCnfs numExtraVars f =
 
 possibleCnfsFromTable :: Int -> Set.Set Variable -> TruthTable -> [(Canonical, [Variable])]
 possibleCnfsFromTable numExtraVars varSet table =
-    let (tables, addedVars) = expand numExtraVars varSet table
+    let (tables, addedVars) = expand'' numExtraVars table
         newVarSet = Set.union varSet addedVars
         cnfs = map (tableToCnf newVarSet) tables
-    in traceShow (tables, newVarSet) $ zip cnfs $ repeat (Set.toAscList addedVars)
+    in zip cnfs $ repeat (Set.toAscList addedVars)
 
 
 combinations :: Set.Set Variable -> Set.Set Variable -> [Assignment] -> [TruthTable]
@@ -76,7 +76,7 @@ combinations oldVarSet extraVars trueAssignments =
         -- for each trueAssignment, all possible non-empty selections of expansions:
         nonEmptySelections = map atLeastOne allExpansions :: [[[Assignment]]]
         combos = map concat (oneFromEachSublist nonEmptySelections) :: [[Assignment]]
-        onlyTrueFor assignments = foldr (flip setRow True) (allFalseTable oldVarSet) assignments
+        onlyTrueFor assignments = foldr (flip setRow True) (allFalseTable $ Set.union oldVarSet extraVars) assignments
         tables = map onlyTrueFor combos
     in tables
         

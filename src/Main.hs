@@ -48,10 +48,14 @@ main' = do
     putStrLn $ show optimized
 
 main = do
-    let f = fst $ nBitAddition Forbid 1
-    optimized <- minimizeTruthBasedWithExtraVarRange (2,2) f
-    putStrLn "Smallest formula:"
-    putStrLn $ show optimized
+    args <- getArgs
+    let numVars = read $ args!!0
+    result <- findWorthExtra $ Set.fromList $ take numVars vars
+    case result of
+        Nothing -> putStrLn $ "There's no formula with " ++ show numVars ++ " variables for which it's worth introducing an extra variable."
+        Just f -> do
+            putStrLn $ "It's worth introducing an extra variable for this formula:"
+            print f
 
 test1 =
     let varSet = Set.fromList [v0,v1,v2,v3]

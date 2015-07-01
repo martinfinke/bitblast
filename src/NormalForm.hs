@@ -64,7 +64,7 @@ tableToNormalForm formType varSet table =
     let assignments = allAssignments table
         relevantOutput = if formType == CNFType then Just False else Just True
         onlyRelevantOutput = filter (\assignment -> getRow assignment table == relevantOutput) assignments
-        terms = map (assignmentToTerm formType $ varSet) onlyRelevantOutput
+        terms = map (assignmentToTerm formType varSet) onlyRelevantOutput
         operator = if formType == CNFType then CNF . And else DNF . Or
     in operator terms
 

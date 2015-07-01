@@ -89,10 +89,10 @@ minimizeWithNExtraVars numExtraVars f =
 
 minimizeTruthBasedWithNExtraVars :: Int -> Formula -> IO (Formula, [Variable])
 minimizeTruthBasedWithNExtraVars numExtraVars f = do
-    let numThreads = 1
+    let numThreads = 10
     let varSet = variableSet f
     let possibles = possibleCnfsFromTable numExtraVars varSet (toTruthTable f)
-    putStrLn $ show (length possibles) ++ " possible formulas for k=" ++ show numExtraVars
+    putStrLn $ show (length possibles) ++ " possible formulas for k=" ++ show numExtraVars ++ ":"
     let divided = divideList numThreads possibles
     winners <- parallelForM divided winnerInList
     let winner = minimumBy byNumLiterals winners
