@@ -50,13 +50,13 @@ optimize base maxNumPrimes = do
     solution <- solve problem
     solutionOrBetter <- case solution of
         Nothing -> do
-            putStrLn $ "Didn't find a solution with " ++ show maxNumPrimes ++ " primes."
+            --putStrLn $ "Didn't find a solution with " ++ show maxNumPrimes ++ " primes."
             return Nothing
         Just bools -> do
             let usedPrimes = length . filter id $ bools
-            putStrLn $ "Found solution with " ++ show usedPrimes ++ " primes."
+            --putStrLn $ "Found solution with " ++ show usedPrimes ++ " primes."
             let improve = do
-                    putStrLn $ "Trying with " ++ show (usedPrimes-1) ++ " primes."
+                    --putStrLn $ "Trying with " ++ show (usedPrimes-1) ++ " primes."
                     result <- optimize base (usedPrimes-1)
                     return $ case result of
                         Nothing -> solution
