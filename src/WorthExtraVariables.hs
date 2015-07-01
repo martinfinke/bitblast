@@ -27,9 +27,9 @@ findWorthExtra varSet =
             | isJust maybeResult = return maybeResult
             | otherwise = do
                 minimizedWithout <- minimizeFormula cnf
-                minimizedWithOneExtra <- minimizeTruthBasedWithExtraVarRange (0,1) cnf
+                minimizedWithOneExtra <- minimizeTruthBasedWithNExtraVars 1 cnf
                 let lits = numLiterals . getStats
                 return $ if lits (fst minimizedWithOneExtra) < lits minimizedWithout
-                    then Just $ fst minimizedWithOneExtra
+                    then Just cnf
                     else Nothing
     in foldM try Nothing allCnfs
