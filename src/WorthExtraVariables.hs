@@ -29,7 +29,11 @@ findWorthExtra varSet =
                 minimizedWithout <- minimizeFormula cnf
                 minimizedWithOneExtra <- minimizeTruthBasedWithNExtraVars 1 cnf
                 let lits = numLiterals . getStats
-                return $ if lits (fst minimizedWithOneExtra) < lits minimizedWithout
-                    then Just cnf
-                    else Nothing
+                if lits (fst minimizedWithOneExtra) < lits minimizedWithout
+                    then do
+                        putStrLn $ show (lits (fst minimizedWithOneExtra)) ++ " < " ++ show (lits minimizedWithout) ++ " for formulas:"
+                        print minimizedWithout
+                        print minimizedWithOneExtra
+                        return $ Just cnf
+                    else return Nothing
     in foldM try Nothing allCnfs

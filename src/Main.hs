@@ -64,3 +64,12 @@ test1 =
         truthTable = foldr (\assignment table' -> setRow assignment True table') allFalse trueAssignments
         cnf = getFormula $ tableToCnf varSet truthTable
     in cnf
+
+-- ((0 || 1 || 2) && (0 || -1 || 2) && (0 || -1 || -2) && (-0 || 1 || 2) && (-0 || 1 || -2))
+smallestWorthExtra = And [
+    Or [x0,x1,x2],
+    Or [x0,Not x1,x2],
+    Or [x0,Not x1,Not x2],
+    Or [Not x0,x1,x2],
+    Or [Not x0,x1,Not x2]
+    ]
