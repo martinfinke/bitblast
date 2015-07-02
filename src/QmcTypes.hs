@@ -3,13 +3,15 @@ module QmcTypes(
           QmTerm(..),
           getTerm,
           getMask,
+          bitVectorToQmTerm,
           getMaskedTerm,
           fromString,
           printTerm,
           primeComplexity,
           invertedNumvarsMask,
           primeCoversOne,
-          columns
+          columns,
+          bitcount
           ) where
 
 
@@ -31,6 +33,9 @@ getTerm (QmTerm (bv,_)) = bv
 -- | Extract the mask 'BitVector'.
 getMask :: QmTerm -> BitVector
 getMask (QmTerm (_,mask)) = mask
+
+bitVectorToQmTerm :: BitVector -> QmTerm
+bitVectorToQmTerm bv = QmTerm (bv, 0)
 
 -- | Extract the variables 'BitVector', with all masked positions set to 0.
 getMaskedTerm :: QmTerm -> BitVector

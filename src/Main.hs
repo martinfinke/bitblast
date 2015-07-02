@@ -31,8 +31,7 @@ varSet = Set.fromList vars
 -- -(0 XOR 1) && ((0 XOR 1) <=> 2)
 testF = And [Not $ Xor [x0,x1], Equiv [Xor [x0,x1], x2]]
 
-main' :: IO ()
-main' = do
+main = do
     args <- getArgs
     let circuitType = args!!0
     let circuit
@@ -47,7 +46,7 @@ main' = do
     putStrLn $ printf "Smallest formula for k `elem` [%d..%d]:" (fst extraVarRange) (snd extraVarRange)
     putStrLn $ show optimized
 
-main = do
+main' = do
     args <- getArgs
     let numVars = read $ args!!0
     smallestWorthExtra numVars
