@@ -50,6 +50,9 @@ main' = do
 main = do
     args <- getArgs
     let numVars = read $ args!!0
+    smallestWorthExtra numVars
+
+smallestWorthExtra numVars = do
     result <- findWorthExtra $ Set.fromList $ take numVars vars
     case result of
         Nothing -> putStrLn $ "There's no formula with " ++ show numVars ++ " variables for which it's worth introducing an extra variable."
@@ -57,19 +60,12 @@ main = do
             putStrLn $ "It's worth introducing an extra variable for this formula:"
             print f
 
-test1 =
-    let varSet = Set.fromList [v0,v1,v2,v3]
-        allFalse = allFalseTable varSet
-        trueAssignments = map (assignmentFromString varSet) $ ["0000", "0101", "1010", "1111"] ++ ["0011", "0110", "1101", "1001"]
-        truthTable = foldr (\assignment table' -> setRow assignment True table') allFalse trueAssignments
-        cnf = getFormula $ tableToCnf varSet truthTable
-    in cnf
 
--- ((0 || 1 || 2) && (0 || -1 || 2) && (0 || -1 || -2) && (-0 || 1 || 2) && (-0 || 1 || -2))
-smallestWorthExtra = And [
-    Or [x0,x1,x2],
-    Or [x0,Not x1,x2],
-    Or [x0,Not x1,Not x2],
-    Or [Not x0,x1,x2],
-    Or [Not x0,x1,Not x2]
-    ]
+---- ((0 || 1 || 2) && (0 || -1 || 2) && (0 || -1 || -2) && (-0 || 1 || 2) && (-0 || 1 || -2))
+--smallestWorthExtra = And [
+--    Or [x0,x1,x2],
+--    Or [x0,Not x1,x2],
+--    Or [x0,Not x1,Not x2],
+--    Or [Not x0,x1,x2],
+--    Or [Not x0,x1,Not x2]
+--    ]

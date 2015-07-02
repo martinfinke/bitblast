@@ -1,6 +1,6 @@
 module ArithmeticTruthTables where
 
-import Arithmetics(OverflowMode(..))
+import Arithmetics(OverflowMode(..), multiplicationTableGen)
 import Numeric (showIntAtBase)
 import Data.Char (intToDigit)
 import Text.Printf(printf)
@@ -182,18 +182,6 @@ multiplication2BitConnectOverflow = [
     "11111001"
     ]
 
-multiplicationTableGen overflowMode termBits resultBits =
-    let formatString = "%0" ++ show termBits ++ "b"
-        resultFormatString = "%0" ++ show resultBits ++ "b"
-        range = [0..(2^termBits)-1] :: [Int]
-        calculate = (*)
-        printResult i j =
-            let str = printf resultFormatString (calculate i j) :: String
-            in drop (length str - resultBits) str
-        valid res = case overflowMode of
-            Forbid -> res < 2^resultBits
-            _ -> True
-        rows = [printf formatString i ++ printf formatString j ++ printResult i j | i <- range, j <- range, valid (calculate i j)] :: [String]
-    in rows
+
 
 multiplication3BitConnectOverflow = multiplicationTableGen DontCare 3 6

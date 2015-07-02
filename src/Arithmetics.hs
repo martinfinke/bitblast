@@ -1,6 +1,7 @@
 module Arithmetics where
 
 import Formula
+import NormalForm
 import Data.List(zip4)
 import Debug.Trace(traceShow)
 import Data.List(zip3)
@@ -93,3 +94,28 @@ nBitMultiplication numBits =
         sums = reverse $ take numBits $ drop (2*numBits) atoms
         multiplierCircuit = multiplier first second sums
     in (multiplierCircuit,Set.fromList vars)
+
+multiplicationTableGen :: OverflowMode -> Int -> Int -> [String]
+multiplicationTableGen overflowMode termBits resultBits =
+    let formatString = "%0" ++ show termBits ++ "b"
+        resultFormatString = "%0" ++ show resultBits ++ "b"
+        range = [0..(2^termBits)-1] :: [Int]
+        calculate = (*)
+        printResult i j =
+            let str = printf resultFormatString (calculate i j) :: String
+            in drop (length str - resultBits) str
+        valid res = case overflowMode of
+            Forbid -> res < 2^resultBits
+            _ -> True
+        rows = [printf formatString i ++ printf formatString j ++ printResult i j | i <- range, j <- range, valid (calculate i j)] :: [String]
+    in rows
+
+canonicalMultiplier :: OverflowMode -> Int -> Canonical
+canonicalMultiplier overflowMode termBits =
+    let resultBits = 2*termBits
+        vars = makeVars $ 2*termBits + resultBits
+        varSet = Set.fromList vars
+        rowStrings = multiplicationTableGen overflowMode termBits resultBits
+        trues = map (assignmentFromString varSet) rowStrings
+        truthTable = foldr (flip setRow True) (allFalseTable varSet) trues
+    in tableToCnf varSet truthTable
