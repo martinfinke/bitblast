@@ -35,14 +35,6 @@ expandOnOne table varSet =
             _ -> branch ++ falseRowsWithExtraVars
     in (map (tableFromList . withZeros) branches, newVar)
 
--- | Partitions a 'TruthTable' into the True and False rows.
-trueAndFalse :: TruthTable -> ([Assignment], [Assignment])
-trueAndFalse table =
-    let list = tableToList table
-        trues = map fst . filter snd $ list
-        falses = map fst . filter (not . snd) $ list
-    in (trues, falses)
-
 expandOne :: Variable -> Assignment -> [(Assignment, Bool)] -> [[(Assignment, Bool)]]
 expandOne newVar trueAssignment branch =
     let extraVarFalse = setVar newVar False trueAssignment

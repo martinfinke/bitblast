@@ -43,6 +43,7 @@ forC1C2 ((c1,c2):rest) =
         (oldNSigma, oldRedundant) = forC1C2 rest
     in  (nc:oldNSigma, Set.union oldRedundant redundant)
 
+-- TODO: Does this terminate under all circumstances?
 forAInC1BInC2 :: [MustOrMay] -> [MustOrMay] -> (Set.Set MustOrMay, Set.Set MustOrMay)
 forAInC1BInC2 c1 c2 =
     let allAAndB = [(a,b) | a <- c1, b <- c2]

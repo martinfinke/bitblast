@@ -29,7 +29,8 @@ module Variable(
                 allBoolCombinations,
                 allAssignments,
                 merge,
-                tableVariableSet
+                tableVariableSet,
+                trueAndFalse
                 ) where
 
 import qualified Control.Monad.State.Lazy as State
@@ -195,3 +196,12 @@ tableVariableSet :: TruthTable -> Set.Set Variable
 tableVariableSet (TruthTable assignmentMap)
     | Map.null assignmentMap = Set.empty
     | otherwise = Set.unions $ map assignedVars $ Map.keys assignmentMap
+
+
+-- | Partitions a 'TruthTable' into the True and False rows.
+trueAndFalse :: TruthTable -> ([Assignment], [Assignment])
+trueAndFalse table =
+    let list = tableToList table
+        trues = map fst . filter snd $ list
+        falses = map fst . filter (not . snd) $ list
+    in (trues, falses)
