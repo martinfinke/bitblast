@@ -1,7 +1,7 @@
-module TruthBasedSpec where
+module TruthBasedNaiveSpec where
 
 import SpecHelper
-import TruthBased
+import TruthBasedNaive
 import Variable
 import Formula
 import NormalForm
@@ -21,10 +21,10 @@ spec = do
             let testVarSet = Set.fromList [v0,v1]
             let testTable = tableFromString testVarSet . unlines $ ["00 | 0", "01 | 0", "10 | 0", "11 | 1"]
             it "returns the input if no extra variables are allowed" $ do
-                fst (expand' 0 testVarSet testTable) `shouldBe` [testTable]
+                fst (expand 0 testVarSet testTable) `shouldBe` [testTable]
             it "returns 3 tables if 1 extra variable is allowed" $ do
                 let withExtraVar = Set.insert v2 testVarSet
-                let result = fst $ expand' 1 testVarSet testTable
+                let result = fst $ expand 1 testVarSet testTable
                 let expected = map (tableFromString withExtraVar . unlines) twoVars_oneOne_oneExtra
                 result `shouldBe` expected
         describe "when given a table with one variable and one true output" $ do
@@ -32,7 +32,7 @@ spec = do
                 let testVarSet = Set.singleton v0
                 let smallTable = tableFromString testVarSet . unlines $ ["0 | 1", "1 | 0"]
                 let withExtraVars = Set.insert v2 $ Set.insert v1 testVarSet
-                let result = sort . fst $ expand' 2 testVarSet smallTable
+                let result = sort . fst $ expand 2 testVarSet smallTable
                 let expected = sort $ map (tableFromString withExtraVars . unlines) oneVar_oneOne_twoExtra
                 result `shouldBe` expected
         describe "when given a table with two ones" $ do
@@ -40,7 +40,7 @@ spec = do
                 let testVarSet = Set.singleton v0
                 let smallTable = tableFromString testVarSet . unlines $ ["0 | 1", "1 | 1"]
                 let withExtraVars = Set.insert v2 $ Set.insert v1 testVarSet
-                let result = sort . fst $ expand' 2 testVarSet smallTable
+                let result = sort . fst $ expand 2 testVarSet smallTable
                 let expected  = sort $ map (tableFromString withExtraVars . unlines) oneVar_twoOnes_twoExtra
                 result `shouldBe` expected
 

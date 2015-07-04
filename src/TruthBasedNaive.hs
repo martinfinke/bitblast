@@ -1,4 +1,4 @@
-module TruthBased where
+module TruthBasedNaive where
 
 import qualified Data.Set as Set
 import Variable
@@ -7,18 +7,14 @@ import NormalForm
 import Utils
 import Debug.Trace(traceShow)
 
--- TODO: remove this and only use the one below
 expand :: Int -> Set.Set Variable -> TruthTable -> ([TruthTable], Set.Set Variable)
-expand = expand'
-
-expand' :: Int -> Set.Set Variable -> TruthTable -> ([TruthTable], Set.Set Variable)
-expand' numExtraVars varSet table
+expand numExtraVars varSet table
     | numExtraVars < 0 = error $ "Number of extra variables can't be < 0: " ++ show numExtraVars
     | numExtraVars == 0 = ([table], varSet)
     | otherwise = 
     let (branches, newVar) = expandOnOne table varSet
         newVarSet = Set.insert newVar varSet
-        rest = map (expand' (numExtraVars-1) newVarSet) branches
+        rest = map (expand (numExtraVars-1) newVarSet) branches
     in (concatMap fst rest, snd $ head rest)
 
 

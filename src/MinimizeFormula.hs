@@ -13,7 +13,7 @@ import SatchmoInterface
 import Variable
 import Tseitin
 import TseitinSelect
-import TruthBased
+import TruthBasedNaive
 import VariableSpec
 import Utils
 
