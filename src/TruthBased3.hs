@@ -7,12 +7,10 @@ import Data.Maybe
 import Control.Monad
 import Control.Applicative
 
-
 import Satchmo.Counting.Binary as C
 import Satchmo.SAT.Mini
 import qualified Satchmo.Boolean as B
 import Satchmo.Code
-
 
 newtype Lit = Lit Int
     deriving (Eq, Ord, Show)
@@ -39,14 +37,18 @@ clauses n =
         i <- [1..n]
         return [Just $ lit i True, Just $ lit i False, Nothing]
 
-opt :: Int -> ([Bool] -> Bool) -> Int -> Int -> IO CNF
+opt :: Int -- ^ number of variables in the (original) formula
+    -> ([Bool] -> Bool) -- ^ original formula
+    -> Int -- ^ number of allowed extra variables
+    -> Int -- ^ number of clauses (reduce this to minimize)
+    -> IO CNF
 opt a f h c = do
     let cls = clauses (a+h)
     selection <- solve $ do
         ws <- forM (assignments (a+h)) $ \w -> (w,) <$> B.boolean
         let w = M.fromList ws :: M.Map [Bool] B.Boolean
 
-        -- forall x: f(x) <-> exists y: w(x, y)
+        -- forall x: f(x) <-> exists y: w(x,y)
         forM_ (assignments a) $ \x -> do
             let ys = assignments h
             z <- B.or $ map (\y -> w M.! (x++y)) ys
@@ -54,7 +56,7 @@ opt a f h c = do
             e <- B.equals2 f_x z
             B.assert [e]
 
-
+        -- forall x,y: (not w(x,y)) <-> OR({p | p <- cls, cover (x,y) p)})
         ps <- replicateM (length cls) B.boolean
         let p = M.fromList $ zip cls ps :: M.Map Clause B.Boolean
         forM_ (assignments $ a+h) $ \xy -> do
@@ -62,20 +64,19 @@ opt a f h c = do
                 (k,v) <- M.toList p
                 guard (cover xy k)
                 return v
-            e <- B.equals2 (w M.! xy) z
+            e <- B.equals2 (B.not $ w M.! xy) z
             B.assert [e]
 
-
+        -- minimization
         ok <- C.atmost c ps
         B.assert [ok]
+
         return $ decode ps
     case selection of
+        Nothing -> error "Impossibru!"
         Just ps -> do
-            putStrLn "ps:"
-            print (ps::[Bool])
-            print $ filter fst $ zip ps cls
-
-    return undefined
+            let cnf = CNF $ map snd $ filter fst $ zip ps cls
+            return cnf
 
 testF [x,y,z] = x == (y && z)
 
