@@ -8,6 +8,7 @@ import NormalForm
 import QmcCpp
 import QmcTypes
 import SatchmoInterface
+import TruthBased
 import TruthBasedNaive
 import Tseitin
 import TseitinSelect

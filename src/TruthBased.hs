@@ -1,5 +1,5 @@
 {-# language TupleSections #-}
-module TruthBased3 where
+module TruthBased where
 
 import qualified Data.Set as Set
 import qualified Data.Map as M
@@ -24,17 +24,15 @@ lit :: Int -> Bool -> Lit
 lit i True = Lit i
 lit i False = Lit $ -i
 
-cover :: [Bool] -> Clause -> Bool
-cover assignment (Clause ls) =
+covers :: Clause -> [Bool]  -> Bool
+covers (Clause ls) assignment =
     let clause = map (\(i, b) -> lit i (not b)) $ zip [1..] assignment
     in Set.isSubsetOf (Set.fromList ls) (Set.fromList clause)
 
-test1 = cover [False, True, False] (Clause $ map Lit [1, -2]) == True
-
 clauses :: Int -> [Clause]
-clauses n =
+clauses numVars =
     map (Clause . catMaybes) $ sequence $ do
-        i <- [1..n]
+        i <- [1..numVars]
         return [Just $ lit i True, Just $ lit i False, Nothing]
 
 opt :: Int -- ^ number of variables in the (original) formula
@@ -62,7 +60,7 @@ opt a f h c = do
         forM_ (assignments $ a+h) $ \xy -> do
             z <- B.or $ do
                 (k,v) <- M.toList p
-                guard (cover xy k)
+                guard (k `covers` xy)
                 return v
             e <- B.equals2 (B.not $ w M.! xy) z
             B.assert [e]
@@ -83,7 +81,6 @@ testF [x,y,z] = x == (y && z)
 testG [x] = not x
 
 testFtest = opt 3 testF 1 3
-
 
 testGtest = opt 1 testG 0 3
 
