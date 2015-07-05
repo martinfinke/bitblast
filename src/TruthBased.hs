@@ -27,7 +27,7 @@ lit i False = Lit $ -i
 covers :: Clause -> [Bool]  -> Bool
 covers (Clause ls) assignment =
     let clause = map (\(i, b) -> lit i (not b)) $ zip [1..] assignment
-    in Set.isSubsetOf (Set.fromList ls) (Set.fromList clause)
+    in Set.fromList ls `Set.isSubsetOf` Set.fromList clause
 
 clauses :: Int -> [Clause]
 clauses numVars =
@@ -35,20 +35,23 @@ clauses numVars =
         i <- [1..numVars]
         return [Just $ lit i True, Just $ lit i False, Nothing]
 
-opt :: Int -- ^ number of variables in the (original) formula
+assignments :: Int -> [[Bool]]
+assignments numVars = sequence $ replicate numVars [False, True]
+
+makeCnf :: Int -- ^ number of variables in the (original) formula
     -> ([Bool] -> Bool) -- ^ original formula
     -> Int -- ^ number of allowed extra variables
-    -> Int -- ^ number of clauses (reduce this to minimize)
-    -> IO CNF
-opt a f h c = do
-    let cls = clauses (a+h)
+    -> Int -- ^ allowed number of clauses
+    -> IO (Maybe CNF)
+makeCnf numVars f numExtraVars maxNumClauses = do
+    let cls = clauses (numVars+numExtraVars)
     selection <- solve $ do
-        ws <- forM (assignments (a+h)) $ \w -> (w,) <$> B.boolean
+        ws <- forM (assignments (numVars+numExtraVars)) $ \w -> (w,) <$> B.boolean
         let w = M.fromList ws :: M.Map [Bool] B.Boolean
 
         -- forall x: f(x) <-> exists y: w(x,y)
-        forM_ (assignments a) $ \x -> do
-            let ys = assignments h
+        forM_ (assignments numVars) $ \x -> do
+            let ys = assignments numExtraVars
             z <- B.or $ map (\y -> w M.! (x++y)) ys
             f_x <- B.constant $ f x
             e <- B.equals2 f_x z
@@ -57,7 +60,7 @@ opt a f h c = do
         -- forall x,y: (not w(x,y)) <-> OR({p | p <- cls, cover (x,y) p)})
         ps <- replicateM (length cls) B.boolean
         let p = M.fromList $ zip cls ps :: M.Map Clause B.Boolean
-        forM_ (assignments $ a+h) $ \xy -> do
+        forM_ (assignments $ numVars+numExtraVars) $ \xy -> do
             z <- B.or $ do
                 (k,v) <- M.toList p
                 guard (k `covers` xy)
@@ -66,23 +69,10 @@ opt a f h c = do
             B.assert [e]
 
         -- minimization
-        ok <- C.atmost c ps
+        ok <- C.atmost maxNumClauses ps
         B.assert [ok]
 
         return $ decode ps
-    case selection of
-        Nothing -> error "Impossibru!"
-        Just ps -> do
-            let cnf = CNF $ map snd $ filter fst $ zip ps cls
-            return cnf
-
-testF [x,y,z] = x == (y && z)
-
-testG [x] = not x
-
-testFtest = opt 3 testF 1 3
-
-testGtest = opt 1 testG 0 3
-
-assignments :: Int -> [[Bool]]
-assignments n = sequence $ replicate n [False, True]
+    return $ case selection of
+        Nothing -> Nothing
+        Just ps -> Just . CNF . map snd . filter fst . zip ps $ cls

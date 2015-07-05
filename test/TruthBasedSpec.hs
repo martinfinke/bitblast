@@ -6,6 +6,7 @@ import TruthBased
 spec :: Spec
 spec = do
     let cls = Clause . map Lit
+    let cnf = CNF . map cls
     describe "covers" $ do
         it "is True for the empty clause and an empty assignment" $ do
             cls [] `covers` [] `shouldBe` True
@@ -26,3 +27,23 @@ spec = do
         it "is 9 clauses for 2 variables" $ do
             clauses 2 `shouldBe` map cls [[1,2], [1,-2], [1], [-1,2], [-1,-2], [-1], [2], [-2], []]
 
+    describe "assignments" $ do
+        it "is the empty assignment for 0 variables" $ do
+            assignments 0 `shouldBe` [[]]
+        it "is 2 assignments for 1 variable" $ do
+            assignments 1 `shouldBe` [[False], [True]]
+        it "is 4 assignments for 2 variables" $ do
+            assignments 2 `shouldBe` [[False,False], [False,True], [True,False], [True,True]]
+
+    describe "makeCnf" $ do
+        let f [x,y,z] = x == (y && z)
+        let g [x] = not x
+        let h = const True
+        it "finds a CNF for f with 1 extra variable and 3 allowed clauses" $ do
+            makeCnf 3 f 1 3 `shouldReturn` Just (cnf [[1,-2,-3], [-1,2], [-1,3]])
+        it "doesn't find a CNF for f with 1 extra variable and 2 allowed clauses" $ do
+            makeCnf 3 f 1 2 `shouldReturn` Nothing
+        it "finds a CNF for g with 1 extra variable and 1 allowed clause" $ do
+            makeCnf 1 g 1 1 `shouldReturn` Just (cnf [[-1]])
+        it "finds an empty CNF for h" $ do
+            makeCnf 0 h 1 0 `shouldReturn` Just (cnf [])
