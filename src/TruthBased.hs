@@ -7,10 +7,10 @@ import Data.Maybe
 import Control.Monad
 import Control.Applicative
 
-import Satchmo.Counting.Binary as C
 import Satchmo.SAT.Mini
-import qualified Satchmo.Boolean as B
 import Satchmo.Code
+import qualified Satchmo.Boolean as B
+import qualified Satchmo.Counting.Binary as C
 
 newtype Lit = Lit Int
     deriving (Eq, Ord, Show)
@@ -57,7 +57,7 @@ makeCnf numVars f numExtraVars maxNumClauses = do
             e <- B.equals2 f_x z
             B.assert [e]
 
-        -- forall x,y: (not w(x,y)) <-> OR({p | p <- cls, cover (x,y) p)})
+        -- forall x,y: (not w(x,y)) <-> OR({p | p <- cls, p `covers` (x,y))})
         ps <- replicateM (length cls) B.boolean
         let p = M.fromList $ zip cls ps :: M.Map Clause B.Boolean
         forM_ (assignments $ numVars+numExtraVars) $ \xy -> do
@@ -76,3 +76,24 @@ makeCnf numVars f numExtraVars maxNumClauses = do
     return $ case selection of
         Nothing -> Nothing
         Just ps -> Just . CNF . map snd . filter fst . zip ps $ cls
+
+optimize :: Int -> ([Bool] -> Bool) -> Int -> IO CNF
+optimize numVars f numExtraVars = do
+        maybeSolution <- opt (maxBound::Int)
+        case maybeSolution of
+            Nothing -> error "No solution."
+            Just cnf -> return cnf
+    where opt maxNumClauses = do
+            solution <- makeCnf numVars f numExtraVars maxNumClauses
+            solutionOrBetter <- case solution of
+                Nothing -> return Nothing
+                Just (CNF clauses) -> do
+                    let numClauses = length clauses
+                    let improve = do
+                        result <- opt (numClauses-1)
+                        if isJust result
+                            then return result
+                            else return solution
+                    if numClauses > 0 then improve else return . Just $ CNF clauses
+            return solutionOrBetter
+
