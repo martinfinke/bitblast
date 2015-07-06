@@ -3,10 +3,14 @@ module TruthBasedCoreSpec where
 import SpecHelper
 import TruthBasedCore
 
+
+cls = Clause . map Lit
+
+cnf = CNF . map cls
+
+
 spec :: Spec
 spec = do
-    let cls = Clause . map Lit
-    let cnf = CNF . map cls
     describe "covers" $ do
         it "is True for the empty clause and an empty assignment" $ do
             cls [] `covers` [] `shouldBe` True

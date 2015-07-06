@@ -97,6 +97,7 @@ nBitMultiplication numBits =
         multiplierCircuit = multiplier first second sums
     in (multiplierCircuit,Set.fromList vars)
 
+-- has DontCare overflow
 multiplicationTableGen :: Int -> Int -> [String]
 multiplicationTableGen termBits resultBits =
     let formatString = "%0" ++ show termBits ++ "b"

@@ -3,9 +3,11 @@ module ArithmeticsSpec where
 import SpecHelper
 import Arithmetics
 import Formula
+import NormalForm
 import Variable hiding (eval)
 import qualified Data.Set as Set
 import ArithmeticTruthTables
+import Control.Monad
 
 spec :: Spec
 spec = do
@@ -185,3 +187,33 @@ spec = do
             let trueAssignments = map (assignmentFromString varSet) $ multiplicationTableGen 3 3
             let mul = multiplier [x2,x1,x0] [y2,y1,y0] [s2,s1,s0]
             toTruthTable mul `shouldBe` trueOnlyForAssignments varSet trueAssignments
+
+    describe "multiplication" $ do
+        describe "DontCare overflow mode" $ do
+            let test numBits =
+                    let f = fst $ nBitMultiplication numBits
+                        g = getFormula $ multiplication DontCare numBits
+                    in toTruthTable f `shouldBe` toTruthTable g
+            it "returns an equivalent formula as nBitMultiplication (1 Bit)" $ do
+                test 1
+            it "returns an equivalent formula as nBitMultiplication (2 Bit)" $ do
+                test 2
+            it "returns an equivalent formula as nBitMultiplication (3 Bit)" $ do
+                test 3
+        describe "Forbid overflow mode" $ do
+            let test numBits assignments expected =
+                    let f = getFormula $ multiplication Forbid numBits
+                        varSet = variableSet f
+                    in forM_ assignments $ \str -> do
+                        let a = assignmentFromString varSet str
+                        a `isModelOf` f `shouldBe` expected
+            it "doesn't allow overflowing calculations" $ do
+                test 2 ["101000", "111001", "101101", "111110"] False
+            it "allows non-overflowing calculations" $ do
+                test 2 [
+                    "000000", "000001", "000010", "000011",
+                    "000100", "010101", "100110", "110111",
+                    "001000", "101001"
+                    ] True
+            it "is False for wrong calculations" $ do
+                test 2 ["010000", "100000", "110000", "000101"] False
