@@ -35,23 +35,26 @@ testF = And [Not $ Xor [x0,x1], Equiv [Xor [x0,x1], x2]]
 
 main = do
     args <- getArgs
-    let circuitType = args!!0
-    let circuit
-            | circuitType == "add_forbid" = nBitAddition Forbid
-            | circuitType == "add_dontcare" = nBitAddition DontCare
-            | circuitType == "mul" = nBitMultiplication
-    let numBits = read (args!!1)
-    let extraVarRange = read (args!!2) :: (Int,Int)
-    putStrLn $ printf "Optimizing %s (%d bit)..." (circuitType) numBits
-    let f = fst $ circuit numBits
-    optimized <- minimizeTruthBasedWithExtraVarRange extraVarRange f
-    putStrLn $ printf "Smallest formula for k `elem` [%d..%d]:" (fst extraVarRange) (snd extraVarRange)
-    putStrLn $ show optimized
+    let mode = args!!0
+    if mode == "min" then minimize args else worthExtraVars args
+    where minimize args = do
+            let circuitType = args!!1
+            let circuit
+                    | circuitType == "add_forbid" = nBitAddition Forbid
+                    | circuitType == "add_dontcare" = nBitAddition DontCare
+                    | circuitType == "mul" = nBitMultiplication
+            let numBits = read (args!!2)
+            let extraVars = read (args!!3)
+            putStrLn $ printf "Optimizing %s (%d bit)..." circuitType numBits
+            let f = fst $ circuit numBits
+            optimized <- minimizeTruthBased extraVars f
+            putStrLn $ printf "Smallest formula for k=%d:" extraVars
+            putStrLn $ show optimized
+          worthExtraVars args = do
+            let numVars = read $ args!!1
+            smallestWorthExtra numVars
 
-main' = do
-    args <- getArgs
-    let numVars = read $ args!!0
-    smallestWorthExtra numVars
+
 
 smallestWorthExtra numVars = do
     result <- findWorthExtra $ Set.fromList $ take numVars vars

@@ -7,6 +7,7 @@ import Formula
 import NormalForm
 import Control.Monad(foldM)
 import MinimizeFormula
+import TruthBased
 import Data.Maybe
 import Debug.Trace(traceShow)
 
@@ -27,11 +28,11 @@ findWorthExtra varSet =
             | isJust maybeResult = return maybeResult
             | otherwise = do
                 minimizedWithout <- minimizeFormula cnf
-                minimizedWithOneExtra <- minimizeTruthBasedWithNExtraVars 1 cnf
+                minimizedWithOneExtra <- minimizeTruthBased 1 cnf
                 let lits = numLiterals . getStats
-                if lits (fst minimizedWithOneExtra) < lits minimizedWithout
+                if lits minimizedWithOneExtra < lits minimizedWithout
                     then do
-                        putStrLn $ show (lits (fst minimizedWithOneExtra)) ++ " < " ++ show (lits minimizedWithout) ++ " for formulas:"
+                        putStrLn $ show (lits minimizedWithOneExtra) ++ " < " ++ show (lits minimizedWithout) ++ " for formulas:"
                         print minimizedWithout
                         print minimizedWithOneExtra
                         return $ Just cnf

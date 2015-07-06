@@ -87,40 +87,11 @@ minimizeWithNExtraVars numExtraVars f =
         return $ minimumBy byNumLiterals optimized
     where removeAnd (And fs) = fs
 
-minimizeTruthBasedWithNExtraVars :: Int -> Formula -> IO (Formula, [Variable])
-minimizeTruthBasedWithNExtraVars numExtraVars f = do
-    putStrLn $ "Minimizing " ++ show f ++ " with k=" ++ show numExtraVars
-    let numThreads = 1 -- TODO: Setting this to something other than 1 is not safe!
-    let varSet = variableSet f
-    let possibles = possibleCnfsFromTable numExtraVars varSet (toTruthTable f)
-    putStrLn $ show (length possibles) ++ " possible formulas for k=" ++ show numExtraVars ++ ":"
-    let divided = divideList numThreads possibles
-    winners <- parallelForM divided winnerInList
-    let winner = minimumBy byNumLiterals winners
-    
-    putStrLn $ "Smallest formula for k=" ++ show numExtraVars ++ ":"
-    print $ fst winner
-    print $ getStats . fst $ winner
-
-    return winner
-    where calculateWinner best (canonical, addedVars) = do
-            minimized <- minimizeFormula . getFormula $ canonical
-            let currentStats = getStats minimized
-            let bestStats = getStats (fst best)
-            if numLiterals currentStats < numLiterals bestStats
-                then return (minimized, addedVars)
-                else return best
-            return (minimized, addedVars)
-          winnerInList list = case list of
-            (firstElem:rest) -> do
-                first <- minimizeFormula . getFormula . fst $ firstElem
-                foldM calculateWinner (first, snd firstElem) rest
-
-minimizeWithExtraVarRange, minimizeTruthBasedWithExtraVarRange :: (Int,Int) -> Formula -> IO (Formula, [Variable])
-(minimizeWithExtraVarRange, minimizeTruthBasedWithExtraVarRange) = (common minimizeWithNExtraVars, common minimizeTruthBasedWithNExtraVars)
-    where common minimize (min',max') f = do
-            bestForEveryAllowedNumber <- forM [min'..max'] (flip minimize f)
-            return $ minimumBy byNumLiterals bestForEveryAllowedNumber
+minimizeWithExtraVarRange :: (Int,Int) -> Formula -> IO (Formula, [Variable])
+minimizeWithExtraVarRange (min',max') f = do
+    bestForEveryAllowedNumber <- forM [min'..max'] (flip minimizeWithNExtraVars f)
+    return $ minimumBy byNumLiterals bestForEveryAllowedNumber
+            
 
 byNumLiterals = comparing $ numLiterals . getStats . fst
 
