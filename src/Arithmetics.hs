@@ -6,6 +6,7 @@ import Data.List(zip4)
 import Debug.Trace(traceShow)
 import Data.List(zip3)
 import Text.Printf(printf)
+import Control.Monad
 import qualified Data.Set as Set
 import Variable
 
@@ -37,6 +38,7 @@ summerSegment (x:xs) (y:ys)
           (sums,finalC) = summerSegment xs ys
 
 data OverflowMode = Forbid | DontCare | Connect Formula
+    deriving(Eq)
 
 summer :: OverflowMode -> [Formula] -> [Formula] -> [Formula] -> Formula
 summer overflowMode xs ys sums
@@ -112,10 +114,33 @@ multiplicationTableGen overflowMode termBits resultBits =
 
 canonicalMultiplier :: OverflowMode -> Int -> Canonical
 canonicalMultiplier overflowMode termBits =
-    let resultBits = 2*termBits
+    let resultBits = termBits
         vars = makeVars $ 2*termBits + resultBits
         varSet = Set.fromList vars
         rowStrings = multiplicationTableGen overflowMode termBits resultBits
         trues = map (assignmentFromString varSet) rowStrings
         truthTable = foldr (flip setRow True) (allFalseTable varSet) trues
     in tableToCnf varSet truthTable
+
+multiplication :: OverflowMode -> Int -> Canonical
+multiplication overflowMode numBits =
+    let vars = makeVars (3*numBits)
+        varSet = Set.fromList vars
+        first = reverse $ take numBits vars
+        second = reverse $ take numBits $ drop numBits vars
+        sums = reverse $ take numBits $ drop (2*numBits) vars
+        orderedVars = first ++ second ++ sums
+        bits = printf $ "%0" ++ show numBits ++ "b" :: (Int -> String)
+        range = [0..(2^numBits)-1]
+        op = (*)
+        trueRowStrings = do
+            x <- range
+            y <- range
+            z <- range
+            guard (x `op` y == z)
+            when (overflowMode == Forbid) $ guard (x `op` y < 2^numBits)
+            return $ bits x ++ bits y ++ bits z
+        convertRowString str = assignmentFromList $ zip orderedVars $ map (== '1') str
+        trues = map convertRowString trueRowStrings
+        table = foldr (flip setRow True) (allFalseTable varSet) trues 
+    in tableToCnf varSet table

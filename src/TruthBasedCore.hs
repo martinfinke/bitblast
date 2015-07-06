@@ -19,27 +19,32 @@ newtype Clause = Clause [Lit]
 newtype CNF = CNF [Clause]
     deriving (Eq, Ord, Show)
 
+type Assignment = [Bool]
+
 
 lit :: Int -> Bool -> Lit
 lit i True = Lit i
 lit i False = Lit $ -i
 
-covers :: Clause -> [Bool]  -> Bool
+variableNumbers :: [Int]
+variableNumbers = [1..]
+
+covers :: Clause -> Assignment  -> Bool
 covers (Clause ls) assignment =
-    let clause = map (\(i, b) -> lit i (not b)) $ zip [1..] assignment
+    let clause = map (\(i, b) -> lit i (not b)) $ zip variableNumbers assignment
     in Set.fromList ls `Set.isSubsetOf` Set.fromList clause
 
 clauses :: Int -> [Clause]
 clauses numVars =
     map (Clause . catMaybes) $ sequence $ do
-        i <- [1..numVars]
+        i <- take numVars variableNumbers
         return [Just $ lit i True, Just $ lit i False, Nothing]
 
-assignments :: Int -> [[Bool]]
+assignments :: Int -> [Assignment]
 assignments numVars = sequence $ replicate numVars [False, True]
 
 makeCnf :: Int -- ^ number of variables in the (original) formula
-    -> ([Bool] -> Bool) -- ^ original formula
+    -> (Assignment -> Bool) -- ^ original formula
     -> Int -- ^ number of allowed extra variables
     -> Int -- ^ allowed number of clauses
     -> IO (Maybe CNF)
@@ -47,7 +52,7 @@ makeCnf numVars f numExtraVars maxNumClauses = do
     let cls = clauses (numVars+numExtraVars)
     selection <- solve $ do
         ws <- forM (assignments (numVars+numExtraVars)) $ \w -> (w,) <$> B.boolean
-        let w = M.fromList ws :: M.Map [Bool] B.Boolean
+        let w = M.fromList ws :: M.Map Assignment B.Boolean
 
         -- forall x: f(x) <-> exists y: w(x,y)
         forM_ (assignments numVars) $ \x -> do
@@ -77,12 +82,12 @@ makeCnf numVars f numExtraVars maxNumClauses = do
         Nothing -> Nothing
         Just ps -> Just . CNF . map snd . filter fst . zip ps $ cls
 
-optimize :: Int -> ([Bool] -> Bool) -> Int -> IO CNF
+optimize :: Int -> (Assignment -> Bool) -> Int -> IO CNF
 optimize numVars f numExtraVars = do
-        maybeSolution <- opt (maxBound::Int)
-        case maybeSolution of
-            Nothing -> error "No solution."
-            Just cnf -> return cnf
+    maybeSolution <- opt (maxBound::Int)
+    case maybeSolution of
+        Nothing -> error "No solution."
+        Just cnf -> return cnf
     where opt maxNumClauses = do
             solution <- makeCnf numVars f numExtraVars maxNumClauses
             solutionOrBetter <- case solution of
