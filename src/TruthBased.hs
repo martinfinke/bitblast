@@ -10,10 +10,12 @@ import qualified Data.Map as Map
 
 minimizeTruthBased :: Int -> Formula -> IO Formula
 minimizeTruthBased numExtraVars f =
-    let vars = Set.toAscList $ variableSet f
+    let varSet = variableSet f
+        vars = Set.toAscList $ variableSet f
         numVars = length vars
+        newVars = take numExtraVars $ newVariables varSet 
         convertedF = toCoreFormula vars f
-    in fmap (fromCoreCNF vars) $ Core.optimize numVars convertedF numExtraVars
+    in fmap (fromCoreCNF $ vars ++ newVars) $ Core.optimize numVars convertedF numExtraVars
 
 toCoreFormula :: [Variable] -> Formula -> (Core.Assignment -> Bool)
 toCoreFormula vars f = \bools ->
