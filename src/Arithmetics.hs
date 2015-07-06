@@ -97,8 +97,8 @@ nBitMultiplication numBits =
         multiplierCircuit = multiplier first second sums
     in (multiplierCircuit,Set.fromList vars)
 
-multiplicationTableGen :: OverflowMode -> Int -> Int -> [String]
-multiplicationTableGen overflowMode termBits resultBits =
+multiplicationTableGen :: Int -> Int -> [String]
+multiplicationTableGen termBits resultBits =
     let formatString = "%0" ++ show termBits ++ "b"
         resultFormatString = "%0" ++ show resultBits ++ "b"
         range = [0..(2^termBits)-1] :: [Int]
@@ -106,21 +106,8 @@ multiplicationTableGen overflowMode termBits resultBits =
         printResult i j =
             let str = printf resultFormatString (calculate i j) :: String
             in drop (length str - resultBits) str
-        valid res = case overflowMode of
-            Forbid -> res < 2^resultBits
-            _ -> True
-        rows = [printf formatString i ++ printf formatString j ++ printResult i j | i <- range, j <- range, valid (calculate i j)] :: [String]
+        rows = [printf formatString i ++ printf formatString j ++ printResult i j | i <- range, j <- range] :: [String]
     in rows
-
-canonicalMultiplier :: OverflowMode -> Int -> Canonical
-canonicalMultiplier overflowMode termBits =
-    let resultBits = termBits
-        vars = makeVars $ 2*termBits + resultBits
-        varSet = Set.fromList vars
-        rowStrings = multiplicationTableGen overflowMode termBits resultBits
-        trues = map (assignmentFromString varSet) rowStrings
-        truthTable = foldr (flip setRow True) (allFalseTable varSet) trues
-    in tableToCnf varSet truthTable
 
 multiplication :: OverflowMode -> Int -> Canonical
 multiplication overflowMode numBits =
@@ -130,16 +117,15 @@ multiplication overflowMode numBits =
         second = reverse $ take numBits $ drop numBits vars
         sums = reverse $ take numBits $ drop (2*numBits) vars
         orderedVars = first ++ second ++ sums
-        bits = printf $ "%0" ++ show numBits ++ "b" :: (Int -> String)
+        trim str = drop (length str - numBits) str
+        bits = trim . (printf $ "%0" ++ show numBits ++ "b") :: (Int -> String)
         range = [0..(2^numBits)-1]
         op = (*)
         trueRowStrings = do
             x <- range
             y <- range
-            z <- range
-            guard (x `op` y == z)
             when (overflowMode == Forbid) $ guard (x `op` y < 2^numBits)
-            return $ bits x ++ bits y ++ bits z
+            return $ bits x ++ bits y ++ bits (x `op` y)
         convertRowString str = assignmentFromList $ zip orderedVars $ map (== '1') str
         trues = map convertRowString trueRowStrings
         table = foldr (flip setRow True) (allFalseTable varSet) trues 

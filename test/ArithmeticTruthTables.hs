@@ -184,4 +184,4 @@ multiplication2BitConnectOverflow = [
 
 
 
-multiplication3BitConnectOverflow = multiplicationTableGen DontCare 3 6
+multiplication3BitConnectOverflow = multiplicationTableGen 3 6

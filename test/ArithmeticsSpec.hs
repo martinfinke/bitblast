@@ -144,7 +144,7 @@ spec = do
                     Equiv [s1,s1'],
                     Equiv [s2,s2']
                     ]
-            let trueAssignments = map (assignmentFromString varSet) $ multiplicationTableGen DontCare 3 3
+            let trueAssignments = map (assignmentFromString varSet) $ multiplicationTableGen 3 3
             toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments varSet trueAssignments
 
         it "has the correct truth table for 4 bits" $ do
@@ -156,7 +156,7 @@ spec = do
                     Equiv [s2,s2'],
                     Equiv [s3,s3']
                     ]
-            let trueAssignments = map (assignmentFromString varSet) $ multiplicationTableGen DontCare 4 4
+            let trueAssignments = map (assignmentFromString varSet) $ multiplicationTableGen 4 4
             toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments varSet trueAssignments
 
         it "has the correct truth table for 5 bits" $ do
@@ -169,7 +169,7 @@ spec = do
                     Equiv [s3,s3'],
                     Equiv [s4,s4']
                     ]
-            let trueAssignments = map (assignmentFromString varSet) $ multiplicationTableGen DontCare 5 5
+            let trueAssignments = map (assignmentFromString varSet) $ multiplicationTableGen 5 5
             pendingWith "Takes a little too long, but has passed before. Uncomment to test again."
             --toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments varSet trueAssignments
 
@@ -177,11 +177,11 @@ spec = do
         it "has the correct truth table for 1 bit" $ do
             let ([s,y,x],varSet) = mkVars 3
             let mul = multiplier [x] [y] [s]
-            let trueAssignments = map (assignmentFromString varSet) $ multiplicationTableGen DontCare 1 1
+            let trueAssignments = map (assignmentFromString varSet) $ multiplicationTableGen 1 1
             toTruthTable mul `shouldBe` trueOnlyForAssignments varSet trueAssignments
 
         it "has the correct truth table for 3 bits" $ do
             let ([s0,s1,s2,y0,y1,y2,x0,x1,x2],varSet) = mkVars 9
-            let trueAssignments = map (assignmentFromString varSet) $ multiplicationTableGen DontCare 3 3
+            let trueAssignments = map (assignmentFromString varSet) $ multiplicationTableGen 3 3
             let mul = multiplier [x2,x1,x0] [y2,y1,y0] [s2,s1,s0]
             toTruthTable mul `shouldBe` trueOnlyForAssignments varSet trueAssignments
