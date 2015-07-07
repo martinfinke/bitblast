@@ -40,15 +40,15 @@ main = do
     if mode == "min" then minimize args else worthExtraVars args
     where minimize args = do
             let circuitType = args!!1
-            let circuit
-                    | circuitType == "add_forbid" = nBitAddition Forbid
-                    | circuitType == "add_dontcare" = nBitAddition DontCare
-                    | circuitType == "mul" = nBitMultiplication
             let numBits = read (args!!2)
+            let circuit
+                    | circuitType == "add_forbid" = fst $ nBitAddition Forbid numBits
+                    | circuitType == "add_dontcare" = fst $ nBitAddition DontCare numBits
+                    | circuitType == "mul_forbid" = getFormula $ multiplication Forbid numBits
+                    | circuitType == "mul_dontcare" = getFormula $ multiplication DontCare numBits
             let extraVars = read (args!!3)
             putStrLn $ printf "Optimizing %s (%d bit)..." circuitType numBits
-            let f = fst $ circuit numBits
-            optimized <- minimizeTruthBased extraVars f
+            optimized <- minimizeTruthBased extraVars circuit
             putStrLn $ printf "Smallest formula for k=%d:" extraVars
             putStrLn $ show optimized
           worthExtraVars args = do
