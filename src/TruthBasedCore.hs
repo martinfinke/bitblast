@@ -12,6 +12,8 @@ import Satchmo.Code
 import qualified Satchmo.Boolean as B
 import qualified Satchmo.Counting.Binary as C
 
+import Data.Time.Clock(getCurrentTime)
+
 newtype Lit = Lit Int
     deriving (Eq, Ord, Show)
 newtype Clause = Clause [Lit]
@@ -94,6 +96,9 @@ optimize numVars f numExtraVars = do
                 Nothing -> return Nothing
                 Just (CNF clauses) -> do
                     let numClauses = length clauses
+                    putStr $ "Found solution with " ++ show numClauses ++ " clauses"
+                    now <- getCurrentTime
+                    putStr $ " (" ++ show now ++ ")\n"
                     let improve = do
                             result <- opt (numClauses-1)
                             if isJust result
