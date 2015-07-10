@@ -6,6 +6,7 @@ import qualified Data.Map as M
 import Data.Maybe
 import Control.Monad
 import Control.Applicative
+import Data.List(intercalate, elemIndices)
 
 import Satchmo.SAT.Mini
 import Satchmo.Code
@@ -46,14 +47,75 @@ assignments :: Int -> [Assignment]
 assignments numVars = sequence $ replicate numVars [False, True]
 
 data Table = Table [Assignment] [Clause] [(Bool, [Bool])]
-    deriving(Eq, Show)
+    deriving(Eq)
 
+-- Example:     table 2 (\[a,b] -> a || (a==b)) 1
 table :: Int -> (Assignment -> Bool) -> Int -> Table
 table numVars f numExtraVars =
     let cls = clauses (numVars+numExtraVars) :: [Clause]
         xys = [x ++ y | x <- assignments numVars, y <- assignments numExtraVars] :: [Assignment]
         m = [(f (take numVars xy), [clause `covers` xy | clause <- cls]) | xy <- xys]
     in Table xys cls m
+
+instance Show Table where
+    show table@(Table assignments clauses rows) =
+        let numVars = length $ head assignments
+            sep = " | "
+            headerPadding = replicate numVars ' ' ++ sep
+            header = headerPadding ++ intercalate sep (map (printClause numVars) clauses)
+            divideLine = replicate (length header) '-'
+            assignmentStrings = map printAssignment assignments
+            cellWidth = length sep + numVars
+            matrixRows = map (printRow cellWidth) rows
+            rowStrings = map (\(a,r) -> a ++ sep ++ r) $ zip assignmentStrings matrixRows
+            (nc,na,good) = redundancy table
+            neverCoverInfo = show (Set.size nc) ++ " clauses don't cover anything:\n" ++ printClauseSet numVars nc
+            neverAllowedInfo = show (Set.size na) ++ " clauses cover too much:\n"  ++ printClauseSet numVars na
+            goodClausesInfo = show (Set.size good) ++ " clauses are candidates:\n" ++ printClauseSet numVars good
+        in unlines $ header : divideLine : rowStrings ++ ["", neverCoverInfo, "", neverAllowedInfo, "", goodClausesInfo]
+        where 
+              printAssignment = map (\b -> if b then '1' else '0')
+              printClauseSet numVars cs = intercalate ", " (map (printClause numVars) $ Set.toAscList cs)
+              printRow cellWidth (outputIsTrue, clauseCovers) = concatMap ((++ replicate (cellWidth-2) ' ') . printCell outputIsTrue) clauseCovers
+              printCell outputIsTrue b
+                | b = if outputIsTrue then "X " else "OK"
+                | otherwise = "  "
+
+printClause :: Int -> Clause -> String
+printClause numVars (Clause lits) = map (printLiteral lits) [1..numVars]
+    where printLiteral lits i
+                | lit i True `elem` lits = '1'
+                | lit i False `elem` lits = '0'
+                | otherwise = '-'
+
+neverCover :: Table -> Set.Set Clause
+neverCover (Table _ clauses rows) =
+    let allClauses = Set.fromList clauses
+    in Set.difference allClauses $ foldr containsAllowedCover Set.empty rows
+    where containsAllowedCover (b, row) accum
+            | b = accum
+            | otherwise =
+                let is = elemIndices True row
+                in Set.union (Set.fromList $ indexed is clauses) accum
+
+notAllowed :: Table -> Set.Set Clause
+notAllowed (Table _ clauses rows) = foldr containsForbiddenCover Set.empty rows
+    where containsForbiddenCover (b, row) accum
+            | not b = accum
+            | otherwise =
+                let is = elemIndices True row
+                in Set.union (Set.fromList $ indexed is clauses) accum
+
+-- | Returns 1. clauses that don't cover anything, 2. clauses that cover too much, 3. the remainder, i.e. the clauses that should be used to look for a minimum cover.
+redundancy :: Table -> (Set.Set Clause, Set.Set Clause, Set.Set Clause)
+redundancy table@(Table _ clauses _) =
+    let allClauses = Set.fromList clauses
+        nc = neverCover table
+        na = notAllowed table
+    in (nc, na, (allClauses Set.\\ nc) Set.\\ na)
+
+indexed :: [Int] -> [a] -> [a]
+indexed is list = foldr (\(i,e) rest -> if i `elem` is then e:rest else rest) [] $ zip [0..] list
 
 makeCnf :: Int -- ^ number of variables in the (original) formula
     -> (Assignment -> Bool) -- ^ original formula
