@@ -48,9 +48,9 @@ assignments numVars = sequence $ replicate numVars [False, True]
 makeCnf :: Int -- ^ number of variables in the (original) formula
     -> (Assignment -> Bool) -- ^ original formula
     -> Int -- ^ number of allowed extra variables
-    -> Int -- ^ allowed number of clauses
+    -> Int
     -> IO (Maybe CNF)
-makeCnf numVars f numExtraVars maxNumClauses = do
+makeCnf numVars f numExtraVars maxNumLiterals = do
     let cls = clauses (numVars+numExtraVars)
     selection <- solve $ do
         ws <- forM (assignments (numVars+numExtraVars)) $ \w -> (w,) <$> B.boolean
@@ -76,7 +76,9 @@ makeCnf numVars f numExtraVars maxNumClauses = do
             B.assert [e]
 
         -- minimization
-        ok <- C.atmost maxNumClauses ps
+        ok <- C.atmost maxNumLiterals $ do
+            ((Clause lits), p') <- M.toList p
+            replicate (length lits) p'
         B.assert [ok]
 
         return $ decode ps
@@ -90,20 +92,24 @@ optimize numVars f numExtraVars = do
     case maybeSolution of
         Nothing -> error "No solution."
         Just cnf -> return cnf
-    where opt maxNumClauses = do
-            solution <- makeCnf numVars f numExtraVars maxNumClauses
+    where opt maxNumLiterals = do
+            solution <- makeCnf numVars f numExtraVars maxNumLiterals
             solutionOrBetter <- case solution of
                 Nothing -> return Nothing
-                Just (CNF clauses) -> do
+                Just cnf@(CNF clauses) -> do
                     let numClauses = length clauses
-                    putStr $ "Found solution with " ++ show numClauses ++ " clauses"
+                    let numLits = numLiterals cnf
+                    putStr $ "Found solution with " ++ show numClauses ++ " clauses and " ++ show numLits ++ " literals."
                     now <- getCurrentTime
                     putStr $ " (" ++ show now ++ ")\n"
                     let improve = do
-                            result <- opt (numClauses-1)
+                            result <- opt (numLits-1)
                             if isJust result
                                 then return result
                                 else return solution
                     if numClauses > 0 then improve else return . Just $ CNF clauses
             return solutionOrBetter
 
+
+numLiterals :: CNF -> Int
+numLiterals (CNF clauses) = sum $ map (\(Clause lits) -> length lits) clauses
