@@ -45,6 +45,16 @@ clauses numVars =
 assignments :: Int -> [Assignment]
 assignments numVars = sequence $ replicate numVars [False, True]
 
+data Table = Table [Assignment] [Clause] [(Bool, [Bool])]
+    deriving(Eq, Show)
+
+table :: Int -> (Assignment -> Bool) -> Int -> Table
+table numVars f numExtraVars =
+    let cls = clauses (numVars+numExtraVars) :: [Clause]
+        xys = [x ++ y | x <- assignments numVars, y <- assignments numExtraVars] :: [Assignment]
+        m = [(f (take numVars xy), [clause `covers` xy | clause <- cls]) | xy <- xys]
+    in Table xys cls m
+
 makeCnf :: Int -- ^ number of variables in the (original) formula
     -> (Assignment -> Bool) -- ^ original formula
     -> Int -- ^ number of allowed extra variables

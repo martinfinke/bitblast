@@ -39,10 +39,11 @@ spec = do
         it "is 4 assignments for 2 variables" $ do
             assignments 2 `shouldBe` [[False,False], [False,True], [True,False], [True,True]]
 
+
+    let f [x,y,z] = x == (y && z)
+    let g [x] = not x
+    let h = const True
     describe "makeCnf" $ do
-        let f [x,y,z] = x == (y && z)
-        let g [x] = not x
-        let h = const True
         it "finds a CNF for f with 1 extra variable and 7 allowed literals" $ do
             makeCnf 3 f 1 7 `shouldReturn` Just (cnf [[1,-2,-3], [-1,2], [-1,3]])
         it "doesn't find a CNF for f with 1 extra variable and 2 allowed literals" $ do
@@ -51,3 +52,47 @@ spec = do
             makeCnf 1 g 1 1 `shouldReturn` Just (cnf [[-1]])
         it "finds an empty CNF for h" $ do
             makeCnf 0 h 1 0 `shouldReturn` Just (cnf [])
+
+    describe "table" $ do
+        let (x:y:_) = variableNumbers
+        describe "for 0 variables and 0 extra vars" $ do
+            it "returns an empty table" $ do
+                table 0 (const True) 0 `shouldBe` Table [[]] [Clause []] [(True, [True])]
+                table 0 (const False) 0 `shouldBe` Table [[]] [Clause []] [(False, [True])]
+        describe "for 1 variable and 0 extra vars" $ do
+            let f (x:[]) = not x
+            it "creates the correct table" $ do
+                let expectedClauses = [Clause [lit x True], Clause [lit x False], Clause []]
+                let expectedRows = [
+                        (True, [True, False, True]),
+                        (False, [False, True, True])
+                        ]
+                table 1 f 0 `shouldBe` Table [[False], [True]] expectedClauses expectedRows
+        describe "for 0 variables and 1 extra var" $ do
+            it "creates the correct table" $ do
+                let f = const True
+                let expectedClauses = [Clause [lit x True], Clause [lit x False], Clause []]
+                table 0 f 1 `shouldBe` Table [[False], [True]] expectedClauses [(True, [True, False, True]), (True, [False, True, True])]
+
+        describe "for 1 variables and 1 extra var" $ do
+            let f (x:[]) = x
+            it "does" $ do
+                let expectedClauses = [
+                        Clause [lit x True, lit y True],
+                        Clause [lit x True, lit y False],
+                        Clause [lit x True],
+                        Clause [lit x False, lit y True],
+                        Clause [lit x False, lit y False],
+                        Clause [lit x False],
+                        Clause [lit y True],
+                        Clause [lit y False],
+                        Clause []
+                        ]
+                let expectedAssignments = [[False, False], [False, True], [True, False], [True, True]]
+                let expectedRows = [
+                        (False, [True, False, True, False, False, False, True, False, True]),
+                        (False, [False, True, True, False, False, False, False, True, True]),
+                        (True, [False, False, False, True, False, True, True, False, True]),
+                        (True, [False, False, False, False, True, True, False, True, True])
+                        ]
+                table 1 f 1 `shouldBe` Table expectedAssignments expectedClauses expectedRows
