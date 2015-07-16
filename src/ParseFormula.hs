@@ -15,6 +15,10 @@ parseFormula str = case parse formula "" str of
     Left e -> error "parse error"
     Right f -> f
 
+instance Read Formula where
+    readsPrec p s = case parse ((,) <$> formula <*> getInput) "" s of
+        Right (f, r) -> [(f, r)]
+
 formula :: Parsec String u Formula
 formula = negation
     <|> try land
