@@ -6,6 +6,7 @@ import TruthBasedCore
 import Variable
 import Formula
 import TruthBasedCoreSpec(cls,cnf)
+import QmcTypes
 
 import qualified Data.Map as Map
 
@@ -36,5 +37,24 @@ spec = do
             let expected = And [Or [x0, Not x2], Or [x1, x3]]
             fromCoreCNF vars (cnf [[1, -3], [2, 4]]) `shouldBe` expected
 
+    describe "toBitVector" $ do
+        it "converts the all false assignment to a 0" $ do
+            toBitVector [False, False, False] `shouldBe` 0
+        it "converts a true assignment with 1 variable to 1" $ do
+            toBitVector [True] `shouldBe` 1
+        it "converts mixed assignments correctly" $ do
+            toBitVector [True, False] `shouldBe` 1
+            toBitVector [False, True] `shouldBe` 2
+            toBitVector [True, True] `shouldBe` 3
+            toBitVector [False, False, True] `shouldBe` 4
+            toBitVector [True, False, True] `shouldBe` 5
+            toBitVector [False, True, True] `shouldBe` 6
+            toBitVector [True, True, True] `shouldBe` 7
+
+    describe "fromQmTerm" $ do
+        it "converts a 0/0 term to " $ do
+            fromQmTerm 4 (fromString "----") `shouldBe` Clause []
+        it "converts a true assignment with 1 variable to a clause" $ do
+            fromQmTerm 3 (bitVectorToQmTerm $ toBitVector [False, False, True]) `shouldBe` Clause (map Lit [1,2,-3])
 
             

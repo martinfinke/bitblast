@@ -24,6 +24,14 @@ newtype CNF = CNF [Clause]
 
 type Assignment = [Bool]
 
+data Options = Options {
+    clauseProvider :: Int -> [Assignment] -> [Assignment] -> [Clause]
+    }
+
+defaultOptions :: Options
+defaultOptions = Options {
+    clauseProvider = \numVars _ _ -> clauses numVars
+    }
 
 lit :: Int -> Bool -> Lit
 lit i True = Lit i
@@ -121,10 +129,10 @@ indexed is list = foldr (\(i,e) rest -> if i `elem` is then e:rest else rest) []
 makeCnf :: Int -- ^ number of variables in the (original) formula
     -> (Assignment -> Bool) -- ^ original formula
     -> Int -- ^ number of allowed extra variables
+    -> [Clause] -- ^ All clauses that should be candidates for the cover
     -> Int
     -> IO (Maybe CNF)
-makeCnf numVars f numExtraVars maxNumLiterals = do
-    let cls = clauses (numVars+numExtraVars)
+makeCnf numVars f numExtraVars cls maxNumLiterals = do
     selection <- solve $ do
         ws <- forM (assignments (numVars+numExtraVars)) $ \w -> (w,) <$> B.boolean
         let w = M.fromList ws :: M.Map Assignment B.Boolean
@@ -160,13 +168,19 @@ makeCnf numVars f numExtraVars maxNumLiterals = do
         Just ps -> Just . CNF . map snd . filter fst . zip ps $ cls
 
 optimize :: Int -> (Assignment -> Bool) -> Int -> IO CNF
-optimize numVars f numExtraVars = do
+optimize = optimizeWith defaultOptions
+
+optimizeWith options numVars f numExtraVars = do
     maybeSolution <- opt (maxBound::Int)
     case maybeSolution of
         Nothing -> error "No solution."
         Just cnf -> return cnf
-    where opt maxNumLiterals = do
-            solution <- makeCnf numVars f numExtraVars maxNumLiterals
+    where allAssignments = assignments (numVars+numExtraVars)
+          ones = filter (f . take numVars) allAssignments
+          zeros = filter (not . f . take numVars) allAssignments
+          cls = (clauseProvider options) (numVars+numExtraVars) ones zeros
+          opt maxNumLiterals = do
+            solution <- makeCnf numVars f numExtraVars cls maxNumLiterals
             solutionOrBetter <- case solution of
                 Nothing -> return Nothing
                 Just cnf@(CNF clauses) -> do

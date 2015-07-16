@@ -45,13 +45,13 @@ spec = do
     let h = const True
     describe "makeCnf" $ do
         it "finds a CNF for f with 1 extra variable and 7 allowed literals" $ do
-            makeCnf 3 f 1 7 `shouldReturn` Just (cnf [[1,-2,-3], [-1,2], [-1,3]])
+            makeCnf 3 f 1 (clauses 4) 7 `shouldReturn` Just (cnf [[1,-2,-3], [-1,2], [-1,3]])
         it "doesn't find a CNF for f with 1 extra variable and 2 allowed literals" $ do
-            makeCnf 3 f 1 2 `shouldReturn` Nothing
+            makeCnf 3 f 1 (clauses 4) 2 `shouldReturn` Nothing
         it "finds a CNF for g with 1 extra variable and 1 allowed literal" $ do
-            makeCnf 1 g 1 1 `shouldReturn` Just (cnf [[-1]])
+            makeCnf 1 g 1 (clauses 2) 1 `shouldReturn` Just (cnf [[-1]])
         it "finds an empty CNF for h" $ do
-            makeCnf 0 h 1 0 `shouldReturn` Just (cnf [])
+            makeCnf 0 h 1 (clauses 1) 0 `shouldReturn` Just (cnf [])
 
     describe "table" $ do
         let (x:y:_) = variableNumbers
