@@ -68,11 +68,12 @@ instance Show Table where
             cellWidth = length sep + numVars
             matrixRows = map (printRow cellWidth) rows
             rowStrings = map (\(a,r) -> a ++ sep ++ r) $ zip assignmentStrings matrixRows
-            (nc,na,good) = redundancy table
-            neverCoverInfo = show (Set.size nc) ++ " clauses don't cover anything:\n" ++ printClauseSet numVars nc
-            neverAllowedInfo = show (Set.size na) ++ " clauses cover too much:\n"  ++ printClauseSet numVars na
-            goodClausesInfo = show (Set.size good) ++ " clauses are candidates:\n" ++ printClauseSet numVars good
-        in unlines $ header : divideLine : rowStrings ++ ["", neverCoverInfo, "", neverAllowedInfo, "", goodClausesInfo]
+            --(nc,na,good) = redundancy table
+            --neverCoverInfo = show (Set.size nc) ++ " clauses don't cover anything good:\n" ++ printClauseSet numVars nc
+            --neverAllowedInfo = show (Set.size na) ++ " clauses cover too much:\n"  ++ printClauseSet numVars na
+            --goodClausesInfo = show (Set.size good) ++ " clauses are candidates:\n" ++ printClauseSet numVars good
+            --redundancyInfo = ["", neverCoverInfo, "", neverAllowedInfo, "", goodClausesInfo]
+        in unlines $ header : divideLine : rowStrings
         where 
               printAssignment = map (\b -> if b then '1' else '0')
               printClauseSet numVars cs = intercalate ", " (map (printClause numVars) $ Set.toAscList cs)

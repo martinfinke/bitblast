@@ -5,6 +5,7 @@ import Formula
 import LimpCBCInterface
 import MinimizeFormula
 import NormalForm
+import ParseFormula
 import QmcCpp
 import QmcTypes
 import SatchmoInterface
@@ -65,6 +66,8 @@ smallestWorthExtra numVars = do
             putStrLn $ "It's worth introducing an extra variable for this formula:"
             print f
 
+
+xor = odd . length . filter id
 
 ---- ((0 || 1 || 2) && (0 || -1 || 2) && (0 || -1 || -2) && (-0 || 1 || 2) && (-0 || 1 || -2))
 --smallestWorthExtra = And [
