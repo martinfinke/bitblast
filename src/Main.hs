@@ -38,7 +38,10 @@ testF = And [Or [Not x0, x2, x3], Or [Not x0, x1, x3], Or [Not x0, x1, x2], Or [
 main = do
     args <- getArgs
     let mode = args!!0
-    if mode == "min" then minimize args else worthExtraVars args
+    case mode of
+        "min" -> minimize args
+        "table" -> table args
+        _ -> worthExtraVars args
     where minimize args = do
             let circuitType = args!!1
             let numBits = read (args!!2)
@@ -52,6 +55,20 @@ main = do
             optimized <- minimizeTruthBased extraVars circuit
             putStrLn $ printf "Smallest formula for k=%d:" extraVars
             putStrLn $ show optimized
+          table args = do
+            let circuitType = args!!1
+            let numBits = read (args!!2)
+            let circuit
+                    | circuitType == "add_forbid" = fst $ nBitAddition Forbid numBits
+                    | circuitType == "add_dontcare" = fst $ nBitAddition DontCare numBits
+                    | circuitType == "mul_forbid" = getFormula $ multiplication Forbid numBits
+                    | circuitType == "mul_dontcare" = getFormula $ multiplication DontCare numBits
+            let extraVars = read (args!!3)
+            let clauseMode = read (args!!4) :: Bool
+            putStrLn $ printf "Creating table for %s (%d bit)..." circuitType numBits
+            let table = (if clauseMode == True then toTableQmc else toTable) extraVars circuit
+            putStrLn "Table Info:"
+            putStrLn (tableInfo table)
           worthExtraVars args = do
             let numVars = read $ args!!1
             smallestWorthExtra numVars
