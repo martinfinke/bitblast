@@ -59,8 +59,9 @@ data Table = Table [Assignment] [Clause] [(Bool, [Bool])]
 
 -- Example:     table 2 (\[a,b] -> a || (a==b)) 1
 table :: Int -> (Assignment -> Bool) -> Int -> Table
-table numVars f numExtraVars =
-    let cls = clauses (numVars+numExtraVars) :: [Clause]
+table = tableWith defaultOptions
+tableWith opts numVars f numExtraVars =
+    let cls = callClauseProvider opts f numVars numExtraVars
         xys = [x ++ y | x <- assignments numVars, y <- assignments numExtraVars] :: [Assignment]
         m = [(f (take numVars xy), [clause `covers` xy | clause <- cls]) | xy <- xys]
     in Table xys cls m
@@ -81,7 +82,7 @@ instance Show Table where
             --neverAllowedInfo = show (Set.size na) ++ " clauses cover too much:\n"  ++ printClauseSet numVars na
             --goodClausesInfo = show (Set.size good) ++ " clauses are candidates:\n" ++ printClauseSet numVars good
             --redundancyInfo = ["", neverCoverInfo, "", neverAllowedInfo, "", goodClausesInfo]
-        in unlines $ header : divideLine : rowStrings
+        in unlines $ header : divideLine : rowStrings ++ [tableInfo table]
         where 
               printAssignment = map (\b -> if b then '1' else '0')
               printClauseSet numVars cs = intercalate ", " (map (printClause numVars) $ Set.toAscList cs)
@@ -89,6 +90,13 @@ instance Show Table where
               printCell outputIsTrue b
                 | b = if outputIsTrue then "X " else "OK"
                 | otherwise = "  "
+
+tableInfo :: Table -> String
+tableInfo (Table assignments clauses _) =
+    unlines [
+        (show . length) assignments ++ " assignments",
+        (show . length) clauses ++ " clauses"
+        ]
 
 printClause :: Int -> Clause -> String
 printClause numVars (Clause lits) = map (printLiteral lits) [1..numVars]
@@ -175,10 +183,7 @@ optimizeWith options numVars f numExtraVars = do
     case maybeSolution of
         Nothing -> error "No solution."
         Just cnf -> return cnf
-    where allAssignments = assignments (numVars+numExtraVars)
-          ones = filter (f . take numVars) allAssignments
-          zeros = filter (not . f . take numVars) allAssignments
-          cls = (clauseProvider options) (numVars+numExtraVars) ones zeros
+    where cls = callClauseProvider options f numVars numExtraVars
           opt maxNumLiterals = do
             solution <- makeCnf numVars f numExtraVars cls maxNumLiterals
             solutionOrBetter <- case solution of
@@ -197,6 +202,12 @@ optimizeWith options numVars f numExtraVars = do
                     if numClauses > 0 then improve else return . Just $ CNF clauses
             return solutionOrBetter
 
+callClauseProvider :: Options -> (Assignment -> Bool) -> Int -> Int -> [Clause]
+callClauseProvider options f numVars numExtraVars =
+    let allAssignments = assignments (numVars+numExtraVars)
+        ones = filter (f . take numVars) allAssignments
+        zeros = filter (not . f . take numVars) allAssignments
+    in (clauseProvider options) (numVars+numExtraVars) ones zeros
 
 numLiterals :: CNF -> Int
 numLiterals (CNF clauses) = sum $ map (\(Clause lits) -> length lits) clauses

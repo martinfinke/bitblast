@@ -2,6 +2,7 @@ module TruthBased(
                   minimizeTruthBased,
                   minimizeTruthBasedQmc,
                   toTable,
+                  toTableQmc,
                   toCoreFormula,
                   fromCoreCNF,
                   toBitVector,
@@ -30,7 +31,10 @@ minimizeTruthBasedWith options numExtraVars f =
     fmap (fromCoreCNF $ variables f ++ newVars numExtraVars f) $ common numExtraVars f (Core.optimizeWith options)
 
 toTable :: Int -> Formula -> Core.Table
-toTable numExtraVars f = common numExtraVars f Core.table
+toTable = toTableWith Core.defaultOptions
+toTableQmc = toTableWith opts
+    where opts = Core.defaultOptions{Core.clauseProvider=modifiedQmcClauseProvider}
+toTableWith opts numExtraVars f = common numExtraVars f (Core.tableWith opts)
 
 common numExtraVars f operation =
     let numVars = length (variables f)
