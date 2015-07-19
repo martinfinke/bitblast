@@ -56,5 +56,3 @@ spec = do
             fromQmTerm 4 (fromString "----") `shouldBe` Clause []
         it "converts a true assignment with 1 variable to a clause" $ do
             fromQmTerm 3 (bitVectorToQmTerm $ toBitVector [False, False, True]) `shouldBe` Clause (map Lit [1,2,-3])
-
-            

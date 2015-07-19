@@ -6,7 +6,7 @@ import qualified Data.Map as M
 import Data.Maybe
 import Control.Monad
 import Control.Applicative
-import Data.List(intercalate, elemIndices)
+import Data.List(intercalate, elemIndices, sort)
 
 import Satchmo.SAT.Mini
 import Satchmo.Code
@@ -61,7 +61,7 @@ data Table = Table [Assignment] [Clause] [(Bool, [Bool])]
 table :: Int -> (Assignment -> Bool) -> Int -> Table
 table = tableWith defaultOptions
 tableWith opts numVars f numExtraVars =
-    let cls = callClauseProvider opts f numVars numExtraVars
+    let cls = sort $ callClauseProvider opts f numVars numExtraVars
         xys = [x ++ y | x <- assignments numVars, y <- assignments numExtraVars] :: [Assignment]
         m = [(f (take numVars xy), [clause `covers` xy | clause <- cls]) | xy <- xys]
     in Table xys cls m
