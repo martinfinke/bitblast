@@ -2,6 +2,9 @@ module TruthBasedCoreSpec where
 
 import SpecHelper
 import TruthBasedCore
+import TruthBased
+import Formula
+import qualified Variable as V
 
 
 cls = Clause . map Lit
@@ -96,3 +99,16 @@ spec = do
                         (True, [False, False, False, False, True, True, False, True, True])
                         ]
                 table 1 f 1 `shouldBe` Table expectedAssignments expectedClauses expectedRows
+
+    describe "illegalClauses" $ do
+        let [x1,x2,x3] = map Atom $ V.makeVars 3
+        it "works for an empty formula that is always True" $ do
+            illegalClauses 0 (toTable 1 $ And []) `shouldBe` [Clause []]
+        it "works for an empty formula that is always False" $ do
+            illegalClauses 0 (toTable 2 $ And [Or []]) `shouldBe` []
+        it "works for a formula with a single clause containing a single literal" $ do
+            illegalClauses 1 (toTable 3 x1) `shouldBe` [Clause [lit 1 False], Clause []]
+        it "works for an And over two variables" $ do
+            illegalClauses 2 (toTable 2 $ And [x1,x2]) `shouldBe` [Clause [lit 1 False, lit 2 False], Clause [lit 1 False], Clause [lit 2 False], Clause []]
+
+            

@@ -61,7 +61,7 @@ data Table = Table [Assignment] [Clause] [(Bool, [Bool])]
 table :: Int -> (Assignment -> Bool) -> Int -> Table
 table = tableWith defaultOptions
 tableWith opts numVars f numExtraVars =
-    let cls = sort $ callClauseProvider opts f numVars numExtraVars
+    let cls = callClauseProvider opts f numVars numExtraVars
         xys = [x ++ y | x <- assignments numVars, y <- assignments numExtraVars] :: [Assignment]
         m = [(f (take numVars xy), [clause `covers` xy | clause <- cls]) | xy <- xys]
     in Table xys cls m
@@ -77,11 +77,6 @@ instance Show Table where
             cellWidth = length sep + numVars
             matrixRows = map (printRow cellWidth) rows
             rowStrings = map (\(a,r) -> a ++ sep ++ r) $ zip assignmentStrings matrixRows
-            --(nc,na,good) = redundancy table
-            --neverCoverInfo = show (Set.size nc) ++ " clauses don't cover anything good:\n" ++ printClauseSet numVars nc
-            --neverAllowedInfo = show (Set.size na) ++ " clauses cover too much:\n"  ++ printClauseSet numVars na
-            --goodClausesInfo = show (Set.size good) ++ " clauses are candidates:\n" ++ printClauseSet numVars good
-            --redundancyInfo = ["", neverCoverInfo, "", neverAllowedInfo, "", goodClausesInfo]
         in unlines $ header : divideLine : rowStrings ++ [tableInfo table]
         where 
               printAssignment = map (\b -> if b then '1' else '0')
@@ -105,31 +100,15 @@ printClause numVars (Clause lits) = map (printLiteral lits) [1..numVars]
                 | lit i False `elem` lits = '0'
                 | otherwise = '-'
 
-neverCover :: Table -> Set.Set Clause
-neverCover (Table _ clauses rows) =
-    let allClauses = Set.fromList clauses
-    in Set.difference allClauses $ foldr containsAllowedCover Set.empty rows
-    where containsAllowedCover (b, row) accum
-            | b = accum
-            | otherwise =
-                let is = elemIndices True row
-                in Set.union (Set.fromList $ indexed is clauses) accum
-
-notAllowed :: Table -> Set.Set Clause
-notAllowed (Table _ clauses rows) = foldr containsForbiddenCover Set.empty rows
-    where containsForbiddenCover (b, row) accum
-            | not b = accum
-            | otherwise =
-                let is = elemIndices True row
-                in Set.union (Set.fromList $ indexed is clauses) accum
-
--- | Returns 1. clauses that don't cover anything, 2. clauses that cover too much, 3. the remainder, i.e. the clauses that should be used to look for a minimum cover.
-redundancy :: Table -> (Set.Set Clause, Set.Set Clause, Set.Set Clause)
-redundancy table@(Table _ clauses _) =
-    let allClauses = Set.fromList clauses
-        nc = neverCover table
-        na = notAllowed table
-    in (nc, na, (allClauses Set.\\ nc) Set.\\ na)
+illegalClauses :: Int -> Table -> [Clause]
+illegalClauses numVars (Table assignments clauses rows) =
+    let numExtraVars = (length $ head assignments) - numVars
+        coveredTrues clause = map snd $ filter (\((output,_), a) -> output && clause `covers` a) $ zip rows assignments :: [Assignment]
+        byPrefix trues = foldr (\a m -> M.insertWith (++) (take numVars a) [a] m) M.empty trues :: M.Map Assignment [Assignment]
+        addIfIllegal clause accum = if any ((==) (2^numExtraVars) . length) . map snd . M.toList . byPrefix . coveredTrues $ clause
+                                    then clause:accum
+                                    else accum
+    in foldr addIfIllegal [] clauses
 
 indexed :: [Int] -> [a] -> [a]
 indexed is list = foldr (\(i,e) rest -> if i `elem` is then e:rest else rest) [] $ zip [0..] list
