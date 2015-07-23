@@ -25,7 +25,7 @@ minimizeTruthBased, minimizeTruthBasedQmc :: Int -> Formula -> IO Formula
 minimizeTruthBased = minimizeTruthBasedWith Core.defaultOptions
 
 minimizeTruthBasedQmc = minimizeTruthBasedWith opts
-    where opts = Core.defaultOptions{Core.clauseProvider=modifiedQmcClauseProvider}
+    where opts = Core.defaultOptions{Core.clauseProvider=modifiedQmcClauseProvider, Core.removeIllegals=True}
 
 minimizeTruthBasedWith options numExtraVars f =
     fmap (fromCoreCNF $ variables f ++ newVars numExtraVars f) $ common numExtraVars f (Core.optimizeWith options)
@@ -33,7 +33,7 @@ minimizeTruthBasedWith options numExtraVars f =
 toTable :: Int -> Formula -> Core.Table
 toTable = toTableWith Core.defaultOptions
 toTableQmc = toTableWith opts
-    where opts = Core.defaultOptions{Core.clauseProvider=modifiedQmcClauseProvider}
+    where opts = Core.defaultOptions{Core.clauseProvider=modifiedQmcClauseProvider, Core.removeIllegals=True}
 toTableWith opts numExtraVars f = common numExtraVars f (Core.tableWith opts)
 
 common numExtraVars f operation =

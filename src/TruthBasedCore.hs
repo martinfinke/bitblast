@@ -25,12 +25,14 @@ newtype CNF = CNF [Clause]
 type Assignment = [Bool]
 
 data Options = Options {
-    clauseProvider :: Int -> [Assignment] -> [Assignment] -> [Clause]
+    clauseProvider :: Int -> [Assignment] -> [Assignment] -> [Clause],
+    removeIllegals :: Bool
     }
 
 defaultOptions :: Options
 defaultOptions = Options {
-    clauseProvider = \numVars _ _ -> clauses numVars
+    clauseProvider = \numVars _ _ -> clauses numVars,
+    removeIllegals = False
     }
 
 lit :: Int -> Bool -> Lit
@@ -61,10 +63,11 @@ data Table = Table [Assignment] [Clause] [(Bool, [Bool])]
 table :: Int -> (Assignment -> Bool) -> Int -> Table
 table = tableWith defaultOptions
 tableWith opts numVars f numExtraVars =
-    let cls = callClauseProvider opts f numVars numExtraVars
+    let allClauses = callClauseProvider opts f numVars numExtraVars
         xys = [x ++ y | x <- assignments numVars, y <- assignments numExtraVars] :: [Assignment]
-        m = [(f (take numVars xy), [clause `covers` xy | clause <- cls]) | xy <- xys]
-    in Table xys cls m
+        m = [(f (take numVars xy), [clause `covers` xy | clause <- allClauses]) | xy <- xys]
+        table = Table xys allClauses m
+    in if removeIllegals opts then removeIllegalClauses numVars table else table
 
 instance Show Table where
     show table@(Table assignments clauses rows) =
@@ -109,6 +112,12 @@ illegalClauses numVars (Table assignments clauses rows) =
                                     then clause:accum
                                     else accum
     in foldr addIfIllegal [] clauses
+
+removeIllegalClauses :: Int -> Table -> Table
+removeIllegalClauses numVars table@(Table assignments clauses rows) =
+    let illegals = Set.fromList $ illegalClauses numVars table
+        filteredClauses = Set.fromList clauses `Set.difference` illegals
+    in Table assignments (Set.toList filteredClauses) rows
 
 indexed :: [Int] -> [a] -> [a]
 indexed is list = foldr (\(i,e) rest -> if i `elem` is then e:rest else rest) [] $ zip [0..] list
@@ -162,7 +171,8 @@ optimizeWith options numVars f numExtraVars = do
     case maybeSolution of
         Nothing -> error "No solution."
         Just cnf -> return cnf
-    where cls = callClauseProvider options f numVars numExtraVars
+    where table = tableWith options numVars f numExtraVars
+          (Table _ cls _) = if removeIllegals options then removeIllegalClauses numVars table else table
           opt maxNumLiterals = do
             solution <- makeCnf numVars f numExtraVars cls maxNumLiterals
             solutionOrBetter <- case solution of
