@@ -6,7 +6,10 @@ import qualified Data.Map as M
 import Data.Maybe
 import Control.Monad
 import Control.Applicative
-import Data.List(intercalate, elemIndices, sort)
+import Data.List(intercalate, elemIndices, sort, nub, sortBy)
+import Data.Ord(comparing)
+import Control.Concurrent
+import Data.Time.Clock
 
 import Satchmo.SAT.Mini
 import Satchmo.Code
@@ -26,13 +29,17 @@ type Assignment = [Bool]
 
 data Options = Options {
     clauseProvider :: Int -> [Assignment] -> [Assignment] -> [Clause],
-    removeIllegals :: Bool
+    removeIllegals :: Bool,
+    gracePeriod :: Float,  -- ^ When a thread finds a solution, how long it should wait (as a fraction of the time it ran) before cancelling other threads which try to find better solutions
+    numThreads :: Int
     }
 
 defaultOptions :: Options
 defaultOptions = Options {
     clauseProvider = \numVars _ _ -> clauses numVars,
-    removeIllegals = False
+    removeIllegals = False,
+    gracePeriod = 0.5,
+    numThreads = 10
     }
 
 lit :: Int -> Bool -> Lit
@@ -188,7 +195,7 @@ optimizeWith options numVars f numExtraVars = do
                             if isJust result
                                 then return result
                                 else return solution
-                    if numClauses > 0 then improve else return . Just $ CNF clauses
+                    if numLits > 0 then improve else return . Just $ CNF clauses
             return solutionOrBetter
 
 callClauseProvider :: Options -> (Assignment -> Bool) -> Int -> Int -> [Clause]
@@ -200,3 +207,76 @@ callClauseProvider options f numVars numExtraVars =
 
 numLiterals :: CNF -> Int
 numLiterals (CNF clauses) = sum $ map (\(Clause lits) -> length lits) clauses
+
+data Result = Solution CNF | NoSolution | Cancelled
+
+optimizeParallel :: Options
+                 -> Int -- ^ The number of literals in the formula you already have (from Quine-McCluskey, or from before the system crashed). Pass (maxBound::Int) to be safe, but slow.
+                 -> Int -- ^ Number of variables in the formula
+                 -> (Assignment -> Bool) -- ^ The formula to find a minimal CNF for
+                 -> Int -- ^ Number of extra variables
+                 -> IO (Maybe CNF)
+optimizeParallel options bestKnownValue numVars f numExtraVars =
+    let table = tableWith options numVars f numExtraVars
+        (Table _ cls _) = if removeIllegals options
+                            then removeIllegalClauses numVars table
+                            else table
+        opt bestKnown = do
+            putStrLn $ "Searching solution with < " ++ show bestKnown ++ " literals"
+            let bounds = sort $ attempts (numThreads options) bestKnown
+            mvars <- forM bounds (const newEmptyMVar)
+            threadIds <- forM (zip [0..] bounds) $ \(i, maxNumLits) -> do
+                forkIO $ do
+                    startTime <- getCurrentTime
+                    solution <- makeCnf numVars f numExtraVars cls maxNumLits
+                    endTime <- getCurrentTime
+                    let elapsedMicroseconds = fromIntegral . round $ diffUTCTime endTime startTime * 10^6
+                    case solution of
+                        Nothing -> do
+                            putStrLn $ "Didn't find a solution with " ++ show maxNumLits ++ " literals"
+                            putMVar (mvars!!i) NoSolution
+                            -- There can't be a better solution, so cancel threads that are looking for one:
+                            let lower = take i mvars
+                            forM_ lower (flip putMVar Cancelled)
+                        Just cnf ->do
+                            -- We don't need worse solutions, so cancel the threads that are looking for one:
+                            let higher = drop (i+1) mvars
+                            forM_ higher (flip putMVar Cancelled)
+                            -- Return our own result:
+                            putStrLn $ "Found solution with " ++ show (numLiterals cnf) ++ " literals"
+                            putMVar (mvars!!i) (Solution cnf)
+                            -- Wait some time, then cancel threads that are looking for better solutions:
+                            threadDelay $ round ((gracePeriod options)*elapsedMicroseconds)
+                            let lower = take i mvars
+                            putStrLn $ "Cancelling lower threads after grace period"
+                            forM_ lower $ \mvar -> do
+                                stillNothing <- isEmptyMVar mvar
+                                guard stillNothing
+                                putMVar mvar Cancelled
+            results <- forM mvars readMVar
+            putStrLn $ "Collected results for " ++ show bestKnown ++ " literals"
+            solutions <- fmap catMaybes $ forM (zip results threadIds) $ \(result,threadId) -> case result of
+                NoSolution -> return Nothing
+                Solution cnf -> return $ Just cnf
+                Cancelled -> do killThread threadId; return Nothing
+            case sortBy (comparing numLiterals) solutions of
+                [] -> return Nothing
+                (sol:_) -> do
+                    maybeBetter <- opt (numLiterals sol)
+                    return $ case maybeBetter of
+                        Nothing -> Just sol
+                        Just better -> Just better
+
+    in opt bestKnownValue
+        
+    
+attempts :: Int -> Int -> [Int]
+attempts num best
+    | num == 0 = []
+    | best <= 0 = []
+    | otherwise = nub $ [floor $ low + i*step |  i <- [0..num'-2::Float]] ++ [best-1]
+    where low = fromIntegral best / 2 :: Float
+          high = fromIntegral $ best - 1
+          num' = fromIntegral num
+          range = (high - low)
+          step = range / (num'-1)

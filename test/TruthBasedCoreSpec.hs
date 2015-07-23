@@ -111,4 +111,25 @@ spec = do
         it "works for an And over two variables" $ do
             illegalClauses 2 (toTable 2 $ And [x1,x2]) `shouldBe` [Clause [lit 1 False, lit 2 False], Clause [lit 1 False], Clause [lit 2 False], Clause []]
 
+    describe "attemps" $ do
+        it "behaves correctly if there's too many attemps for the number range" $ do
+            attempts 4 1 `shouldBe` [0]
+            attempts 4 2 `shouldBe` [1]
+            attempts 4 3 `shouldBe` [1,2]
+            attempts 1 0 `shouldBe` []
+        it "always returns best-1 if num=1" $ do
+            property $ \i -> if i > 0
+                then attempts 1 i `shouldBe` [i-1]
+                else attempts 1 i `shouldBe` []
+        it "never returns negative values" $ do
+            property $ \(OneHundredOrLess i) (OneHundredOrLess j) -> any (< 0) (attempts i j) `shouldBe` False
+        it "works for a big even number" $ do
+            attempts 2 100 `shouldBe` [50,99]
+            attempts 3 100 `shouldBe` [50,74,99]
+            attempts 4 100 `shouldBe` [50,66,82,99]
+        it "works for a big odd number" $ do
+            attempts 1 99 `shouldBe` [98]
+            attempts 2 99 `shouldBe` [49,98]
+            attempts 3 99 `shouldBe` [49,73,98]
+            
             
