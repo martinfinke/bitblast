@@ -52,9 +52,10 @@ main = do
                     | circuitType == "mul_dontcare" = getFormula $ multiplication DontCare numBits
             let extraVars = read (args!!3)
             putStrLn $ printf "Optimizing %s (%d bit)..." circuitType numBits
-            optimized <- minimizeTruthBased extraVars circuit
+            optimized <- minimizeTruthBasedParallel extraVars circuit
             putStrLn $ printf "Smallest formula for k=%d:" extraVars
-            putStrLn $ show optimized
+            print optimized
+            print $ getStats optimized
           table args = do
             let circuitType = args!!1
             let numBits = read (args!!2)
