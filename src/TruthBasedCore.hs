@@ -6,10 +6,11 @@ import qualified Data.Map as M
 import Data.Maybe
 import Control.Monad
 import Control.Applicative
-import Data.List(intercalate, elemIndices, sort, nub, sortBy)
+import Data.List(intercalate, elemIndices, sort, nub, sortBy, maximumBy)
 import Data.Ord(comparing)
 import Control.Concurrent
 import Data.Time.Clock
+import qualified Control.Concurrent.Lock as Lock
 
 import Satchmo.SAT.Mini
 import Satchmo.Code
@@ -209,6 +210,7 @@ numLiterals :: CNF -> Int
 numLiterals (CNF clauses) = sum $ map (\(Clause lits) -> length lits) clauses
 
 data Result = Solution CNF | NoSolution | Cancelled
+    deriving(Eq)
 
 optimizeParallel :: Options
                  -> Int -- ^ The number of literals in the formula you already have (from Quine-McCluskey, or from before the system crashed). Pass (maxBound::Int) to be safe, but slow.
@@ -221,61 +223,86 @@ optimizeParallel options bestKnownValue numVars f numExtraVars =
         (Table _ cls _) = if removeIllegals options
                             then removeIllegalClauses numVars table
                             else table
-        opt bestKnown = do
-            putStrLn $ "Searching solution with < " ++ show bestKnown ++ " literals"
-            let bounds = sort $ attempts (numThreads options) bestKnown
-            mvars <- forM bounds (const newEmptyMVar)
-            threadIds <- forM (zip [0..] bounds) $ \(i, maxNumLits) -> do
-                forkIO $ do
-                    startTime <- getCurrentTime
-                    solution <- makeCnf numVars f numExtraVars cls maxNumLits
-                    endTime <- getCurrentTime
-                    let elapsedMicroseconds = fromIntegral . round $ diffUTCTime endTime startTime * 10^6
-                    case solution of
-                        Nothing -> do
-                            putStrLn $ "Didn't find a solution with " ++ show maxNumLits ++ " literals"
-                            putMVar (mvars!!i) NoSolution
-                            -- There can't be a better solution, so cancel threads that are looking for one:
-                            let lower = take i mvars
-                            forM_ lower (flip putMVar Cancelled)
-                        Just cnf ->do
-                            -- We don't need worse solutions, so cancel the threads that are looking for one:
-                            let higher = drop (i+1) mvars
-                            forM_ higher (flip putMVar Cancelled)
-                            -- Return our own result:
-                            putStrLn $ "Found solution with " ++ show (numLiterals cnf) ++ " literals"
-                            putMVar (mvars!!i) (Solution cnf)
-                            -- Wait some time, then cancel threads that are looking for better solutions:
-                            threadDelay $ round ((gracePeriod options)*elapsedMicroseconds)
-                            let lower = take i mvars
-                            putStrLn $ "Cancelling lower threads after grace period"
-                            forM_ lower $ \mvar -> do
-                                stillNothing <- isEmptyMVar mvar
-                                guard stillNothing
-                                putMVar mvar Cancelled
-            results <- forM mvars readMVar
-            putStrLn $ "Collected results for " ++ show bestKnown ++ " literals"
-            solutions <- fmap catMaybes $ forM (zip results threadIds) $ \(result,threadId) -> case result of
-                NoSolution -> return Nothing
-                Solution cnf -> return $ Just cnf
-                Cancelled -> do killThread threadId; return Nothing
-            case sortBy (comparing numLiterals) solutions of
-                [] -> return Nothing
-                (sol:_) -> do
-                    maybeBetter <- opt (numLiterals sol)
-                    return $ case maybeBetter of
-                        Nothing -> Just sol
-                        Just better -> Just better
+        opt highestKnownFail bestKnownSolution
+            | highestKnownFail >= bestKnownSolution-1 = do
+                putStrLn $ show highestKnownFail ++ " >= " ++ show (bestKnownSolution-1) ++ ". No better solution possible."
+                return Nothing
+            | otherwise = do
+                putStrLn $ "Searching solution with " ++ show (highestKnownFail+1) ++ " <= numLiterals < " ++ show bestKnownSolution
+                let bounds = sort $ attempts (numThreads options) (highestKnownFail+1) bestKnownSolution
+                mvars <- forM bounds (const newEmptyMVar)
+                printOutputLock <- Lock.new
+                let atomPutStrLn str = Lock.with printOutputLock $ do
+                        t <- getCurrentTime
+                        putStrLn $ show t ++ ": " ++ str
+                threadIds <- forM (zip [0..] bounds) $ \(i, maxNumLits) -> do
+                    forkIO $ do
+                        atomPutStrLn $ "Thread " ++ show i ++  " trying <= " ++ show maxNumLits ++ " literals"
+                        startTime <- getCurrentTime
+                        solution <- makeCnf numVars f numExtraVars cls maxNumLits
+                        endTime <- getCurrentTime
+                        let elapsedMicroseconds = fromIntegral . round $ diffUTCTime endTime startTime * 10^6
+                        case solution of
+                            Nothing -> do
+                                atomPutStrLn $ "Thread " ++ show i ++  " didn't find a solution with " ++ show maxNumLits ++ " literals"
+                                tryPutMVar (mvars!!i) NoSolution
+                                -- There can't be a better solution, so cancel threads that are still looking for one:
+                                let lower = take i mvars
+                                cancelledLower <- forM lower (flip tryPutMVar Cancelled)
+                                let indices = elemIndices True cancelledLower
+                                let cancelledLowerBounds = map ((!!) bounds) indices
+                                when (not . null $ cancelledLowerBounds) $ atomPutStrLn $ "Marking threads trying lower maxLiterals: " ++ show cancelledLowerBounds ++ " to be killed"
+                            Just cnf ->do
+                                atomPutStrLn $ "Thread " ++ show i ++  " found solution with " ++ show (numLiterals cnf) ++ " literals"
+                                -- We don't need worse solutions, so cancel the threads that are looking for one:
+                                let higher = drop (i+1) mvars
+                                cancelledHigher <- forM higher (flip tryPutMVar Cancelled)
+                                let indices = elemIndices True cancelledHigher
+                                let cancelledHigherBounds = map ((!!) bounds) indices
+                                when (not . null $ cancelledHigherBounds) $ atomPutStrLn $ "Marking threads trying higher maxLiterals: " ++ show cancelledHigherBounds ++ " to be killed"
+                                -- Return our own result:
+                                tryPutMVar (mvars!!i) (Solution cnf)
+                                 -- Wait some time, then cancel threads that are looking for better solutions:
+                                let delay = round ((gracePeriod options)*elapsedMicroseconds)
+                                threadDelay delay
+                                let lower = take i mvars
+                                cancelledLower <- forM lower $ flip tryPutMVar Cancelled
+                                let indices = elemIndices True cancelledLower
+                                let cancelledLowerBounds = map ((!!) bounds) indices
+                                when (not . null $ cancelledLowerBounds) $ atomPutStrLn $ "Marked threads trying lower maxLiterals: " ++ show cancelledLowerBounds ++ " to be killed after gracePeriod=" ++ (show $ delay `div` 10^6) ++ "s"
+                -- For each thread started, we have to start another thread that's waiting for its result. This is because we want to react early to a "Cancelled" result (by killing the corresponding thread). If we just wait on mvars using forM, a still-empty mvar early in the list would hinder us from cancelling "Cancelled" results further into the list.
+                results <- forM (zip3 mvars threadIds [0..]) $ \(mvar,threadId, i) -> do
+                    result <- newEmptyMVar
+                    forkIO $ do
+                        res <- readMVar mvar
+                        when (res == Cancelled) $ do
+                            killThread threadId
+                            atomPutStrLn $ "Thread " ++ show i ++ " killed."
+                        putMVar result res
+                    readMVar result
+                atomPutStrLn $ "Collected results for < " ++ show bestKnownSolution ++ " literals"
+                solutions <- fmap catMaybes $ forM results $ \result -> case result of
+                    Solution cnf -> return $ Just cnf
+                    _ -> return Nothing
 
-    in opt bestKnownValue
+                case sortBy (comparing numLiterals) solutions of
+                    [] -> return Nothing
+                    (sol:_) -> do
+                        let highestFail = fst $ maximumBy (comparing fst) $ filter ((==) NoSolution . snd) $ zip bounds results :: Int
+                        maybeBetter <- opt highestFail (numLiterals sol)
+                        return $ case maybeBetter of
+                            Nothing -> Just sol
+                            Just better -> Just better
+    -- There's never a solution with (-1) literals, so initially this is the highest known fail:
+    in opt (-1) bestKnownValue
         
     
-attempts :: Int -> Int -> [Int]
-attempts num best
+attempts :: Int -> Int -> Int -> [Int]
+attempts num lowest best
     | num == 0 = []
     | best <= 0 = []
     | otherwise = nub $ [floor $ low + i*step |  i <- [0..num'-2::Float]] ++ [best-1]
-    where low = fromIntegral best / 2 :: Float
+    where low = max (fromIntegral lowest) (fromIntegral best / 2) :: Float
           high = fromIntegral $ best - 1
           num' = fromIntegral num
           range = (high - low)

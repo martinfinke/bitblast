@@ -15,5 +15,5 @@ qmccpp-dynamic:
 test: qmccpp-static
 	cabal test
 
-ghci: qmccpp-dynamic
+ghci:
 	cabal exec -- ghci $(MOD) -isrc -itest -lqmc-dynamic -Lqmc-cpp
