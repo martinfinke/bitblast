@@ -259,3 +259,24 @@ spec = do
             let expectedTable = setRow (setVar x1 True allFalse') False $ setRow allFalse' True emptyTable
             toTruthTable (Not $ Atom x1) `shouldBe` expectedTable
 
+    describe "toTree" $ do
+        let [x0,x1,x2,x3,x4,x5,x6,x7,x8,x9] = map Atom $ V.makeVars 10
+        it "Doesn't change a literal" $ do
+            toTree x0 `shouldBe` x0
+            toTree (Not x0) `shouldBe` Not x0
+        it "doesn't change an implication of atoms" $ do
+            let f = Implies x0 $ Not x1
+            toTree f `shouldBe` f
+        it "doesn't change an empty And" $ do
+            toTree (And []) `shouldBe` And []
+        it "unfolds an And with only one literal" $ do
+            toTree (And [x0]) `shouldBe` x0
+            toTree (And [Not x5]) `shouldBe` Not x5
+        it "doesn't change an And with two literals" $ do
+            toTree (And [x0,x2]) `shouldBe` And [x0,x2]
+        it "changes an And with three literals" $ do
+            toTree (And [x0,x1,x2]) `shouldBe` And [x0, And [x1,x2]]
+        it "changes an And containing an Or" $ do
+            toTree (And [Or [x1,x2,x3], x5, Not x4]) `shouldBe` And [Or [x1, Or [x2,x3]], And [x5, Not x4]]
+        it "produces only equivalent Formulas" $ do
+            property $ \f -> toTruthTable (toTree f) `shouldBe` toTruthTable f

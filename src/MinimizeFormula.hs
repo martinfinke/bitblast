@@ -83,8 +83,10 @@ minimizeWithNExtraVars numExtraVars f =
         optimized <- forM replaced $ \(TseitinFormula f newVars equivTerms) -> do
             And clauses <- minimizeFormula f
             equivClauses <- fmap (concat . map removeAnd) $ forM equivTerms minimizeFormula
-            return $ (And (clauses ++ equivClauses), newVars)
-        return $ minimumBy byNumLiterals optimized
+            return (And (clauses ++ equivClauses), newVars, equivTerms)
+        let (f,vars,equivs) = minimumBy (comparing $ \(f,_,_) -> numLiterals $ getStats f) optimized
+        print equivs
+        return (f,vars)
     where removeAnd (And fs) = fs
 
 minimizeWithExtraVarRange :: (Int,Int) -> Formula -> IO (Formula, [Variable])

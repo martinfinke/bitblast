@@ -8,7 +8,8 @@ module Formula (Formula(..),
                 possibleAssignments,
                 allBoolCombinations,
                 isLiteral,
-                isPositiveLiteral
+                isPositiveLiteral,
+                toTree
                 ) where
 
 import Variable hiding(eval)
@@ -91,3 +92,19 @@ isLiteral _ = False
 isPositiveLiteral :: Formula -> Bool
 isPositiveLiteral (Atom _) = True
 isPositiveLiteral _ = False
+
+toTree :: Formula -> Formula
+toTree formula = case formula of
+    Atom v -> formula
+    Not f -> Not (toTree f)
+    And fs -> treeify And fs
+    Or fs -> treeify Or fs
+    Implies premise conclusion -> Implies (toTree premise) (toTree conclusion)
+    Xor fs -> treeify Xor fs
+    -- Equiv can't be converted to a tree because it's not associative:
+    Equiv fs -> Equiv fs
+    where treeify op fs = case fs of
+            [] -> op []
+            (f:[]) -> f
+            (f:f':[]) -> op [toTree f, toTree f']
+            (f:fs) -> op [toTree f, treeify op fs]

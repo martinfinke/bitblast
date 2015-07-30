@@ -41,15 +41,12 @@ tseitinReplace varSet toReplaces formula =
     let result = tseitin varSet toReplaces formula
     in (And (modFormula result : equivTerms result), extraVars result)
 
-
-
-
 tseitin :: Set.Set Variable -> [Formula] -> Formula -> TseitinFormula
 tseitin varSet toReplaces formula
     | null toReplaces = TseitinFormula formula [] []
     | not (all (`containsOnlyVarsFrom` varSet) toReplaces) = error "The terms to replace must contain only variables from the variable set. Otherwise, the introduced extra variables might clash."
     | otherwise =
-    let hierarchical = reverse . concat . map Set.toList $ hierarchy (Set.fromList toReplaces)
+    let hierarchical = reverse . concatMap Set.toList $ hierarchy (Set.fromList toReplaces)
         newVars = take (length hierarchical) (newVariables varSet)
         withVariables = zip hierarchical newVars
         normalized = normalize withVariables
@@ -78,8 +75,9 @@ f1 `isChildOf` f2 =
     in fst $ findAndReplace f1 unusedVar f2
 
 containsOnlyVarsFrom :: Formula -> Set.Set Variable -> Bool
-f `containsOnlyVarsFrom` varSet = (variableSet f) `Set.isSubsetOf` varSet
+f `containsOnlyVarsFrom` varSet = variableSet f `Set.isSubsetOf` varSet
 
+-- | Orders a set of 'Formula's hierarchically. The first set of the result contains only formulas that do not appear as subtrees in any other formula of the input. The second set contains only formulas that do not appear in formulas from further into the list, and so on.
 hierarchy :: Set.Set Formula -> [Set.Set Formula]
 hierarchy remainingTerms
     | Set.null remainingTerms = []
