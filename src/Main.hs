@@ -48,8 +48,8 @@ main = do
             let circuit
                     | circuitType == "add_forbid" = fst $ nBitAddition Forbid numBits
                     | circuitType == "add_dontcare" = fst $ nBitAddition DontCare numBits
-                    | circuitType == "mul_forbid" = getFormula $ multiplication Forbid numBits
-                    | circuitType == "mul_dontcare" = getFormula $ multiplication DontCare numBits
+                    | circuitType == "mul_forbid" = getFormula .fst $ multiplication Forbid numBits
+                    | circuitType == "mul_dontcare" = getFormula .fst $ multiplication DontCare numBits
             let extraVars = read (args!!3)
             putStrLn $ printf "Optimizing %s (%d bit)..." circuitType numBits
             optimized <- minimizeTruthBasedParallel extraVars circuit
@@ -62,8 +62,8 @@ main = do
             let circuit
                     | circuitType == "add_forbid" = fst $ nBitAddition Forbid numBits
                     | circuitType == "add_dontcare" = fst $ nBitAddition DontCare numBits
-                    | circuitType == "mul_forbid" = getFormula $ multiplication Forbid numBits
-                    | circuitType == "mul_dontcare" = getFormula $ multiplication DontCare numBits
+                    | circuitType == "mul_forbid" = getFormula .fst $ multiplication Forbid numBits
+                    | circuitType == "mul_dontcare" = getFormula .fst $ multiplication DontCare numBits
             let extraVars = read (args!!3)
             let clauseMode = read (args!!4) :: Bool
             putStrLn $ printf "Creating table for %s (%d bit)..." circuitType numBits

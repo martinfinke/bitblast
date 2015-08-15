@@ -191,8 +191,8 @@ spec = do
     describe "multiplication" $ do
         describe "DontCare overflow mode" $ do
             let test numBits =
-                    let f = fst $ nBitMultiplication numBits
-                        g = getFormula $ multiplication DontCare numBits
+                    let f = fst $ nBitMultiplication DontCare numBits
+                        g = getFormula . fst $ multiplication DontCare numBits
                     in toTruthTable f `shouldBe` toTruthTable g
             it "returns an equivalent formula as nBitMultiplication (1 Bit)" $ do
                 test 1
@@ -202,7 +202,7 @@ spec = do
                 test 3
         describe "Forbid overflow mode" $ do
             let test numBits assignments expected =
-                    let f = getFormula $ multiplication Forbid numBits
+                    let f = getFormula . fst $ multiplication Forbid numBits
                         varSet = variableSet f
                     in forM_ assignments $ \str -> do
                         let a = assignmentFromString varSet str
@@ -217,3 +217,16 @@ spec = do
                     ] True
             it "is False for wrong calculations" $ do
                 test 2 ["010000", "100000", "110000", "000101"] False
+
+    describe "operation2" $ do
+        let test op numBits assignments expected =
+                let f = getFormula . fst $ operation2 op numBits
+                    varSet = variableSet f
+                in forM_ assignments $ \str -> do
+                    let a = assignmentFromString varSet str
+                    a `isModelOf` f `shouldBe` expected
+        it "creates the correct truth table for 1 bit" $ do
+            test (<) 1 ["10"] True
+            test (<) 1 ["00", "01", "11"] False
+            test (<=) 1 ["00", "10", "11"] True
+            test (<=) 1 ["01"] False

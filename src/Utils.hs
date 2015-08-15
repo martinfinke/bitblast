@@ -5,6 +5,9 @@ import qualified Data.Set as Set
 import Control.Monad
 import Control.Concurrent
 
+wrapIO3 :: (a -> b -> c -> d) -> a -> b -> c -> IO d
+wrapIO3 f a b c = do
+    return $ f a b c
 
 divideList :: Int -> [a] -> [[a]]
 divideList numSublists list =
