@@ -23,7 +23,6 @@ import System.Process(readProcess)
 import System.IO.Unsafe
 import Test.Hspec
 import Test.QuickCheck
-import Control.Parallel.Strategies
 
 data MinimizeFormulaOptions = MinimizeFormulaOptions {
     useSolver :: Int -> [QmTerm] -> [BitVector] -> IO [QmTerm],

@@ -11,6 +11,7 @@ import QmcTypes
 import SatchmoInterface
 import TruthBasedCore
 import TruthBased
+import TruthBasedApprox
 import Tseitin
 import TseitinSelect
 import Variable
@@ -52,7 +53,7 @@ main = do
                     | circuitType == "mul_dontcare" = getFormula .fst $ multiplication DontCare numBits
             let extraVars = read (args!!3)
             putStrLn $ printf "Optimizing %s (%d bit)..." circuitType numBits
-            optimized <- minimizeTruthBasedParallel extraVars circuit
+            optimized <- minimizeTruthBased extraVars circuit
             putStrLn $ printf "Smallest formula for k=%d:" extraVars
             print optimized
             print $ getStats optimized

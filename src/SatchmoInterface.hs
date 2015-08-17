@@ -47,7 +47,7 @@ runSatchmo numVars primes ones = do
 optimize :: SAT [Boolean] -> Int -> IO (Maybe [Bool])
 optimize base maxNumPrimes = do
     let problem = withAtMost base maxNumPrimes
-    solution <- solve problem
+    solution <- solveSilently problem
     solutionOrBetter <- case solution of
         Nothing -> do
             --putStrLn $ "Didn't find a solution with " ++ show maxNumPrimes ++ " primes."

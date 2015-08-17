@@ -1,15 +1,16 @@
 module TruthBased(
+                  bestOptions,
                   minimizeTruthBased,
                   minimizeTruthBasedQmc,
-                  minimizeTruthBasedParallel,
                   toTable,
+                  variables,
+                  newVars,
                   toTableQmc,
                   toCoreFormula,
                   fromCoreCNF,
                   toBitVector,
                   fromQmTerm,
-                  convertLiteral,
-                  test) where
+                  convertLiteral) where
 
 import Variable
 import Formula
@@ -32,13 +33,27 @@ bestOptions = Core.defaultOptions{
 }
 
 minimizeTruthBased, minimizeTruthBasedQmc :: Int -> Formula -> IO Formula
-minimizeTruthBased = minimizeTruthBasedWith Core.defaultOptions
+minimizeTruthBased = minimizeTruthBasedWith bestOptions
 
 minimizeTruthBasedQmc = minimizeTruthBasedWith opts
     where opts = Core.defaultOptions{Core.clauseProvider=modifiedQmcClauseProvider, Core.removeIllegals=True}
 
-minimizeTruthBasedWith options numExtraVars f =
-    fmap (fromCoreCNF $ variables f ++ newVars numExtraVars f) $ common numExtraVars f (Core.optimizeWith options)
+minimizeTruthBasedWith :: Core.Options -> Int -> Formula -> IO Formula
+minimizeTruthBasedWith options numExtraVars formula =
+    let vars = variables formula
+        numVars = length vars
+        f = toCoreFormula vars formula
+        table = Core.tableWith options numVars f numExtraVars
+        (Core.Table _ cls _) = if Core.removeIllegals options
+            then Core.removeIllegalClauses numVars table
+            else table
+    in do
+        withoutExtraVariables <- minimizeFormula formula
+        let numLits = numLiterals . getStats $ withoutExtraVariables
+        result <- Core.optimizeParallel options numLits numVars f numExtraVars cls
+        return $ case result of
+            Nothing -> withoutExtraVariables
+            Just cnf -> fromCoreCNF (vars ++ newVars numExtraVars formula) cnf
 
 common numExtraVars f operation =
     let numVars = length (variables f)
@@ -94,38 +109,3 @@ modifiedQmcClauseProvider totalNumVars ones zeros =
         zeros' = map toBitVector zeros
         qmTerms = modifiedQmc zeros' ones'
     in map (fromQmTerm totalNumVars) qmTerms
-
-minimizeTruthBasedParallel :: Int -> Formula -> IO Formula
-minimizeTruthBasedParallel numExtraVars formula =
-    let vars = variables formula
-        numVars = length vars
-        f = toCoreFormula vars formula
-    in do
-        withoutExtraVariables <- minimizeFormula formula
-        let numLits = numLiterals . getStats $ withoutExtraVariables
-        result <- Core.optimizeParallel bestOptions numLits numVars f numExtraVars
-        return $ case result of
-            Nothing -> withoutExtraVariables
-            Just cnf -> fromCoreCNF (vars ++ newVars numExtraVars formula) cnf
-
-test k f = do
-    start <- getCurrentTime
-    parallel <- minimizeTruthBasedParallel k f
-    end <- getCurrentTime
-    putStrLn $ "Parallel: " ++ show (getStats parallel)
-    print parallel
-    putStrLn $ "(Time: " ++ (show $ diffUTCTime end start) ++ " seconds)"
-
-    start' <- getCurrentTime
-    qmc <- minimizeTruthBasedQmc k f
-    end' <- getCurrentTime
-    putStrLn $ "Qmc: " ++ show (getStats qmc)
-    print qmc
-    putStrLn $ "(Time: " ++ (show $ diffUTCTime end' start') ++ " seconds)"
-
-    start'' <- getCurrentTime
-    naive <- minimizeTruthBased k f
-    end'' <- getCurrentTime
-    putStrLn $ "Naive: " ++ show (getStats naive)
-    print naive
-    putStrLn $ "(Time: " ++ (show $ diffUTCTime end'' start'') ++ " seconds)"

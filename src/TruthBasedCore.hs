@@ -17,6 +17,9 @@ import Satchmo.Code
 import qualified Satchmo.Boolean as B
 import qualified Satchmo.Counting.Binary as C
 
+
+import Debug.Trace(traceShow)
+import Utils(indexed)
 import Data.Time.Clock(getCurrentTime)
 
 newtype Lit = Lit Int
@@ -116,19 +119,14 @@ illegalClauses numVars (Table assignments clauses rows) =
     let numExtraVars = (length $ head assignments) - numVars
         coveredTrues clause = map snd $ filter (\((output,_), a) -> output && clause `covers` a) $ zip rows assignments :: [Assignment]
         byPrefix trues = foldr (\a m -> M.insertWith (++) (take numVars a) [a] m) M.empty trues :: M.Map Assignment [Assignment]
-        addIfIllegal clause accum = if any ((==) (2^numExtraVars) . length) . map snd . M.toList . byPrefix . coveredTrues $ clause
-                                    then clause:accum
-                                    else accum
-    in foldr addIfIllegal [] clauses
+        illegals = filter (any ((==) (2^numExtraVars) . length) . map snd . M.toList . byPrefix . coveredTrues) clauses
+    in illegals
 
 removeIllegalClauses :: Int -> Table -> Table
 removeIllegalClauses numVars table@(Table assignments clauses rows) =
     let illegals = Set.fromList $ illegalClauses numVars table
         filteredClauses = Set.fromList clauses `Set.difference` illegals
     in Table assignments (Set.toList filteredClauses) rows
-
-indexed :: [Int] -> [a] -> [a]
-indexed is list = foldr (\(i,e) rest -> if i `elem` is then e:rest else rest) [] $ zip [0..] list
 
 makeCnf :: Int -- ^ number of variables in the (original) formula
     -> (Assignment -> Bool) -- ^ original formula
@@ -137,7 +135,7 @@ makeCnf :: Int -- ^ number of variables in the (original) formula
     -> Int
     -> IO (Maybe CNF)
 makeCnf numVars f numExtraVars cls maxNumLiterals = do
-    selection <- solve $ do
+    selection <- solveSilently $ do
         ws <- forM (assignments (numVars+numExtraVars)) $ \w -> (w,) <$> B.boolean
         let w = M.fromList ws :: M.Map Assignment B.Boolean
 
@@ -217,13 +215,10 @@ optimizeParallel :: Options
                  -> Int -- ^ Number of variables in the formula
                  -> (Assignment -> Bool) -- ^ The formula to find a minimal CNF for
                  -> Int -- ^ Number of extra variables
+                 -> [Clause] -- ^ Candidate clauses
                  -> IO (Maybe CNF)
-optimizeParallel options bestKnownValue numVars f numExtraVars =
-    let table = tableWith options numVars f numExtraVars
-        (Table _ cls _) = if removeIllegals options
-                            then removeIllegalClauses numVars table
-                            else table
-        opt highestKnownFail bestKnownSolution
+optimizeParallel options bestKnownValue numVars f numExtraVars cls =
+    let opt highestKnownFail bestKnownSolution
             | highestKnownFail >= bestKnownSolution-1 = do
                 putStrLn $ show highestKnownFail ++ " >= " ++ show (bestKnownSolution-1) ++ ". No better solution possible."
                 return Nothing
@@ -307,3 +302,4 @@ attempts num lowest best
           num' = fromIntegral num
           range = (high - low)
           step = range / (num'-1)
+
