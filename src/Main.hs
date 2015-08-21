@@ -2,6 +2,7 @@ module Main where
 
 import Arithmetics
 import Formula
+import EspressoInterface
 import LimpCBCInterface
 import MinimizeFormula
 import NormalForm

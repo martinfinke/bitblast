@@ -1,16 +1,16 @@
 module TruthBasedGenetic where
 
-import TruthBasedCore(Assignment, CNF(..), Clause(..), assignments)
-
+import TruthBasedCore(Assignment, CNF(..), Clause(..), assignments, numLiterals)
+import EspressoInterface
 
 import qualified System.Random as R
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.List
 
+-- A candidate maps each f-One-Assignment to a non-empty list of (f' \ f)-Assignments.
 newtype Candidate = Candidate (Map.Map Assignment [Assignment])
     deriving(Eq, Show)
-
 
 merge :: R.RandomGen g => g -> Candidate -> Candidate -> (Candidate, g)
 merge rand (Candidate a) (Candidate b)
@@ -24,15 +24,22 @@ merge rand (Candidate a) (Candidate b)
                 in (selection:accum, newRand)
           (mergeResult, newRand) = foldr combine ([], rand) $ zipped
 
-fitness :: [Assignment] -> [Assignment] -> Candidate -> IO Int
-fitness ones expandedZeros candidate = do
-    return 0
+-- | The lower, the better.
+fitness :: Int -> Set.Set Assignment -> [Assignment] -> Candidate -> IO Int
+fitness totalNumVars allAssignments ones (Candidate m) = do
+    let expandedOnes = Set.fromList $ map expand ones
+    let zeros = Set.toList $ allAssignments Set.\\ expandedOnes
+    optimized <- espressoOptimize totalNumVars zeros
+    return $ numLiterals $ CNF optimized
+    where expand one = concatMap (one ++) $ m Map.! one
 
 optimize :: Int -> (Assignment -> Bool) -> Int -> IO CNF
 optimize numVars f numExtraVars = do
     let as = assignments numVars
     let expansions = assignments numExtraVars
+    let allAssignments = Set.fromList $ assignments (numVars + numExtraVars)
     let (ones, zeros) = partition f as
     let expandedZeros = [zero ++ ex | zero <- zeros, ex <- expansions]
+    let fitness' = fitness (numVars + numExtraVars) allAssignments ones
     return $ CNF undefined
 
