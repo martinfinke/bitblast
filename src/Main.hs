@@ -12,6 +12,7 @@ import SatchmoInterface
 import TruthBasedCore
 import TruthBased
 import TruthBasedApprox
+import TruthBasedGenetic
 import Tseitin
 import TseitinSelect
 import Variable
