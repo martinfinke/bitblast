@@ -41,7 +41,6 @@ runEspresso :: PLA -> [String] -> IO String
 runEspresso (PLA string) args = do
     -- First, perform a quick distance-1-merge
     -- This is useful because the input generally has a lot of terms
-    putStrLn $ string
     distance1Merge <- readProcess "espresso" ["-Dd1merge"] string
     readProcess "espresso" args distance1Merge
 

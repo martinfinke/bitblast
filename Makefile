@@ -13,7 +13,7 @@ qmccpp-dynamic:
 	$(MAKE) -C qmc-cpp dynamic
 
 test: qmccpp-static
-	cabal test
+	cabal test --with-gcc=/usr/bin/gcc
 
 ghci:
 	cabal exec -- ghci $(MOD) -isrc -itest -lqmc-dynamic -Lqmc-cpp

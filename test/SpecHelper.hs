@@ -3,6 +3,7 @@ module SpecHelper
       module Test.QuickCheck,
       OneHundredOrLess(..),
       TenOrLess(..),
+      IntList(..),
       shouldBeOneOf,
       evaluate
     ) where
@@ -22,6 +23,14 @@ data TenOrLess = TenOrLess Int
 
 instance Arbitrary TenOrLess where
     arbitrary = elements $ map TenOrLess [0..10]
+
+data IntList = IntList [Int]
+    deriving(Show)
+
+instance Arbitrary IntList where
+    arbitrary = do
+        TenOrLess len <- arbitrary :: Gen TenOrLess
+        fmap IntList $ vectorOf len (arbitrary :: Gen Int)
 
 shouldBeOneOf :: (Eq a, Show a) => a -> [a] -> Expectation
 shouldBeOneOf x xs = x `shouldSatisfy` (`elem` xs)

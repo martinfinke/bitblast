@@ -27,17 +27,6 @@ toAbs amount len =
             (Abs i) -> i
     in max 0 $ min len $ absAmount
 
-uniqueRandom :: (R.Random a, Eq b, R.RandomGen g) => (a -> b) -> g -> Int -> (g, [b])
-uniqueRandom f rand num = uniqueRandom' f rand num []
-uniqueRandom' _ rand 0 accum = (rand,accum)
-uniqueRandom' f rand num accum =
-    let (i,newRand) = R.random rand
-        i' = f i
-    in if i' `elem` accum
-        then uniqueRandom' f newRand num accum
-        else uniqueRandom' f newRand (num-1) (i':accum)
-
-
 uniformRandom :: ClauseSelector
 uniformRandom = RandomSelector $ \rand amount clauses -> 
     let len = length clauses
