@@ -60,6 +60,7 @@ main = do
             putStrLn $ printf "Optimizing %s (%d bit)..." circuitType numBits
             optimized <- minimizeFormula circuit
             putStrLn $ "Minimized formula:"
+            putStrLn . Formula.prettyPrint $ optimized
             print optimized
             print $ getStats optimized
           minimizeTruth circuitType circuit numBits args = do
@@ -67,6 +68,7 @@ main = do
             putStrLn $ printf "Optimizing %s (%d bit)..." circuitType numBits
             optimized <- minimizeTruthBased extraVars circuit
             putStrLn $ printf "Smallest formula for k=%d:" extraVars
+            putStrLn . Formula.prettyPrint $ optimized
             print optimized
             print $ getStats optimized
           table circuitType circuit numBits args = do
