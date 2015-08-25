@@ -9,8 +9,8 @@ import ParseFormula
 spec :: Spec
 spec = do
     describe "parseFormula" $ do
-        it "parses any Formula from the Formula Show instance" $ do
-            property $ \f -> parseFormula (show f) `shouldBe` f
+        it "parses any Formula from prettyPrint" $ do
+            property $ \f -> parseFormula (prettyPrint f) `shouldBe` f
     describe "Formula Read instance" $ do
-        it "is inverse to show" $ do
-            property $ \f -> read (show f) `shouldBe` (f::Formula)
+        it "is inverse to prettyPrint" $ do
+            property $ \f -> read (prettyPrint f) `shouldBe` (f::Formula)

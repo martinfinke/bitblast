@@ -10,6 +10,7 @@ import ParseFormula
 import QmcCpp
 import QmcTypes
 import SatchmoInterface
+import SatchmoOutput
 import TruthBasedCore
 import TruthBased
 import TruthBasedApprox

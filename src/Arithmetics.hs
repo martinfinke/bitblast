@@ -117,11 +117,11 @@ multiplicationTableGen termBits resultBits =
 multiplication :: OverflowMode -> Int -> (Canonical, Set.Set Variable)
 multiplication = operation3 (*)
 
-lessThan :: Int -> (Canonical, Set.Set Variable)
+lessThan, lessThanEq, greaterThan, greaterThanEq :: Int -> (Canonical, Set.Set Variable)
 lessThan = operation2 (<)
-
-lessThanEq :: Int -> (Canonical, Set.Set Variable)
 lessThanEq = operation2 (<=)
+greaterThan = operation2 (>)
+greaterThanEq = operation2 (>=)
 
 operation2 :: (Int -> Int -> Bool) -> Int -> (Canonical, Set.Set Variable)
 operation2 op numBits =

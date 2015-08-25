@@ -155,57 +155,57 @@ spec = do
                     ]
             assignment `isModelOf` nestedFormula `shouldBe` True
 
-    describe "Formula Show instance" $ do
+    describe "prettyPrint" $ do
         it "shows an Atom correctly" $ do
-            show (Atom x5) `shouldBe` "5"
+            prettyPrint (Atom x5) `shouldBe` "5"
 
         it "shows a negated literal" $ do
-            show (Not $ Atom x7) `shouldBe` "-7"
+            prettyPrint (Not $ Atom x7) `shouldBe` "-7"
 
         it "shows an empty conjunct as true" $ do
-            show (And []) `shouldBe` "true"
+            prettyPrint (And []) `shouldBe` "true"
 
         it "shows a conjunct with just one term as just this term" $ do
-            show (And [Not $ Atom (x9)]) `shouldBe` "(-9)"
+            prettyPrint (And [Not $ Atom (x9)]) `shouldBe` "(-9)"
 
         it "shows a conjunct with two terms" $ do
-            show (And [Not $ Atom (x6), Atom (x3)]) `shouldBe` "(-6 && 3)"
+            prettyPrint (And [Not $ Atom (x6), Atom (x3)]) `shouldBe` "(-6 && 3)"
 
         it "shows an empty disjunct as false" $ do
-            show (Or []) `shouldBe` "false"
+            prettyPrint (Or []) `shouldBe` "false"
 
         it "shows a disjunct with just one term as just this term" $ do
-            show (Or [Atom (x4)]) `shouldBe` "(4)"
+            prettyPrint (Or [Atom (x4)]) `shouldBe` "(4)"
 
         it "shows a disjunct with three terms" $ do
-            show (Or [Not $ Atom (x7), Atom (x9), Not $ Atom (x3)]) `shouldBe` "(-7 || 9 || -3)"
+            prettyPrint (Or [Not $ Atom (x7), Atom (x9), Not $ Atom (x3)]) `shouldBe` "(-7 || 9 || -3)"
 
         it "shows an implication" $ do
-            show (Implies (Atom (x4)) (Not $ Atom (x1))) `shouldBe` "(4 -> -1)"
+            prettyPrint (Implies (Atom (x4)) (Not $ Atom (x1))) `shouldBe` "(4 -> -1)"
 
         it "shows an empty Xor as false" $ do
-            show (Xor []) `shouldBe` "false"
+            prettyPrint (Xor []) `shouldBe` "false"
 
         it "shows an Xor with one term as this term" $ do
-            show (Xor [Atom (x2)]) `shouldBe` "(2)"
+            prettyPrint (Xor [Atom (x2)]) `shouldBe` "(2)"
 
         it "shows an Xor with three terms" $ do
-            show (Xor [Atom (x2), Not $ Atom (x1), Atom (x9)]) `shouldBe` "(2 XOR -1 XOR 9)"
+            prettyPrint (Xor [Atom (x2), Not $ Atom (x1), Atom (x9)]) `shouldBe` "(2 XOR -1 XOR 9)"
 
         it "shows equivalence without terms as true" $ do
-            show (Equiv []) `shouldBe` "true"
+            prettyPrint (Equiv []) `shouldBe` "true"
 
         it "shows equivalence with one term as true" $ do
-            show (Equiv [Not $ Atom (x3)]) `shouldBe` "true"
+            prettyPrint (Equiv [Not $ Atom (x3)]) `shouldBe` "true"
 
         it "shows equivalence with two terms" $ do
-            show (Equiv [Not $ Atom (x3), Atom (x4)]) `shouldBe` "(-3 <=> 4)"
+            prettyPrint (Equiv [Not $ Atom (x3), Atom (x4)]) `shouldBe` "(-3 <=> 4)"
 
         it "shows equivalence with three terms" $ do
-            show (Equiv [Not $ Atom (x3), Atom (x4), Not $ Atom (x8)]) `shouldBe` "(-3 <=> 4 <=> -8)"
+            prettyPrint (Equiv [Not $ Atom (x3), Atom (x4), Not $ Atom (x8)]) `shouldBe` "(-3 <=> 4 <=> -8)"
 
         it "shows nestedFormula correctly" $ do
-            show nestedFormula `shouldBe` "-(-3 && 1 && ((7 XOR -9 XOR (3 <=> 2 <=> (-3) <=> 9)) -> (3 || 2)))"
+            prettyPrint nestedFormula `shouldBe` "-(-3 && 1 && ((7 XOR -9 XOR (3 <=> 2 <=> (-3) <=> 9)) -> (3 || 2)))"
 
     describe "variableSet" $ do
         it "is the singleton set with one variable for an atom" $ do

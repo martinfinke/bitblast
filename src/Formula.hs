@@ -2,6 +2,7 @@
 'Formula' type representing a boolean function in propositional logic, and functions to evaluate and convert to a 'TruthTable.TruthTable'.
 -}
 module Formula (Formula(..),
+                prettyPrint,
                 isModelOf,
                 variableSet,
                 toTruthTable,
@@ -24,25 +25,25 @@ data Formula = Atom     Variable -- ^ A positive literal
              | Implies  Formula Formula -- ^ Implication
              | Xor     [Formula] -- ^ Exclusive Or
              | Equiv   [Formula] -- ^ Equivalence
-    deriving (Eq, Ord)
+    deriving (Eq, Ord, Show)
 
-instance Show Formula where
-    show f = case f of
-        Atom v -> show v
-        Not f' -> '-' : show f'
-        And [] -> "true"
-        And fs -> parensJoin " && " fs
-        Or [] -> "false"
-        Or fs -> parensJoin " || " fs
-        Implies premise conclusion -> parensJoin " -> " [premise, conclusion]
-        Xor [] -> "false"
-        Xor fs -> parensJoin " XOR " fs
-        Equiv [] -> "true"
-        Equiv (_:[]) -> "true"
-        Equiv fs -> parensJoin " <=> " fs
-        where surround (open, close) string = open ++ string ++ close
-              parens = surround ("(", ")")
-              parensJoin delimiter fs = parens $ intercalate delimiter $ map show fs
+prettyPrint :: Formula -> String
+prettyPrint f = case f of
+    Atom v -> show v
+    Not f' -> '-' : prettyPrint f'
+    And [] -> "true"
+    And fs -> parensJoin " && " fs
+    Or [] -> "false"
+    Or fs -> parensJoin " || " fs
+    Implies premise conclusion -> parensJoin " -> " [premise, conclusion]
+    Xor [] -> "false"
+    Xor fs -> parensJoin " XOR " fs
+    Equiv [] -> "true"
+    Equiv (_:[]) -> "true"
+    Equiv fs -> parensJoin " <=> " fs
+    where surround (open, close) string = open ++ string ++ close
+          parens = surround ("(", ")")
+          parensJoin delimiter fs = parens $ intercalate delimiter $ map prettyPrint fs
 
 -- | Evaluates a 'Formula' under a given 'Assignment' to 'True' or 'False'.
 isModelOf :: Assignment -- ^ Assigns a value to each 'Variable'
