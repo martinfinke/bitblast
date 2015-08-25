@@ -2,11 +2,12 @@ module Main where
 
 import Arithmetics
 import Formula
+import CalculatedFormulas
 import EspressoInterface
 import LimpCBCInterface
 import MinimizeFormula
 import NormalForm
-import ParseFormula
+import ParseCnf
 import QmcCpp
 import QmcTypes
 import SatchmoInterface
@@ -82,8 +83,6 @@ main = do
             let numVars = read $ args!!1
             smallestWorthExtra numVars
 
-
-
 smallestWorthExtra numVars = do
     result <- findWorthExtra $ Set.fromList $ take numVars vars
     case result of
@@ -91,7 +90,6 @@ smallestWorthExtra numVars = do
         Just f -> do
             putStrLn $ "It's worth introducing an extra variable for this formula:"
             print f
-
 
 xor = odd . length . filter id
 

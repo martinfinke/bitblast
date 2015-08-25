@@ -14,8 +14,7 @@ instance Arbitrary Canonical where
         numVariables <- choose (1,4)
         variables <- randomVariables numVariables
         rndFormula <- randomFormula variables 2
-        toCanonical <- elements [toCanonicalCnf, toCanonicalDnf]
-        return $ toCanonical rndFormula
+        return $ toCanonicalCnf rndFormula
 
 
 spec :: Spec

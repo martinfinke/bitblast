@@ -12,22 +12,24 @@ import Data.Maybe
 import Control.Monad(forM, forM_, replicateM)
 import qualified Data.Set as Set
 
-outputNoExtra = createSatchmo "OptNatNoExtra" minimizeFormula
+outputNoExtra = createSatchmo "OptNatNoExtra" minimizeFormula Nothing
 outputStructural =
     let minimizer = fmap fst . minimizeWithExtraVarRange (0,1) . toTree
-    in createSatchmo "OptNatStruct" minimizer
-outputTruthBased = createSatchmo "OptNatTruth" (minimizeTruthBased 1)
+    in createSatchmo "OptNatStruct" minimizer (Just 1)
+outputTruthBased = createSatchmo "OptNatTruth" (minimizeTruthBased 1) (Just 1)
 
 
 indent :: Int -> String -> String
 indent amount str = replicate amount ' ' ++ str
 
-createSatchmo :: String -> (Formula -> IO Formula) -> [Int] -> IO String
-createSatchmo name minimizer numBitsList =
+createSatchmo :: String -> (Formula -> IO Formula) -> Maybe Int -> [Int] -> IO String
+createSatchmo name minimizer maybeNumExtraVars numBitsList =
     let fileName = name ++ ".hs"
         header = unlines [
             "{-# LANGUAGE FlexibleInstances #-}",
             "{-# LANGUAGE MultiParamTypeClasses #-}",
+            "{-# LANGUAGE FlexibleContexts #-}",
+            "{-# LANGUAGE UndecidableInstances #-}",
             "module " ++ name ++ " where",
             "import qualified Satchmo.Boolean as B",
             "import qualified Satchmo.Code as C",
@@ -50,7 +52,7 @@ createSatchmo name minimizer numBitsList =
             in "newtype " ++ typeName ++ " = " ++ typeName ++ " [B.Boolean]"
         mkDecodeInstance numBits =
             let typeName = name ++ show numBits
-            in "instance C.Decode m B.Boolean Bool => C.Decode m (" ++ typeName ++ ") where\n" ++ unlines [
+            in "instance C.Decode m B.Boolean Bool => C.Decode m " ++ typeName ++ " Integer where\n" ++ unlines [
                 indent 4 $ "decode (" ++ typeName ++ " bs) = foldr (\\x y -> fromIntegral (fromEnum (x::Bool)) + 2*y) 0 <$> forM bs C.decode"
             ]
         mkSemiringInstance numBits =
@@ -58,7 +60,7 @@ createSatchmo name minimizer numBitsList =
                 xs = "(" ++ typeName ++ " xs) "
                 ys = "(" ++ typeName ++ " ys)"
                 args = xs ++ ys
-            in "instance B.MonadSAT m => Semiring m OptNat" ++ show numBits ++ " where\n" ++
+            in "instance B.MonadSAT m => Semiring m " ++ typeName ++ " where\n" ++
                 unlines (map (indent 4) [
                     "unknown = fmap " ++ typeName ++ " $ replicateM " ++ show numBits ++ " B.boolean",
                     "plus " ++ args ++ " = fmap " ++ typeName ++ " $ add" ++ show numBits ++ " xs ys",
@@ -69,7 +71,20 @@ createSatchmo name minimizer numBitsList =
                     ])
         mkDefs numBits = do
             let ops = map ($ numBits) operations
-            cnfs <- forM ops minimizer
+            cnfs <- forM (zip operationNames ops) $ \(opname,op) -> do
+                let methodName = case name of
+                        "OptNatStruct" -> name ++ show (fromJust maybeNumExtraVars) ++ "Ex"
+                        "OptNatTruth" -> name ++ show (fromJust maybeNumExtraVars) ++ "Ex"
+                        _ -> name
+                case getIfAvailable methodName opname numBits of
+                    Just cnf -> return cnf
+                    Nothing -> do
+                        putStrLn $ "Formula for " ++ methodName ++ "/" ++ opname ++ "/" ++ show numBits ++ " not minimized yet. Minimizing..."
+                        cnf <- minimizer op
+                        putStrLn $ "Minimized formula:"
+                        putStrLn $ prettyPrint cnf
+                        return cnf
+
             let withName = zip3 operationNames cnfs outputsResult
             let toSatchmo (opName,cnf,returnResult) = cnfToSatchmo returnResult opName cnf numBits
             return . unlines $ map toSatchmo withName

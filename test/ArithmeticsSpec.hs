@@ -223,10 +223,53 @@ spec = do
                 let f = getFormula . fst $ operation2 op numBits
                     varSet = variableSet f
                 in forM_ assignments $ \str -> do
-                    let a = assignmentFromString varSet str
+                    -- "001 010" -> x0 und x4
+                    let a = assignmentFromString varSet $ reverse str
                     a `isModelOf` f `shouldBe` expected
         it "creates the correct truth table for 1 bit" $ do
-            test (<) 1 ["10"] True
-            test (<) 1 ["00", "01", "11"] False
-            test (<=) 1 ["00", "10", "11"] True
-            test (<=) 1 ["01"] False
+            test (<) 1 ["01"] True
+            test (<) 1 ["00", "10", "11"] False
+            test (<=) 1 ["00", "01", "11"] True
+            test (<=) 1 ["10"] False
+        it "creates the correct truth table for less than, 2 bits" $ do
+            let f = getFormula . fst $ operation2 (<) 2
+            let expected = tableFromString (variableSet f) $ unlines [
+                    "0000 0",
+                    "0001 0",
+                    "0010 0",
+                    "0011 0",
+                    "0100 1",
+                    "0101 0",
+                    "0110 0",
+                    "0111 0",
+                    "1000 1",
+                    "1001 1",
+                    "1010 0",
+                    "1011 0",
+                    "1100 1",
+                    "1101 1",
+                    "1110 1",
+                    "1111 0"
+                    ]
+            toTruthTable f `shouldBe` expected
+        it "creates the correct truth table for less than or equal, 2 bits" $ do
+            let f = getFormula . fst $ operation2 (<=) 2
+            let expected = tableFromString (variableSet f) $ unlines [
+                    "0000 1",
+                    "0001 0",
+                    "0010 0",
+                    "0011 0",
+                    "0100 1",
+                    "0101 1",
+                    "0110 0",
+                    "0111 0",
+                    "1000 1",
+                    "1001 1",
+                    "1010 1",
+                    "1011 0",
+                    "1100 1",
+                    "1101 1",
+                    "1110 1",
+                    "1111 1"
+                    ]
+            toTruthTable f `shouldBe` expected
