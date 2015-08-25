@@ -2,7 +2,7 @@ module FormulaSpec where
 
 import SpecHelper
 import Formula
-import Variable hiding (eval)
+import Variable hiding (eval, prettyPrint)
 import qualified Variable as V
 import VariableSpec
 import qualified Data.Set as Set

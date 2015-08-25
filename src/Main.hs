@@ -42,32 +42,34 @@ testF = And [Or [Not x0, x2, x3], Or [Not x0, x1, x3], Or [Not x0, x1, x2], Or [
 main = do
     args <- getArgs
     let mode = args!!0
+    let circuitType = args!!1
+    let numBits = read (args!!2)
+    let circuit
+            | circuitType == "add_forbid" = fst $ nBitAddition Forbid numBits
+            | circuitType == "add_dontcare" = fst $ nBitAddition DontCare numBits
+            | circuitType == "mul_forbid" = getFormula .fst $ multiplication Forbid numBits
+            | circuitType == "mul_dontcare" = getFormula .fst $ multiplication DontCare numBits
+            | circuitType == "gt" = getFormula . fst $ greaterThan numBits
+            | circuitType == "ge" = getFormula . fst $ greaterThanEq numBits
     case mode of
-        "min" -> minimize args
-        "table" -> table args
+        "min" -> minimize circuitType circuit numBits
+        "min_truth" -> minimizeTruth circuitType circuit numBits args
+        "table" -> table circuitType circuit numBits args
         _ -> worthExtraVars args
-    where minimize args = do
-            let circuitType = args!!1
-            let numBits = read (args!!2)
-            let circuit
-                    | circuitType == "add_forbid" = fst $ nBitAddition Forbid numBits
-                    | circuitType == "add_dontcare" = fst $ nBitAddition DontCare numBits
-                    | circuitType == "mul_forbid" = getFormula .fst $ multiplication Forbid numBits
-                    | circuitType == "mul_dontcare" = getFormula .fst $ multiplication DontCare numBits
+    where minimize circuitType circuit numBits = do
+            putStrLn $ printf "Optimizing %s (%d bit)..." circuitType numBits
+            optimized <- minimizeFormula circuit
+            putStrLn $ "Minimized formula:"
+            print optimized
+            print $ getStats optimized
+          minimizeTruth circuitType circuit numBits args = do
             let extraVars = read (args!!3)
             putStrLn $ printf "Optimizing %s (%d bit)..." circuitType numBits
             optimized <- minimizeTruthBased extraVars circuit
             putStrLn $ printf "Smallest formula for k=%d:" extraVars
             print optimized
             print $ getStats optimized
-          table args = do
-            let circuitType = args!!1
-            let numBits = read (args!!2)
-            let circuit
-                    | circuitType == "add_forbid" = fst $ nBitAddition Forbid numBits
-                    | circuitType == "add_dontcare" = fst $ nBitAddition DontCare numBits
-                    | circuitType == "mul_forbid" = getFormula .fst $ multiplication Forbid numBits
-                    | circuitType == "mul_dontcare" = getFormula .fst $ multiplication DontCare numBits
+          table circuitType circuit numBits args = do
             let extraVars = read (args!!3)
             let clauseMode = read (args!!4) :: Bool
             putStrLn $ printf "Creating table for %s (%d bit)..." circuitType numBits

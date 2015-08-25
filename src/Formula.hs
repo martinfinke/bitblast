@@ -13,7 +13,8 @@ module Formula (Formula(..),
                 toTree
                 ) where
 
-import Variable hiding(eval)
+import Variable hiding(eval, prettyPrint)
+import qualified Variable as V
 import Data.List (intercalate)
 import qualified Data.Set as Set
 
@@ -29,7 +30,7 @@ data Formula = Atom     Variable -- ^ A positive literal
 
 prettyPrint :: Formula -> String
 prettyPrint f = case f of
-    Atom v -> show v
+    Atom v -> V.prettyPrint v
     Not f' -> '-' : prettyPrint f'
     And [] -> "true"
     And fs -> parensJoin " && " fs

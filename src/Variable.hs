@@ -1,5 +1,6 @@
 module Variable(
                 Variable,
+                prettyPrint,
                 initial,
                 eval,
                 makeVars,
@@ -45,10 +46,10 @@ data VarMem = VarMem {currentVarIndex :: Int}
 type VarState = State.State VarMem
 type VarStateTransformer = State.StateT VarMem
 newtype Variable = Variable Int
-    deriving(Eq, Ord)
+    deriving(Eq, Ord, Show)
 
-instance Show Variable where
-    show (Variable i) = show i
+prettyPrint :: Variable -> String
+prettyPrint (Variable i) = show i
 
 instance Enum Variable where
     fromEnum (Variable i) = i
