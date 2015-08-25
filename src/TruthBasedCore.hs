@@ -218,18 +218,18 @@ optimizeParallel :: Options
                  -> [Clause] -- ^ Candidate clauses
                  -> IO (Maybe CNF)
 optimizeParallel options bestKnownValue numVars f numExtraVars cls =
-    let opt highestKnownFail bestKnownSolution
+    let atomicOutput lock str = Lock.with lock $ do
+            t <- getCurrentTime
+            putStrLn $ show t ++ ": " ++ str
+        opt highestKnownFail bestKnownSolution printOutputLock
             | highestKnownFail >= bestKnownSolution-1 = do
-                putStrLn $ show highestKnownFail ++ " >= " ++ show (bestKnownSolution-1) ++ ". No better solution possible."
+                atomicOutput printOutputLock $ show highestKnownFail ++ " >= " ++ show (bestKnownSolution-1) ++ ". No better solution possible."
                 return Nothing
             | otherwise = do
-                putStrLn $ "Searching solution with " ++ show (highestKnownFail+1) ++ " <= numLiterals < " ++ show bestKnownSolution
+                let atomPutStrLn = atomicOutput printOutputLock
+                atomPutStrLn $ "Searching solution with " ++ show (highestKnownFail+1) ++ " <= numLiterals < " ++ show bestKnownSolution
                 let bounds = sort $ attempts (numThreads options) (highestKnownFail+1) bestKnownSolution
-                mvars <- forM bounds (const newEmptyMVar)
-                printOutputLock <- Lock.new
-                let atomPutStrLn str = Lock.with printOutputLock $ do
-                        t <- getCurrentTime
-                        putStrLn $ show t ++ ": " ++ str
+                mvars <- replicateM (length bounds) newEmptyMVar
                 threadIds <- forM (zip [0..] bounds) $ \(i, maxNumLits) -> do
                     forkIO $ do
                         atomPutStrLn $ "Thread " ++ show i ++  " trying <= " ++ show maxNumLits ++ " literals"
@@ -245,36 +245,39 @@ optimizeParallel options bestKnownValue numVars f numExtraVars cls =
                                 let lower = take i mvars
                                 cancelledLower <- forM lower (flip tryPutMVar Cancelled)
                                 let indices = elemIndices True cancelledLower
-                                let cancelledLowerBounds = map ((!!) bounds) indices
-                                when (not . null $ cancelledLowerBounds) $ atomPutStrLn $ "Marking threads trying lower maxLiterals: " ++ show cancelledLowerBounds ++ " to be killed"
+                                let cancelledLowerBounds = map (bounds!!) indices
+                                when (not . null $ cancelledLowerBounds) $ atomPutStrLn $ "Thread " ++ show i ++  " marked threads trying lower maxLiterals: " ++ show cancelledLowerBounds ++ " to be killed"
                             Just cnf ->do
                                 atomPutStrLn $ "Thread " ++ show i ++  " found solution with " ++ show (numLiterals cnf) ++ " literals"
                                 -- We don't need worse solutions, so cancel the threads that are looking for one:
                                 let higher = drop (i+1) mvars
                                 cancelledHigher <- forM higher (flip tryPutMVar Cancelled)
                                 let indices = elemIndices True cancelledHigher
-                                let cancelledHigherBounds = map ((!!) bounds) indices
-                                when (not . null $ cancelledHigherBounds) $ atomPutStrLn $ "Marking threads trying higher maxLiterals: " ++ show cancelledHigherBounds ++ " to be killed"
+                                let cancelledHigherBounds = map ((drop (i+1) bounds)!!) indices
+                                when (not . null $ cancelledHigherBounds) $ atomPutStrLn $ "Thread " ++ show i ++  " marked threads trying higher maxLiterals: " ++ show cancelledHigherBounds ++ " to be killed"
                                 -- Return our own result:
                                 tryPutMVar (mvars!!i) (Solution cnf)
-                                 -- Wait some time, then cancel threads that are looking for better solutions:
+                                -- Wait some time, then cancel threads that are looking for better solutions:
                                 let delay = round ((gracePeriod options)*elapsedMicroseconds)
                                 threadDelay delay
                                 let lower = take i mvars
                                 cancelledLower <- forM lower $ flip tryPutMVar Cancelled
                                 let indices = elemIndices True cancelledLower
-                                let cancelledLowerBounds = map ((!!) bounds) indices
-                                when (not . null $ cancelledLowerBounds) $ atomPutStrLn $ "Marked threads trying lower maxLiterals: " ++ show cancelledLowerBounds ++ " to be killed after gracePeriod=" ++ (show $ delay `div` 10^6) ++ "s"
-                -- For each thread started, we have to start another thread that's waiting for its result. This is because we want to react early to a "Cancelled" result (by killing the corresponding thread). If we just wait on mvars using forM, a still-empty mvar early in the list would hinder us from cancelling "Cancelled" results further into the list.
-                results <- forM (zip3 mvars threadIds [0..]) $ \(mvar,threadId, i) -> do
-                    result <- newEmptyMVar
+                                let cancelledLowerBounds = map (bounds!!) indices
+                                when (not . null $ cancelledLowerBounds) $ atomPutStrLn $ "Thread " ++ show i ++  " marked threads trying lower maxLiterals: " ++ show cancelledLowerBounds ++ " to be killed after gracePeriod=" ++ (show $ delay `div` 10^6) ++ "s"
+                -- For each thread started, we have to start another thread that's waiting for it to be Cancelled (if it gets cancelled). This is because we want to react early to a "Cancelled" result (by killing the corresponding thread). If we just wait on the result mvars using forM, a still-empty mvar early in the list would hinder us from cancelling "Cancelled" results further into the list.
+                kills <- forM (zip3 mvars threadIds [0..]) $ \(mvar,threadId, i) -> do
+                    kill <- newEmptyMVar
                     forkIO $ do
                         res <- readMVar mvar
                         when (res == Cancelled) $ do
                             killThread threadId
                             atomPutStrLn $ "Thread " ++ show i ++ " killed."
-                        putMVar result res
-                    readMVar result
+                        tryPutMVar kill ()
+                        return ()
+                    return kill
+                results <- forM mvars readMVar
+                forM_ kills readMVar
                 atomPutStrLn $ "Collected results for < " ++ show bestKnownSolution ++ " literals"
                 solutions <- fmap catMaybes $ forM results $ \result -> case result of
                     Solution cnf -> return $ Just cnf
@@ -283,13 +286,18 @@ optimizeParallel options bestKnownValue numVars f numExtraVars cls =
                 case sortBy (comparing numLiterals) solutions of
                     [] -> return Nothing
                     (sol:_) -> do
-                        let highestFail = fst $ maximumBy (comparing fst) $ filter ((==) NoSolution . snd) $ zip bounds results :: Int
-                        maybeBetter <- opt highestFail (numLiterals sol)
+                        let noSolutions = filter ((==) NoSolution . snd) $ zip bounds results
+                        let highestFail
+                                | null noSolutions = highestKnownFail
+                                | otherwise = fst $ maximumBy (comparing fst) noSolutions :: Int
+                        maybeBetter <- opt highestFail (numLiterals sol) printOutputLock
                         return $ case maybeBetter of
                             Nothing -> Just sol
                             Just better -> Just better
-    -- There's never a solution with (-1) literals, so initially this is the highest known fail:
-    in opt (-1) bestKnownValue
+    in do
+        printOutputLock <- Lock.new
+        -- There's never a solution with (-1) literals, so initially this is the highest known fail:
+        opt (-1) bestKnownValue printOutputLock
         
     
 attempts :: Int -> Int -> Int -> [Int]

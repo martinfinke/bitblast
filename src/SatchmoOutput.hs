@@ -30,8 +30,10 @@ createSatchmo name minimizer numBitsList =
             "{-# LANGUAGE MultiParamTypeClasses #-}",
             "module " ++ name ++ " where",
             "import qualified Satchmo.Boolean as B",
+            "import qualified Satchmo.Code as C",
             "import Semiring",
             "import Control.Monad",
+            "import Control.Applicative",
             "import Data.Maybe",
             "import Data.List"
             ]
@@ -46,6 +48,11 @@ createSatchmo name minimizer numBitsList =
         mkNewtype numBits =
             let typeName = name ++ show numBits
             in "newtype " ++ typeName ++ " = " ++ typeName ++ " [B.Boolean]"
+        mkDecodeInstance numBits =
+            let typeName = name ++ show numBits
+            in "instance C.Decode m B.Boolean Bool => C.Decode m (" ++ typeName ++ ") where\n" ++ unlines [
+                indent 4 $ "decode (" ++ typeName ++ " bs) = foldr (\\x y -> fromIntegral (fromEnum (x::Bool)) + 2*y) 0 <$> forM bs C.decode"
+            ]
         mkSemiringInstance numBits =
             let typeName = name ++ show numBits
                 xs = "(" ++ typeName ++ " xs) "
@@ -64,21 +71,21 @@ createSatchmo name minimizer numBitsList =
             let ops = map ($ numBits) operations
             cnfs <- forM ops minimizer
             let withName = zip3 operationNames cnfs outputsResult
-            let toSatchmo (opName,cnf,withResult) = cnfToSatchmo withResult opName cnf numBits
+            let toSatchmo (opName,cnf,returnResult) = cnfToSatchmo returnResult opName cnf numBits
             return . unlines $ map toSatchmo withName
 
     in do
         body <- forM numBitsList $ \numBits -> do
             defs <- mkDefs numBits
-            return . unlines $ [mkNewtype numBits, mkSemiringInstance numBits, defs]
+            return . unlines $ [mkNewtype numBits, mkDecodeInstance numBits, mkSemiringInstance numBits, defs]
         return . unlines $ header : body
 
 cnfToSatchmo :: Bool -> String -> Formula -> Int -> String
-cnfToSatchmo withResult name f numBits
+cnfToSatchmo returnResult name f numBits
     | not (isCnf f) = error $ "cnfToSatchmo: Formula is not a CNF:\n" ++ show f
     | otherwise =
         let functionName = name ++ show numBits
-            typeSignature = functionName ++ " :: B.MonadSAT m => [B.Boolean] -> [B.Boolean] -> m " ++ if withResult
+            typeSignature = functionName ++ " :: B.MonadSAT m => [B.Boolean] -> [B.Boolean] -> m " ++ if returnResult
                 then "[B.Boolean]"
                 else "B.Boolean"
             header = functionName ++ " xs ys = do"
@@ -93,13 +100,13 @@ cnfToSatchmo withResult name f numBits
             createExtraVars
                 | null extraVars = ""
                 | otherwise = indent 4 $ "extraVars <- replicateM " ++ show (length extraVars) ++ " B.boolean"
-            createResult = if withResult
+            createResult = if returnResult
                 then "rs <- replicateM " ++ show numBits ++ " B.boolean"
                 else ""
             clauseCode = unlines $ map printClause $ zip clauses [1..]
             printClause ((Or lits), i) = indent 4 $ "clause" ++ show i ++ " <- B.or [" ++ intercalate ", " (map mapLit lits) ++ "]"
             printAnd = "cnf <- B.and [" ++ intercalate ", " (map (\i -> "clause" ++ show i) [1..length clauses]) ++ "]"
-            returnRs = if withResult
+            returnRs = if returnResult
                 then "B.assert [cnf]; return rs"
                 else "return cnf"
             mapVar v

@@ -1,5 +1,5 @@
 module Variable(
-                Variable,
+                Variable(Variable),
                 prettyPrint,
                 initial,
                 eval,
