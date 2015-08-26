@@ -14,18 +14,9 @@ import MinimizeFormula
 import NormalForm
 
 
-data Amount = Percent Float
-            | Abs Int
 
 data ClauseSelector = RandomSelector (R.StdGen -> Amount -> [Core.Clause] -> (R.StdGen, [Core.Clause]))
                     | Selector (Amount -> [Core.Clause] -> [Core.Clause])
-
-toAbs :: Amount -> Int -> Int
-toAbs amount len =
-    let absAmount = case amount of
-            (Percent f) -> round ((f / 100) * fromIntegral len)
-            (Abs i) -> i
-    in max 0 $ min len $ absAmount
 
 uniformRandom :: ClauseSelector
 uniformRandom = RandomSelector $ \rand amount clauses -> 

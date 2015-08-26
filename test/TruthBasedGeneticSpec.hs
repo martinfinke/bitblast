@@ -3,7 +3,7 @@ module TruthBasedGeneticSpec where
 
 import SpecHelper
 import TruthBasedGenetic
-import TruthBasedCore(Assignment, assignments)
+import TruthBasedCore(Assignment,assignments,CNF(..),Clause(..),lit)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified System.Random as R
@@ -22,7 +22,7 @@ instance Arbitrary Candidates where
         numCandidates <- choose (2,10)
         seed <- arbitrary :: Gen Int
         let as = assignments numVars
-        let candidates = flip evalRand (R.mkStdGen seed) $ replicateM numCandidates $ randomCandidate as numExtraVars
+        let candidates = flip evalRand (R.mkStdGen seed) $ replicateM numCandidates $ randomCandidate as (assignments numExtraVars)
         return $ Candidates candidates numVars numExtraVars
 
 spec :: Spec
@@ -104,8 +104,8 @@ spec = do
     describe "randomCandidate" $ do
         it "creates different candidates for two different RNGs" $ do
             let ones = [[t, f], [f, t]]
-            let numExtraVars = 3
-            let [cand1,cand2] = map (evalRand $ randomCandidate ones numExtraVars) [R.mkStdGen 17, R.mkStdGen 1737]
+            let expansions = assignments 3
+            let [cand1,cand2] = map (evalRand $ randomCandidate expansions ones) [R.mkStdGen 17, R.mkStdGen 1737]
             cand1 `shouldNotBe` cand2
             getOnes cand1 `shouldBeSetEqualTo` ones
             getOnes cand2 `shouldBeSetEqualTo` ones
@@ -113,8 +113,8 @@ spec = do
             property $ \(OneHundredOrLess seed) (TenOrLess i) ->
                 let rand = R.mkStdGen seed
                     ones = [[f,f], [t,f]]
-                    numExtraVars = min 5 i
-                    Candidate m = evalRand (randomCandidate ones numExtraVars) rand
+                    expansions = assignments $ min 5 i
+                    Candidate m = evalRand (randomCandidate expansions ones) rand
                 in forM_ ones $ \one -> do
                     Map.lookup one m `shouldNotBe` Nothing
                     Map.lookup one m `shouldNotBe` Just []
@@ -125,6 +125,22 @@ spec = do
                 let rand = R.mkStdGen 15
                     new = evalRand (generation defaultOptions numExtraVars cs) rand
                 in length new `shouldBe` length cs
+
+    describe "candidateToCNF" $ do
+        let totalNumVars = 3
+        it "converts a candidate correctly" $ do
+            let cand = candidate [([t,f], [[f]]), ([f,f], [[t], [f]])]
+            candidateToCNF totalNumVars cand `shouldBe` CNF [
+                Clause [lit 1 f, lit 2 t, lit 3 f],
+                Clause [lit 1 f, lit 2 t, lit 3 t],
+                Clause [lit 1 t, lit 2 f, lit 3 t],
+                Clause [lit 1 t, lit 2 t, lit 3 f],
+                Clause [lit 1 t, lit 2 t, lit 3 t]
+                ]
+
+
+    -- TODO: Test fitness function. Why does this candidate have fitness == 0?
+    -- Candidate (fromList [([False,False,True],[[True],[False]]),([False,True,False],[[True],[False]]),([True,False,False],[[False],[True]]),([True,True,True],[[False],[True]])])
 
 
             

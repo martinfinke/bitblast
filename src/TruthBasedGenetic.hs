@@ -1,16 +1,15 @@
 module TruthBasedGenetic where
 
-import TruthBasedCore(Assignment, CNF(..), Clause(..), assignments, numLiterals)
-import TruthBasedApprox(Amount(..), toAbs)
+import TruthBasedCore(Assignment, CNF(..), Clause(..), assignments, numLiterals, lit)
 import EspressoInterface
-import Utils(shuffleList, parallelForM)
 import Test.QuickCheck
 import Control.Monad
 import Control.Monad.Random
-
 import qualified System.Random as R
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+
+import Utils(shuffleList, parallelForM, Amount(..), toAbs)
 import Data.List
 import Data.Ord(comparing)
 
@@ -63,19 +62,21 @@ defaultOptions = EvolutionOptions {
     maxAge = 10
     }
 
---optimize :: Int -> (Assignment -> Bool) -> Int -> IO CNF
---optimize = optimizeWith defaultOptions
+optimize :: Int -> (Assignment -> Bool) -> Int -> IO CNF
+optimize = optimizeWith defaultOptions
 
 optimizeWith :: EvolutionOptions -> Int -> (Assignment -> Bool) -> Int -> IO CNF
 optimizeWith options numVars f numExtraVars =
     let ones = filter f (assignments numVars)
+        expansions = assignments numExtraVars
         numCands = numCandidates (length ones) numExtraVars
+        -- Prevent overflow when converting from Integer to Int:
+        populationSize' = fromIntegral . max 1 . min (fromIntegral (maxBound::Int) :: Integer) $ toAbs (populationSize options) numCands :: Int
         allAssignments = Set.fromList $ assignments (numVars + numExtraVars)
         calculateFitness = fitness (numVars+numExtraVars) allAssignments ones
         lifecycle candidates (oldBest, oldBestFitness, oldAge) = do
             fitness <- parallelForM (numThreads options) $ map calculateFitness candidates
             let sortedCands = map fst $ sortBy (comparing snd) $ zip candidates fitness
-
             thisGenBestFitness <- calculateFitness (head sortedCands)
             (newBest, newBestFitness, age) <- if thisGenBestFitness < oldBestFitness
                 then do
@@ -84,18 +85,22 @@ optimizeWith options numVars f numExtraVars =
                     return (head sortedCands, thisGenBestFitness, 0)
                 else return (oldBest, oldBestFitness, oldAge+1)
 
-            let shouldStop = age >= 10
+            let shouldStop = age >= (maxAge options)
             if shouldStop
-                then return newBest
+                then do
+                    putStrLn $ "Stopping because age >= " ++ show (maxAge options)
+                    return newBest
                 else do
                     rand <- R.newStdGen
                     let newGeneration = flip evalRand rand $ generation options numExtraVars sortedCands
                     lifecycle newGeneration (newBest, newBestFitness, age)
     in do
         putStrLn $ "Possible candidates: " ++ show numCands
-        -- TODO: create initial population, then call lifecycle
-        -- Guard against the population being length 0.
-        return undefined
+        putStrLn $ "Population size: " ++ show populationSize'
+        rand <- R.newStdGen
+        let initialPopulation = flip evalRand rand $ replicateM populationSize' (randomCandidate expansions ones)
+        bestCandidate <- lifecycle initialPopulation (head initialPopulation, maxBound::Int, 0)
+        return $ candidateToCNF (numVars+numExtraVars) bestCandidate
 
 numCandidates :: Int -> Int -> Integer
 numCandidates numOnes numExtraVars = (two^(two^numExtraVars) - 1)^numOnes
@@ -115,7 +120,7 @@ generation options numExtraVars candidates =
         numRandoms = max 0 $ len - numSurvivors - numMerges - numMutations
         ones = getOnes (head candidates)
         mutateAll' = mutateAll numExtraVars (mutationAmount options)
-        randomCandidate' = randomCandidate ones numExtraVars
+        randomCandidate' = randomCandidate (assignments numExtraVars) ones
     in do
         merged <- mergeAll forMerge
         mutated <- mutateAll' forMutation
@@ -125,11 +130,10 @@ generation options numExtraVars candidates =
 getOnes :: Candidate -> [Assignment]
 getOnes (Candidate m) = Map.keys m
 
-randomCandidate :: R.RandomGen g => [Assignment] -> Int -> Rand g Candidate
-randomCandidate ones numExtraVars = do
-    let expansions = assignments numExtraVars
+randomCandidate :: R.RandomGen g => [Assignment] -> [Assignment] -> Rand g Candidate
+randomCandidate expansions ones = do
     m <- forM ones $ \one -> do
-        numPlacements <- liftRand $ R.randomR (1, length expansions)
+        numPlacements <- liftRand $ R.randomR (1, max 1 $ length expansions)
         placements <- randomPlacements expansions numPlacements
         return (one, placements)
     return . Candidate . Map.fromList $ m
@@ -157,4 +161,8 @@ randomPlacements expansions amount = do
     return $ take amount shuffled
 
 candidateToCNF :: Int -> Candidate -> CNF
-candidateToCNF totalNumVars (Candidate m) = undefined
+candidateToCNF totalNumVars (Candidate m) =
+    let ones = Map.foldMapWithKey (\base expansions -> Set.fromList $ map (base++) expansions) m :: Set.Set Assignment
+        zeros = Set.toAscList $ Set.fromList (assignments totalNumVars) Set.\\ ones
+        mkClause zero = Clause . map (uncurry lit) $ zip [1..] zero
+    in CNF $ map mkClause zeros

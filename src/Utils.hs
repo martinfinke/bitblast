@@ -12,6 +12,16 @@ import Data.Ord(comparing)
 import Control.Concurrent
 
 
+data Amount = Percent Float
+            | Abs Int
+toAbs :: Integral a => Amount -> a -> a
+toAbs amount len =
+    let absAmount = case amount of
+            (Percent f) -> round ((f / 100) * fromIntegral len)
+            (Abs i) -> fromIntegral i
+    in max 0 $ min len $ absAmount
+
+
 indexed :: [Int] -> [a] -> [a]
 indexed is list = foldr (\(i,e) rest -> if i `elem` is then e:rest else rest) [] $ zip [0..] list
 
