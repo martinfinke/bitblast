@@ -10,7 +10,7 @@ import Control.Monad
 import Control.Monad.Random
 import qualified System.Random as R
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.Map.Strict as Map
 
 import Utils(shuffleList, parallelForM, Amount(..), toAbs)
 import Data.List
@@ -18,7 +18,7 @@ import Data.Ord(comparing)
 
 -- A candidate maps each f-One-Assignment to a non-empty list of (f' \ f)-Assignments.
 newtype Candidate = Candidate (Map.Map Assignment [Assignment])
-    deriving(Eq, Show)
+    deriving(Eq, Show, Ord)
 
 merge :: R.RandomGen g => Candidate -> Candidate -> Rand g Candidate
 merge (Candidate a) (Candidate b)
@@ -107,11 +107,15 @@ optimizeWith options numVars f numExtraVars =
         -- Prevent overflow when converting from Integer to Int:
         populationSize' = fromIntegral . max 1 . min (fromIntegral (maxBound::Int) :: Integer) $ toAbs (populationSize options) numCands :: Int
         allAssignments = assignments totalNumVars
-        calculateFitness = fitness totalNumVars allAssignments
-        lifecycle candidates (oldBest, oldBestFitness, oldAge) = do
-            fitness <- parallelForM (numThreads options) $ map calculateFitness candidates
-            let sortedCands = map fst $ sortBy (comparing snd) $ zip candidates fitness
-            thisGenBestFitness <- calculateFitness (head sortedCands)
+        calculateFitness mem cand = case Map.lookup cand mem of
+                Just rating -> return rating
+                Nothing -> fitness totalNumVars allAssignments cand
+        lifecycle candidates (oldBest, oldBestFitness, oldAge) fitnessMemory = do
+            fitness <- parallelForM (numThreads options) $ map (calculateFitness fitnessMemory) candidates
+            let zipped = zip candidates fitness :: [(Candidate, Int)]
+            let sortedCands = map fst $ sortBy (comparing snd) $ zipped
+            let fitnessMemory' = Map.union fitnessMemory $ Map.fromList zipped
+            thisGenBestFitness <- calculateFitness fitnessMemory' (head sortedCands)
             (newBest, newBestFitness, age) <- if thisGenBestFitness < oldBestFitness
                 then do
                     (printMessage options) $ "New best CNF with fitness " ++ show thisGenBestFitness ++ ":"
@@ -128,14 +132,15 @@ optimizeWith options numVars f numExtraVars =
                 else do
                     rand <- R.newStdGen
                     let newGeneration = flip evalRand rand $ generation options numExtraVars sortedCands
-                    lifecycle newGeneration (newBest, newBestFitness, age)
+                    lifecycle newGeneration (newBest, newBestFitness, age) fitnessMemory'
     in do
         (printMessage options) $ "Possible candidates: " ++ show numCands
         (printMessage options) $ "Population size: " ++ show populationSize'
         rand <- R.newStdGen
         let initialPopulation = flip evalRand rand $ replicateM populationSize' (randomCandidate expansions ones)
         let initialBest = candidateToCNF totalNumVars (head initialPopulation)
-        bestCNF <- lifecycle initialPopulation (initialBest, maxBound::Int, 0)
+        let emptyFitnessMem = Map.empty :: Map.Map Candidate Int
+        bestCNF <- lifecycle initialPopulation (initialBest, maxBound::Int, 0) emptyFitnessMem 
         return $ bestCNF
 
 numCandidates :: Int -> Int -> Integer
