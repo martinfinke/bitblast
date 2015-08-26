@@ -88,7 +88,9 @@ convertLiteral :: Map.Map Int Variable -> Core.Lit -> Formula
 convertLiteral mapping (Core.Lit varNumber)
     | varNumber >= 0 = atom
     | otherwise = Not atom
-    where atom = Atom $ mapping Map.! (abs varNumber)
+    where atom
+            | not ((abs varNumber) `elem` Map.keys mapping) = error $ "invalid variable number: " ++ show (abs varNumber) ++ " for mapping with keys: " ++ show (Map.keys mapping)
+            | otherwise = Atom $ mapping Map.! (abs varNumber)
 
 toBitVector :: Core.Assignment -> BitVector
 toBitVector a = foldr setBitAtIndex 0 $ zip [0..] a

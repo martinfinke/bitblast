@@ -2,7 +2,7 @@ module EspressoInterface where
 
 import System.Process(readProcess)
 import Debug.Trace(traceShow)
-import TruthBasedCore(Assignment, Clause(..), lit, assignments)
+import TruthBasedCore(Assignment, Clause(..), lit, assignments, CNF(..))
 
 import Data.Maybe
 
@@ -23,7 +23,7 @@ toPLA numVariables ones =
         footer = ".e\n"
     in PLA $ header ++ unlines terms ++ footer
 
-parseOutput :: String -> [Clause]
+parseOutput :: String -> CNF
 parseOutput output =
     let ls = lines output
         withoutHeader = dropWhile (\line -> head line == '.') ls
@@ -35,7 +35,7 @@ parseOutput output =
             '-' -> Nothing
             _ -> error "EspressoInterface.parseOutput: parse error!"
         fromString term = Clause . catMaybes $ map readChar $ zip [1..] term
-    in map fromString withoutOne
+    in CNF $ map fromString withoutOne
 
 runEspresso :: PLA -> [String] -> IO String
 runEspresso (PLA string) args = do
@@ -44,12 +44,12 @@ runEspresso (PLA string) args = do
     distance1Merge <- readProcess "espresso" ["-Dd1merge"] string
     readProcess "espresso" args distance1Merge
 
-espressoOptimize, espressoOptimizeExact :: Int -> [Assignment] -> IO [Clause]
+espressoOptimize, espressoOptimizeExact :: Int -> [Assignment] -> IO CNF
 espressoOptimize = espressoOptimizeWith []
 
 espressoOptimizeExact = espressoOptimizeWith ["-Dexact"]
 
-espressoOptimizeWith :: [String] -> Int -> [Assignment] -> IO [Clause]
-espressoOptimizeWith args numVariables terms = do
+espressoOptimizeWith :: [String] -> Int -> [Assignment] -> IO CNF
+espressoOptimizeWith args numVariables terms =
     let pla = toPLA numVariables terms
-    fmap parseOutput (runEspresso pla args)
+    in fmap parseOutput (runEspresso pla args)

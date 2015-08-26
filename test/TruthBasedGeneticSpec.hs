@@ -138,9 +138,18 @@ spec = do
                 Clause [lit 1 t, lit 2 t, lit 3 t]
                 ]
 
+    describe "fitness" $ do
+        it "is not 0 for this candidate" $ do
+            let totalNumVars = 4
+            let cand = candidate [
+                    ([f,f,t],[[t],[f]]),
+                    ([f,t,f],[[t],[f]]),
+                    ([t,f,f],[[f],[t]]),
+                    ([t,t,t],[[f],[t]])
+                    ]
+            rating <- fitness totalNumVars (assignments totalNumVars) cand
+            rating `shouldNotBe` 0
 
-    -- TODO: Test fitness function. Why does this candidate have fitness == 0?
-    -- Candidate (fromList [([False,False,True],[[True],[False]]),([False,True,False],[[True],[False]]),([True,False,False],[[False],[True]]),([True,True,True],[[False],[True]])])
 
 
             
