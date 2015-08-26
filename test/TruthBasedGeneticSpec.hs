@@ -153,7 +153,7 @@ spec = do
             rating `shouldNotBe` 0
 
     describe "minimizeGenetic" $ do
-        let options = silentOptions{maxAge=10}
+        let options = silentOptions{maxAge=Just 10}
         it "optimizes a always-false formula without variables" $ do
             result <- minimizeGeneticWith options 1 $ Xor []
             result `shouldBe` And [Or []]

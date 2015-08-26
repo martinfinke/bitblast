@@ -57,6 +57,7 @@ main = do
     case mode of
         "min" -> minimize circuitType circuit numBits
         "min_truth" -> minimizeTruth circuitType circuit numBits args
+        "min_genetic" -> minimizeGen circuitType circuit numBits args
         "table" -> table circuitType circuit numBits args
         _ -> worthExtraVars args
     where minimize circuitType circuit numBits = do
@@ -74,6 +75,11 @@ main = do
             putStrLn . Formula.prettyPrint $ optimized
             print optimized
             print $ getStats optimized
+          minimizeGen circuitType circuit numBits args = do
+            let extraVars = read (args!!3)
+            putStrLn $ printf "Optimizing %s (%d bit)..." circuitType numBits
+            minimizeGeneticEndless extraVars circuit
+            return ()
           table circuitType circuit numBits args = do
             let extraVars = read (args!!3)
             let clauseMode = read (args!!4) :: Bool

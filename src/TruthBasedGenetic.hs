@@ -50,19 +50,19 @@ data EvolutionOptions = EvolutionOptions {
     mergeQuantity :: Amount,
     surviveQuantity :: Amount,
     numThreads :: Int,
-    maxAge :: Int, -- ^ If this many generations in sequence fail to improve, the algorithm terminates.
+    maxAge :: Maybe Int, -- ^ If this many generations in sequence fail to improve, the algorithm terminates. If 'Nothing', the algorithm will run endlessly.
     printCNF :: (CNF -> IO ()), -- ^ Used to show the current best CNF
     printMessage :: (String -> IO ()) -- ^ Used to show stats about the current progress
     }
 
 defaultOptions = EvolutionOptions {
-    populationSize = Abs 100,
-    mutationQuantity = Percent 25,
-    mutationAmount = 0.3,
+    populationSize = Abs 200,
+    mutationQuantity = Percent 30,
+    mutationAmount = 0.5,
     mergeQuantity = Percent 50,
-    surviveQuantity = Percent 25,
+    surviveQuantity = Percent 20,
     numThreads = 10,
-    maxAge = 50,
+    maxAge = Just 50,
     printCNF = print,
     printMessage = putStrLn
     }
@@ -72,14 +72,19 @@ silentOptions = defaultOptions{
     printMessage = const (return ())
     }
 
-minimizeGenetic, minimizeGeneticSilent :: Int -> Formula -> IO Formula
+minimizeGenetic, minimizeGeneticSilent, minimizeGeneticEndless :: Int -> Formula -> IO Formula
 
-minimizeGenetic numExtraVars formula = 
+minimizeGenetic = minimizeGeneticPretty False
+minimizeGeneticEndless = minimizeGeneticPretty True
+
+minimizeGeneticPretty endless numExtraVars formula = 
     let vars = Set.toAscList (variableSet formula)
         newVars' = newVars numExtraVars formula
         varsWithExtra = vars ++ newVars'
-        opts = defaultOptions{printCNF = \cnf -> do
-                print . prettyPrint $ fromCoreCNF varsWithExtra cnf
+        opts = defaultOptions{
+            printCNF = \cnf -> do
+                print . prettyPrint $ fromCoreCNF varsWithExtra cnf,
+            maxAge = if endless then Nothing else (maxAge defaultOptions)
             }
     in minimizeGeneticWith opts numExtraVars formula
 
@@ -124,7 +129,9 @@ optimizeWith options numVars f numExtraVars =
                     return (optimized, thisGenBestFitness, 0)
                 else return (oldBest, oldBestFitness, oldAge+1)
 
-            let shouldStop = age > (maxAge options)
+            let shouldStop = case (maxAge options) of
+                    Nothing -> False
+                    Just maxAge' -> age > maxAge'
             if shouldStop
                 then do
                     (printMessage options) $ "Stopping because age > " ++ show (maxAge options)
