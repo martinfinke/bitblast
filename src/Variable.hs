@@ -1,10 +1,7 @@
 module Variable(
                 Variable(Variable),
                 prettyPrint,
-                initial,
-                eval,
                 makeVars,
-                var,
                 newVariables,
                 Assignment,
                 emptyAssignment,
@@ -42,9 +39,6 @@ import Control.Monad(forM)
 import Text.Printf(printf)
 import Data.List(sort)
 
-data VarMem = VarMem {currentVarIndex :: Int}
-type VarState = State.State VarMem
-type VarStateTransformer = State.StateT VarMem
 newtype Variable = Variable Int
     deriving(Eq, Ord, Show)
 
@@ -55,27 +49,9 @@ instance Enum Variable where
     fromEnum (Variable i) = i
     toEnum = Variable
 
-initial :: VarMem
-initial = VarMem {currentVarIndex=0}
-
-eval :: VarMem -> VarState a -> a
-eval = flip State.evalState
-
 makeVars :: Int -- ^ How many 'Variable's to create
              -> [Variable]
-makeVars numvars = eval initial $ do
-    forM [0..numvars-1] $ const var
-
-var :: Monad m => VarStateTransformer m Variable
-var = do
-    varIndex <- fmap currentVarIndex State.get
-    let newVar = Variable varIndex
-    State.modify addVariable
-    return newVar
-
-addVariable :: VarMem -> VarMem
-addVariable mem@(VarMem {currentVarIndex=idx}) =
-    mem{currentVarIndex=succ idx}
+makeVars numvars = map Variable [0..numvars - 1]
 
 newtype Assignment = Assignment (IntMap.IntMap Bool)
     deriving(Eq, Show, Ord)

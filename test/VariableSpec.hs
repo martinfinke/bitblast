@@ -13,9 +13,7 @@ instance Arbitrary Variable where
 
 randomVariables :: Int -> Gen [Variable]
 randomVariables numvars = do
-    let vars = eval initial $ do
-            forM [0..numvars-1] $ const var
-    return vars
+    return $ makeVars numvars
 
 instance Arbitrary Assignment where
     arbitrary = do
