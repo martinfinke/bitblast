@@ -25,6 +25,25 @@ toAbs amount len =
 indexed :: [Int] -> [a] -> [a]
 indexed is list = foldr (\(i,e) rest -> if i `elem` is then e:rest else rest) [] $ zip [0..] list
 
+replace :: Int -> a -> [a] -> [a]
+replace idx element list = take idx list ++ [element] ++ drop (idx+1) list
+
+remove :: Int -> [a] -> [a]
+remove idx list = take idx list ++ drop (idx+1) list
+
+paddedResize :: a -> Int -> [a] -> [a]
+paddedResize fill = paddedResizeWith (const fill)
+
+paddedResizeWith :: (Int -> a) -> Int -> [a] -> [a]
+paddedResizeWith f len list
+    | length list >= len = take len list
+    | otherwise = list ++ map f [length list .. len-1]
+
+ensureLength :: a -> Int -> [a] -> [a]
+ensureLength fill len list
+    | length list >= len = list
+    | otherwise = paddedResize fill len list
+
 -- Returns a list with exactly num elements, with no duplicates (after calling f).
 uniqueRandom :: (R.Random a, Eq b, R.RandomGen g) => (a -> b) -> g -> Int -> (g, [b])
 uniqueRandom f rand num = uniqueRandom' f rand num []

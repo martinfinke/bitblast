@@ -64,3 +64,10 @@ spec = do
                 result <- parallelForM numThreads tasks
                 result `shouldBe` [0..numTasks-1]
 
+    describe "paddedResize" $ do
+        it "works correctly on lists both longer and shorter than the length we want" $ do
+            paddedResize '-' 10 "012345" `shouldBe` "012345----"
+            paddedResize '-' 3 "012345" `shouldBe` "012"
+            paddedResizeWith id 10 [0,1,2,3,4,5] `shouldBe` [0,1,2,3,4,5,6,7,8,9]
+            paddedResizeWith id 1 [0,1,2,3,4,5] `shouldBe` [0]
+            paddedResizeWith id 0 [0,1,2,3,4,5] `shouldBe`  []
