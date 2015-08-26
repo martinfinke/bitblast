@@ -11,6 +11,7 @@ import Control.Monad.Random
 import qualified System.Random as R
 import qualified Data.Set as Set
 import qualified Data.Map.Strict as Map
+import Numeric(showEFloat)
 
 import Utils(shuffleList, parallelForM, Amount(..), toAbs)
 import Data.List
@@ -106,6 +107,7 @@ optimize = optimizeWith defaultOptions
 optimizeWith :: EvolutionOptions -> Int -> (Assignment -> Bool) -> Int -> IO CNF
 optimizeWith options numVars f numExtraVars =
     let ones = filter f (assignments numVars)
+        minimizeF = let zeros = filter (not . f) (assignments numVars) in espressoOptimize numVars zeros
         totalNumVars = numVars + numExtraVars
         expansions = assignments numExtraVars
         numCands = numCandidates (length ones) numExtraVars
@@ -141,18 +143,26 @@ optimizeWith options numVars f numExtraVars =
                     let newGeneration = flip evalRand rand $ generation options numExtraVars sortedCands
                     lifecycle newGeneration (newBest, newBestFitness, age) fitnessMemory'
     in do
-        (printMessage options) $ "Possible candidates: " ++ show numCands
+        (printMessage options) $ "Possible candidates: " ++ showNumCandidates numCands
         (printMessage options) $ "Population size: " ++ show populationSize'
+        withoutExtra <- minimizeF
+        let numLitsWithoutExtra = numLiterals withoutExtra
+        (printMessage options) $ "CNF without extra variables has " ++ show numLitsWithoutExtra ++ " literals:"
+        (printCNF options) withoutExtra
         rand <- R.newStdGen
         let initialPopulation = flip evalRand rand $ replicateM populationSize' (randomCandidate expansions ones)
-        let initialBest = candidateToCNF totalNumVars (head initialPopulation)
-        let emptyFitnessMem = Map.empty :: Map.Map Candidate Int
-        bestCNF <- lifecycle initialPopulation (initialBest, maxBound::Int, 0) emptyFitnessMem 
+        bestCNF <- lifecycle initialPopulation (withoutExtra, numLitsWithoutExtra, 0) Map.empty 
         return $ bestCNF
 
 numCandidates :: Int -> Int -> Integer
 numCandidates numOnes numExtraVars = (two^(two^numExtraVars) - 1)^numOnes
     where two = 2 :: Integer
+
+showNumCandidates :: Integer -> String
+showNumCandidates num =
+    let outputLength = length $ show num
+        approx = showEFloat (Just 1) (fromInteger num :: Double) ""
+    in if outputLength > 10 then approx else show num
 
 
 -- | The candidates must already be sorted!
