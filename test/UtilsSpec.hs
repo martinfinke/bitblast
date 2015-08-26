@@ -53,3 +53,14 @@ spec = do
         it "never contains duplicates" $ safeProp $ \list _ _ _ -> do
             nub list `shouldBe` list
 
+    describe "parallelForM" $ do
+        it "works when the task list is empty" $ do
+            result <- parallelForM 4 []
+            result `shouldBe` ([]::[Int])
+        it "always returns the right results in the right order" $ do
+            property $ \(TenOrLess i) (TenOrLess numTasks) -> do
+                let numThreads = max 1 i
+                let tasks = map return [0..numTasks-1]
+                result <- parallelForM numThreads tasks
+                result `shouldBe` [0..numTasks-1]
+

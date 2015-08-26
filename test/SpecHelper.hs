@@ -5,12 +5,14 @@ module SpecHelper
       TenOrLess(..),
       IntList(..),
       shouldBeOneOf,
+      shouldBeSetEqualTo,
       evaluate
     ) where
 
 import Test.Hspec
 import Test.QuickCheck
 import Control.Exception(evaluate)
+import qualified Data.Set as Set
 
 data OneHundredOrLess = OneHundredOrLess Int
     deriving (Show)
@@ -34,3 +36,6 @@ instance Arbitrary IntList where
 
 shouldBeOneOf :: (Eq a, Show a) => a -> [a] -> Expectation
 shouldBeOneOf x xs = x `shouldSatisfy` (`elem` xs)
+
+shouldBeSetEqualTo :: (Ord a, Show a) => [a] -> [a] -> Expectation
+list1 `shouldBeSetEqualTo` list2 = Set.fromList list1 `shouldBe` Set.fromList list2

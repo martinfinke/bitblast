@@ -1,11 +1,16 @@
 module Utils where
 
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 
 import Control.Monad
 import Control.Concurrent
 import qualified System.Random as R
 import Control.Monad.Random
+import Data.List
+import Data.Ord(comparing)
+import Control.Concurrent
+
 
 indexed :: [Int] -> [a] -> [a]
 indexed is list = foldr (\(i,e) rest -> if i `elem` is then e:rest else rest) [] $ zip [0..] list
@@ -55,13 +60,23 @@ divideList numSublists list =
                     else [current ++ nonEmpty]
     in helper list
 
-parallelForM :: [a] -> (a -> IO b) -> IO [b]
-parallelForM list action = do
-    mvars <- forM list $ \x -> do
-        m <- newEmptyMVar
-        forkIO $ action x >>= putMVar m
-        return m
-    forM mvars takeMVar
+parallelForM :: Int -> [IO b] -> IO [b]
+parallelForM numThreads tasks =
+    let mapping = zip3 [0..] tasks $ cycle [0..numThreads-1]
+        insert = const (++)
+        byThread = map snd . Map.toAscList $ foldr (\(i,task,thread) m -> Map.insertWithKey insert thread [(i,task)] m) Map.empty mapping
+    in do
+        mvars <- forM byThread $ \tasks -> do
+            mvar <- newEmptyMVar
+            forkIO $ do
+                results <- forM tasks $ \(i,task) -> do
+                    result <- task
+                    return (i, result)
+                putMVar mvar results
+            return mvar
+        unsortedResults <- fmap concat $ forM mvars readMVar
+        let sortedResults = map snd $ sortBy (comparing fst) unsortedResults
+        return sortedResults
 
 combinationsNoMirror :: (Eq a, Ord a) => Int -> [a] -> [[a]]
 combinationsNoMirror i ls =
