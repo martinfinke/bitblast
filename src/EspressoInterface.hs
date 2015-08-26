@@ -13,15 +13,13 @@ instance Show PLA where
     show (PLA string) = show string
 
 toPLA :: Int -> [Assignment] -> PLA
-toPLA numVariables ones =
-    let header = unlines [".i " ++ show numVariables, ".o 1"]
+toPLA numVariables terms =
+    let header = unlines [".i " ++ show numVariables, ".o 1", ".p " ++ show (length terms)]
         printBool b = if b then '1' else '0'
         printAssignment output a = map printBool a ++ " " ++ [output]
-        terms = if null ones
-            then ".type fdr" : map (printAssignment '0') (assignments numVariables)
-            else ".type fdr" : map (printAssignment '1') ones
+        termLines = map (printAssignment '1') terms
         footer = ".e\n"
-    in PLA $ header ++ unlines terms ++ footer
+    in PLA $ header ++ unlines termLines ++ footer
 
 parseOutput :: String -> CNF
 parseOutput output =
@@ -38,11 +36,7 @@ parseOutput output =
     in CNF $ map fromString withoutOne
 
 runEspresso :: PLA -> [String] -> IO String
-runEspresso (PLA string) args = do
-    -- First, perform a quick distance-1-merge
-    -- This is useful because the input generally has a lot of terms
-    distance1Merge <- readProcess "espresso" ["-Dd1merge"] string
-    readProcess "espresso" args distance1Merge
+runEspresso (PLA string) args = readProcess "espresso" args string
 
 espressoOptimize, espressoOptimizeExact :: Int -> [Assignment] -> IO CNF
 espressoOptimize = espressoOptimizeWith []
@@ -50,6 +44,7 @@ espressoOptimize = espressoOptimizeWith []
 espressoOptimizeExact = espressoOptimizeWith ["-Dexact"]
 
 espressoOptimizeWith :: [String] -> Int -> [Assignment] -> IO CNF
-espressoOptimizeWith args numVariables terms =
-    let pla = toPLA numVariables terms
-    in fmap parseOutput (runEspresso pla args)
+espressoOptimizeWith args numVariables zeros
+    | null zeros = return $ CNF []
+    | otherwise = let pla = toPLA numVariables zeros
+                    in fmap parseOutput (runEspresso pla args)

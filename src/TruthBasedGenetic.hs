@@ -51,7 +51,8 @@ data EvolutionOptions = EvolutionOptions {
     surviveQuantity :: Amount,
     numThreads :: Int,
     maxAge :: Int, -- ^ If this many generations in sequence fail to improve, the algorithm terminates.
-    printCNF :: (CNF -> IO ()) -- ^ Used to show the current best CNF
+    printCNF :: (CNF -> IO ()), -- ^ Used to show the current best CNF
+    printMessage :: (String -> IO ()) -- ^ Used to show stats about the current progress
     }
 
 defaultOptions = EvolutionOptions {
@@ -61,8 +62,9 @@ defaultOptions = EvolutionOptions {
     mergeQuantity = Percent 50,
     surviveQuantity = Percent 25,
     numThreads = 10,
-    maxAge = 10,
-    printCNF = print
+    maxAge = 50,
+    printCNF = print,
+    printMessage = putStrLn
     }
 
 minimizeGenetic :: Int -> Formula -> IO Formula
@@ -97,7 +99,7 @@ optimizeWith options numVars f numExtraVars =
             thisGenBestFitness <- calculateFitness (head sortedCands)
             (newBest, newBestFitness, age) <- if thisGenBestFitness < oldBestFitness
                 then do
-                    putStrLn $ "New best CNF with fitness " ++ show thisGenBestFitness ++ ":"
+                    (printMessage options) $ "New best CNF with fitness " ++ show thisGenBestFitness ++ ":"
                     optimized <- espressoOptimize totalNumVars (getZeros allAssignments $ head sortedCands)
                     (printCNF options) optimized
                     return (optimized, thisGenBestFitness, 0)
@@ -106,15 +108,15 @@ optimizeWith options numVars f numExtraVars =
             let shouldStop = age > (maxAge options)
             if shouldStop
                 then do
-                    putStrLn $ "Stopping because age > " ++ show (maxAge options)
+                    (printMessage options) $ "Stopping because age > " ++ show (maxAge options)
                     return newBest
                 else do
                     rand <- R.newStdGen
                     let newGeneration = flip evalRand rand $ generation options numExtraVars sortedCands
                     lifecycle newGeneration (newBest, newBestFitness, age)
     in do
-        putStrLn $ "Possible candidates: " ++ show numCands
-        putStrLn $ "Population size: " ++ show populationSize'
+        (printMessage options) $ "Possible candidates: " ++ show numCands
+        (printMessage options) $ "Population size: " ++ show populationSize'
         rand <- R.newStdGen
         let initialPopulation = flip evalRand rand $ replicateM populationSize' (randomCandidate expansions ones)
         let initialBest = candidateToCNF totalNumVars (head initialPopulation)
