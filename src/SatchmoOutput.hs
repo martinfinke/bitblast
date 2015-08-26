@@ -40,10 +40,10 @@ createSatchmo name minimizer maybeNumExtraVars numBitsList =
             "import Data.List"
             ]
         operations = [
-            fst . nBitAddition Forbid,
-            fst . nBitMultiplication Forbid,
-            getFormula . fst . greaterThan,
-            getFormula . fst . greaterThanEq
+            nBitAddition Forbid,
+            nBitMultiplication Forbid,
+            getFormula . greaterThan,
+            getFormula . greaterThanEq
             ]
         operationNames = ["add", "mul", "gt", "ge"]
         outputsResult  = [True, True, False, False]

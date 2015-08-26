@@ -46,12 +46,12 @@ main = do
     let circuitType = args!!1
     let numBits = read (args!!2)
     let circuit
-            | circuitType == "add_forbid" = fst $ nBitAddition Forbid numBits
-            | circuitType == "add_dontcare" = fst $ nBitAddition DontCare numBits
-            | circuitType == "mul_forbid" = getFormula .fst $ multiplication Forbid numBits
-            | circuitType == "mul_dontcare" = getFormula .fst $ multiplication DontCare numBits
-            | circuitType == "gt" = getFormula . fst $ greaterThan numBits
-            | circuitType == "ge" = getFormula . fst $ greaterThanEq numBits
+            | circuitType == "add_forbid" = nBitAddition Forbid numBits
+            | circuitType == "add_dontcare" = nBitAddition DontCare numBits
+            | circuitType == "mul_forbid" = getFormula $ multiplication Forbid numBits
+            | circuitType == "mul_dontcare" = getFormula $ multiplication DontCare numBits
+            | circuitType == "gt" = getFormula $ greaterThan numBits
+            | circuitType == "ge" = getFormula $ greaterThanEq numBits
     case mode of
         "min" -> minimize circuitType circuit numBits
         "min_truth" -> minimizeTruth circuitType circuit numBits args

@@ -76,7 +76,7 @@ multiplier xs ys sums
     where sums' = multiplierSegmentDontCareOverflow xs ys
           outputFormula = map (\(s,s') -> Equiv [s, s']) $ zip sums' sums
 
-nBitAddition :: OverflowMode -> Int -> (Formula, Set.Set Variable)
+nBitAddition :: OverflowMode -> Int -> Formula
 nBitAddition overflowMode numBits =
     -- Variable ordering is [x2,x1,x0] + [x5,x4,x3] = [x8,x7,x6]
     let vars = makeVars (3*numBits)
@@ -84,21 +84,17 @@ nBitAddition overflowMode numBits =
         first = reverse $ take numBits atoms
         second = reverse $ take numBits $ drop numBits atoms
         sums = reverse $ take numBits $ drop (2*numBits) atoms
-        summerCircuit = summer overflowMode first second sums
-    in (summerCircuit,Set.fromList vars)
+    in summer overflowMode first second sums
 
-nBitMultiplication :: OverflowMode -> Int -> (Formula, Set.Set Variable)
-nBitMultiplication Forbid numBits =
-    let (canonical,varSet) = multiplication Forbid numBits
-    in (getFormula canonical, varSet)
+nBitMultiplication :: OverflowMode -> Int -> Formula
+nBitMultiplication Forbid numBits = getFormula $ multiplication Forbid numBits
 nBitMultiplication DontCare numBits = 
     let vars = makeVars (3*numBits)
         atoms = map Atom vars
         first = reverse $ take numBits atoms
         second = reverse $ take numBits $ drop numBits atoms
         sums = reverse $ take numBits $ drop (2*numBits) atoms
-        multiplierCircuit = multiplier first second sums
-    in (multiplierCircuit,Set.fromList vars)
+    in multiplier first second sums
 nBitMultiplication _ _ = error "nBitMultiplication: OverflowMode not implemented."
 
 -- has DontCare overflow
@@ -114,16 +110,16 @@ multiplicationTableGen termBits resultBits =
         rows = [printf formatString i ++ printf formatString j ++ printResult i j | i <- range, j <- range] :: [String]
     in rows
 
-multiplication :: OverflowMode -> Int -> (Canonical, Set.Set Variable)
+multiplication :: OverflowMode -> Int -> Canonical
 multiplication = operation3 (*)
 
-lessThan, lessThanEq, greaterThan, greaterThanEq :: Int -> (Canonical, Set.Set Variable)
+lessThan, lessThanEq, greaterThan, greaterThanEq :: Int -> Canonical
 lessThan = operation2 (<)
 lessThanEq = operation2 (<=)
 greaterThan = operation2 (>)
 greaterThanEq = operation2 (>=)
 
-operation2 :: (Int -> Int -> Bool) -> Int -> (Canonical, Set.Set Variable)
+operation2 :: (Int -> Int -> Bool) -> Int -> Canonical
 operation2 op numBits =
     let vars = makeVars (2*numBits)
         varSet = Set.fromList vars
@@ -141,10 +137,10 @@ operation2 op numBits =
         convertRowString str = assignmentFromList $ zip orderedVars $ map (== '1') str
         trues = map convertRowString trueRowStrings
         table = foldr (flip setRow True) (allFalseTable varSet) trues 
-    in (tableToCnf varSet table, varSet)
+    in tableToCnf varSet table
 
 -- | Encodes an operation with 3 numbers (like "a+b=c" or "a*b=c") as a canonical CNF
-operation3 :: (Int -> Int -> Int) -> OverflowMode -> Int -> (Canonical, Set.Set Variable)
+operation3 :: (Int -> Int -> Int) -> OverflowMode -> Int -> Canonical
 operation3 op overflowMode numBits =
     let vars = makeVars (3*numBits)
         varSet = Set.fromList vars
@@ -163,4 +159,4 @@ operation3 op overflowMode numBits =
         convertRowString str = assignmentFromList $ zip orderedVars $ map (== '1') str
         trues = map convertRowString trueRowStrings
         table = foldr (flip setRow True) (allFalseTable varSet) trues 
-    in (tableToCnf varSet table, varSet)
+    in tableToCnf varSet table

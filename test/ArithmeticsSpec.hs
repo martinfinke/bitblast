@@ -191,8 +191,8 @@ spec = do
     describe "multiplication" $ do
         describe "DontCare overflow mode" $ do
             let test numBits =
-                    let f = fst $ nBitMultiplication DontCare numBits
-                        g = getFormula . fst $ multiplication DontCare numBits
+                    let f = nBitMultiplication DontCare numBits
+                        g = getFormula $ multiplication DontCare numBits
                     in toTruthTable f `shouldBe` toTruthTable g
             it "returns an equivalent formula as nBitMultiplication (1 Bit)" $ do
                 test 1
@@ -202,7 +202,7 @@ spec = do
                 test 3
         describe "Forbid overflow mode" $ do
             let test numBits assignments expected =
-                    let f = getFormula . fst $ multiplication Forbid numBits
+                    let f = getFormula $ multiplication Forbid numBits
                         varSet = variableSet f
                     in forM_ assignments $ \str -> do
                         let a = assignmentFromString varSet str
@@ -220,7 +220,7 @@ spec = do
 
     describe "operation2" $ do
         let test op numBits assignments expected =
-                let f = getFormula . fst $ operation2 op numBits
+                let f = getFormula $ operation2 op numBits
                     varSet = variableSet f
                 in forM_ assignments $ \str -> do
                     -- "001 010" -> x0 und x4
@@ -232,7 +232,7 @@ spec = do
             test (<=) 1 ["00", "01", "11"] True
             test (<=) 1 ["10"] False
         it "creates the correct truth table for less than, 2 bits" $ do
-            let f = getFormula . fst $ operation2 (<) 2
+            let f = getFormula $ operation2 (<) 2
             let expected = tableFromString (variableSet f) $ unlines [
                     "0000 0",
                     "0001 0",
@@ -253,7 +253,7 @@ spec = do
                     ]
             toTruthTable f `shouldBe` expected
         it "creates the correct truth table for less than or equal, 2 bits" $ do
-            let f = getFormula . fst $ operation2 (<=) 2
+            let f = getFormula $ operation2 (<=) 2
             let expected = tableFromString (variableSet f) $ unlines [
                     "0000 1",
                     "0001 0",
