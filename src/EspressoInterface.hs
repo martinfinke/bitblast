@@ -14,7 +14,10 @@ instance Show PLA where
 
 toPLA :: Int -> [Assignment] -> PLA
 toPLA numVariables terms =
-    let header = unlines [".i " ++ show numVariables, ".o 1", ".p " ++ show (length terms)]
+    let header = unlines [
+            ".i " ++ show numVariables, ".o 1",
+            ".p " ++ show (length terms)
+            ]
         printBool b = if b then '1' else '0'
         printAssignment output a = map printBool a ++ " " ++ [output]
         termLines = map (printAssignment '1') terms
@@ -46,5 +49,6 @@ espressoOptimizeExact = espressoOptimizeWith ["-Dexact"]
 espressoOptimizeWith :: [String] -> Int -> [Assignment] -> IO CNF
 espressoOptimizeWith args numVariables zeros
     | null zeros = return $ CNF []
-    | otherwise = let pla = toPLA numVariables zeros
-                    in fmap parseOutput (runEspresso pla args)
+    | otherwise =
+        let pla = toPLA numVariables zeros
+        in fmap parseOutput (runEspresso pla args)

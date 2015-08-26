@@ -50,7 +50,7 @@ prettyPrint f = case f of
 isModelOf :: Assignment -- ^ Assigns a value to each 'Variable'
      -> Formula -- ^ The 'Formula' to evaluate
      -> Bool -- ^ The value of the 'Formula' under the given 'Assignment'
-isModelOf assignment formula = case formula of
+assignment `isModelOf` formula = case formula of
     Atom v -> case getVar v assignment of
         Nothing -> error $ "Variable not assigned: " ++ show v
         Just b -> b
@@ -95,6 +95,7 @@ isPositiveLiteral :: Formula -> Bool
 isPositiveLiteral (Atom _) = True
 isPositiveLiteral _ = False
 
+-- | Converts a Formula to tree form. This means that all And, Or and Xor lists will be converted to nested binary operators with two operands each.
 toTree :: Formula -> Formula
 toTree formula = case formula of
     Atom v -> formula
