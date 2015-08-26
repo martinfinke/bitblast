@@ -3,6 +3,8 @@ module TruthBasedGeneticSpec where
 
 import SpecHelper
 import TruthBasedGenetic
+import Formula(Formula(..))
+import Variable(makeVars)
 import TruthBasedCore(Assignment,assignments,CNF(..),Clause(..),lit)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -149,6 +151,20 @@ spec = do
                     ]
             rating <- fitness totalNumVars (assignments totalNumVars) cand
             rating `shouldNotBe` 0
+
+    describe "minimizeGenetic" $ do
+        let options = silentOptions{maxAge=10}
+        it "optimizes a always-false formula without variables" $ do
+            result <- minimizeGeneticWith options 1 $ Xor []
+            result `shouldBe` And [Or []]
+        it "optimizes a tautology without variables" $ do
+            result <- minimizeGeneticWith options 1 $ Equiv []
+            result `shouldBe` And []
+        it "optimizes an XOR with two variables" $ do
+            let [x0,x1] = map Atom $ makeVars 2
+            result <- minimizeGeneticWith options 1 $ Xor [x0,x1]
+            result `shouldBe` And [Or [x0,x1], Or [Not x0, Not x1]]
+
 
 
 

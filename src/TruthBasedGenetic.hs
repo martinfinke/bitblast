@@ -67,15 +67,30 @@ defaultOptions = EvolutionOptions {
     printMessage = putStrLn
     }
 
-minimizeGenetic :: Int -> Formula -> IO Formula
-minimizeGenetic numExtraVars formula =
+silentOptions = defaultOptions{
+    printCNF = const (return ()),
+    printMessage = const (return ())
+    }
+
+minimizeGenetic, minimizeGeneticSilent :: Int -> Formula -> IO Formula
+
+minimizeGenetic numExtraVars formula = 
+    let vars = Set.toAscList (variableSet formula)
+        newVars' = newVars numExtraVars formula
+        varsWithExtra = vars ++ newVars'
+        opts = defaultOptions{printCNF = \cnf -> do
+                print . prettyPrint $ fromCoreCNF varsWithExtra cnf
+            }
+    in minimizeGeneticWith opts numExtraVars formula
+
+minimizeGeneticSilent = minimizeGeneticWith silentOptions
+
+minimizeGeneticWith :: EvolutionOptions -> Int -> Formula -> IO Formula
+minimizeGeneticWith options numExtraVars formula =
     let vars = Set.toAscList (variableSet formula)
         newVars' = newVars numExtraVars formula
         varsWithExtra = vars ++ newVars'
         f = toCoreFormula vars formula
-        options = defaultOptions{printCNF = \cnf -> do
-                print . prettyPrint $ fromCoreCNF varsWithExtra cnf
-            }
     in do
         minCnf <- optimizeWith options (length vars) f numExtraVars
         return $ fromCoreCNF varsWithExtra minCnf
