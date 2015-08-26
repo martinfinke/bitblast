@@ -9,6 +9,8 @@ import Text.Printf(printf)
 import Control.Monad
 import qualified Data.Set as Set
 import Variable
+import Assignment
+import TruthTable
 
 halfAdderSegment :: (Formula,Formula) -> (Formula,Formula)
 halfAdderSegment (x,y) = (s,c)

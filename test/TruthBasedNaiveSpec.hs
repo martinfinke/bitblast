@@ -3,6 +3,8 @@ module TruthBasedNaiveSpec where
 import SpecHelper
 import TruthBasedNaive
 import Variable
+import TruthTable
+import Assignment
 import Formula
 import NormalForm
 import qualified Data.Set as Set

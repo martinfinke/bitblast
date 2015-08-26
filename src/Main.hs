@@ -1,5 +1,6 @@
 module Main where
 
+import Assignment
 import Arithmetics
 import Formula
 import CalculatedFormulas
@@ -16,6 +17,7 @@ import TruthBasedCore
 import TruthBased
 import TruthBasedApprox
 import TruthBasedGenetic
+import TruthTable
 import Tseitin
 import TseitinSelect
 import Variable

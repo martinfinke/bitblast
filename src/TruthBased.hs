@@ -13,6 +13,7 @@ module TruthBased(
                   convertLiteral) where
 
 import Variable
+import Assignment
 import Formula
 import MinimizeFormula
 import NormalForm

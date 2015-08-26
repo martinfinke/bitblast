@@ -2,6 +2,7 @@ module WorthExtraVariables where
 
 import qualified Data.Set as Set
 import Variable
+import TruthTable
 import Utils(combinationsNoMirror)
 import Formula
 import NormalForm

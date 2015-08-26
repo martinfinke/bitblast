@@ -6,6 +6,8 @@ import Formula
 import NormalForm
 import Utils
 import Debug.Trace(traceShow)
+import TruthTable
+import Assignment
 
 expand :: Int -> Set.Set Variable -> TruthTable -> ([TruthTable], Set.Set Variable)
 expand numExtraVars varSet table

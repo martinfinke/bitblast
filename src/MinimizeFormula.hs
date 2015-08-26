@@ -11,6 +11,7 @@ import QmcCpp
 import QmcTypes
 import SatchmoInterface
 import Variable
+import Assignment
 import Tseitin
 import TseitinSelect
 import TruthBasedNaive

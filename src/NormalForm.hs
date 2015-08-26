@@ -22,6 +22,8 @@ module NormalForm (Canonical,
 
 import Formula
 import Variable
+import Assignment
+import TruthTable
 import qualified Data.Set as Set
 import Text.Printf(printf)
 import Debug.Trace(traceShow)

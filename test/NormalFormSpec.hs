@@ -2,6 +2,7 @@ module NormalFormSpec(NormalFormSpec.spec) where
 
 import SpecHelper
 import qualified Variable as V
+import Assignment
 import VariableSpec
 import Formula(Formula(..), isModelOf, variableSet, isLiteral)
 import NormalForm
@@ -40,8 +41,8 @@ spec = do
         it "creates CNFs that are equivalent (for one random assignment) to the original formula" $ do
             property $ \formula assignment ->
                 let cnf = getFormula $ toCanonicalCnf formula
-                    a1 = V.expandOrReduce False (variableSet formula) assignment
-                    a2 = V.expandOrReduce False (variableSet cnf) assignment
+                    a1 = expandOrReduce False (variableSet formula) assignment
+                    a2 = expandOrReduce False (variableSet cnf) assignment
                 in a2 `isModelOf` cnf `shouldBe` a1 `isModelOf` formula
 
         it "can create a CNF for a formula without variables" $ do
@@ -68,8 +69,8 @@ spec = do
         it "creates DNFs that are equivalent (for one random assignment) to the original formula" $ do
             property $ \formula assignment ->
                 let dnf = getFormula $ toCanonicalDnf formula
-                    a1 = V.expandOrReduce False (variableSet formula) assignment
-                    a2 = V.expandOrReduce False (variableSet dnf) assignment
+                    a1 = expandOrReduce False (variableSet formula) assignment
+                    a2 = expandOrReduce False (variableSet dnf) assignment
                 in a2 `isModelOf` dnf `shouldBe` a1 `isModelOf` formula
 
     describe "isCnf" $ do

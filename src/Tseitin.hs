@@ -5,6 +5,7 @@ import Formula
 import qualified Data.Set as Set
 import Data.List(sortBy,partition)
 import Data.Maybe(catMaybes)
+import Assignment
 
 data TseitinFormula = TseitinFormula {
     modFormula :: Formula,

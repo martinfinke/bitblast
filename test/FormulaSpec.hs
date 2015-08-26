@@ -2,6 +2,8 @@ module FormulaSpec where
 
 import SpecHelper
 import Formula
+import Assignment
+import TruthTable
 import Variable hiding (eval, prettyPrint)
 import qualified Variable as V
 import VariableSpec

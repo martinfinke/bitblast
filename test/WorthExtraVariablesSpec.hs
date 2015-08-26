@@ -3,6 +3,7 @@ module WorthExtraVariablesSpec where
 import SpecHelper
 import WorthExtraVariables
 import Variable
+import TruthTable
 import qualified Data.Set as Set
 
 spec :: Spec

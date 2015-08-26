@@ -13,7 +13,9 @@ module Formula (Formula(..),
                 toTree
                 ) where
 
-import Variable hiding(eval, prettyPrint)
+import Variable hiding(prettyPrint)
+import Assignment
+import TruthTable
 import qualified Variable as V
 import Data.List (intercalate)
 import qualified Data.Set as Set

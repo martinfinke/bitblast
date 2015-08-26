@@ -8,6 +8,8 @@ import Variable hiding (eval)
 import qualified Data.Set as Set
 import ArithmeticTruthTables
 import Control.Monad
+import Assignment
+import TruthTable
 
 spec :: Spec
 spec = do
