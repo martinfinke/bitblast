@@ -51,7 +51,8 @@ data EvolutionOptions = EvolutionOptions {
     mergeQuantity :: Amount,
     surviveQuantity :: Amount,
     numThreads :: Int,
-    maxAge :: Maybe Int, -- ^ If this many generations in sequence fail to improve, the algorithm terminates. If 'Nothing', the algorithm will run endlessly.
+    allowedReshuffles :: Maybe Int, -- ^ How many restarts are allowed. 'Just 0' means none at all, 'Nothing' means infinitely many.
+    reshuffleAge :: Maybe Int, -- ^ If this many generations in sequence fail to improve, the algorithm will restart with a new, completely shuffled population.
     printCNF :: (CNF -> IO ()), -- ^ Used to show the current best CNF
     printMessage :: (String -> IO ()) -- ^ Used to show stats about the current progress
     }
@@ -63,7 +64,8 @@ defaultOptions = EvolutionOptions {
     mergeQuantity = Percent 50,
     surviveQuantity = Percent 20,
     numThreads = 10,
-    maxAge = Just 50,
+    allowedReshuffles = Just 20,
+    reshuffleAge = Just 20,
     printCNF = print,
     printMessage = putStrLn
     }
@@ -85,7 +87,7 @@ minimizeGeneticPretty endless numExtraVars formula =
         opts = defaultOptions{
             printCNF = \cnf -> do
                 print . prettyPrint $ fromCoreCNF varsWithExtra cnf,
-            maxAge = if endless then Nothing else (maxAge defaultOptions)
+            allowedReshuffles = if endless then Nothing else (allowedReshuffles defaultOptions)
             }
     in minimizeGeneticWith opts numExtraVars formula
 
@@ -107,7 +109,7 @@ optimize = optimizeWith defaultOptions
 optimizeWith :: EvolutionOptions -> Int -> (Assignment -> Bool) -> Int -> IO CNF
 optimizeWith options numVars f numExtraVars =
     let ones = filter f (assignments numVars)
-        minimizeF = let zeros = filter (not . f) (assignments numVars) in espressoOptimize numVars zeros
+        print' = (printMessage options)
         totalNumVars = numVars + numExtraVars
         expansions = assignments numExtraVars
         numCands = numCandidates (length ones) numExtraVars
@@ -117,41 +119,50 @@ optimizeWith options numVars f numExtraVars =
         calculateFitness mem cand = case Map.lookup cand mem of
                 Just rating -> return rating
                 Nothing -> fitness totalNumVars allAssignments cand
-        lifecycle candidates (oldBest, oldBestFitness, oldAge) fitnessMemory = do
+        lifecycle candidates (oldBest, oldBestFitness, oldAge, doneRestarts) fitnessMemory = do
             fitness <- parallelForM (numThreads options) $ map (calculateFitness fitnessMemory) candidates
-            let zipped = zip candidates fitness :: [(Candidate, Int)]
+            let zipped = zip candidates fitness
             let sortedCands = map fst $ sortBy (comparing snd) $ zipped
             let fitnessMemory' = Map.union fitnessMemory $ Map.fromList zipped
             thisGenBestFitness <- calculateFitness fitnessMemory' (head sortedCands)
             (newBest, newBestFitness, age) <- if thisGenBestFitness < oldBestFitness
                 then do
-                    (printMessage options) $ "New best CNF with fitness " ++ show thisGenBestFitness ++ ":"
+                    print' $ "New best CNF with fitness " ++ show thisGenBestFitness ++ ":"
                     optimized <- espressoOptimize totalNumVars (getZeros allAssignments $ head sortedCands)
                     (printCNF options) optimized
                     return (optimized, thisGenBestFitness, 0)
                 else return (oldBest, oldBestFitness, oldAge+1)
 
-            let shouldStop = case (maxAge options) of
+            let shouldStop = case (allowedReshuffles options) of
                     Nothing -> False
-                    Just maxAge' -> age > maxAge'
+                    Just allowedReshuffles' -> doneRestarts > allowedReshuffles'
             if shouldStop
                 then do
-                    (printMessage options) $ "Stopping because age > " ++ show (maxAge options)
+                    print' $ "Stopping because no more restarts are allowed."
                     return newBest
                 else do
                     rand <- R.newStdGen
-                    let newGeneration = flip evalRand rand $ generation options numExtraVars sortedCands
-                    lifecycle newGeneration (newBest, newBestFitness, age) fitnessMemory'
+                    let shouldReshuffle = case (reshuffleAge options) of
+                            Nothing -> False
+                            Just reshuffleAge' -> oldAge >= reshuffleAge'
+                    if shouldReshuffle
+                        then reshufflePopulation (newBest, newBestFitness, age, doneRestarts) fitnessMemory' rand
+                        else let newGeneration = flip evalRand rand $ generation options numExtraVars sortedCands
+                             in lifecycle newGeneration (newBest, newBestFitness, age, doneRestarts) fitnessMemory'
+        reshufflePopulation (best, bestFitness, _, doneRestarts) fitnessMemory rand = do
+            print' $ "Reshuffling population..."
+            let randomPopulation = flip evalRand rand $ replicateM populationSize' (randomCandidate expansions ones)
+            lifecycle randomPopulation (best, bestFitness, 0, doneRestarts + 1) fitnessMemory
     in do
-        (printMessage options) $ "Possible candidates: " ++ showNumCandidates numCands
-        (printMessage options) $ "Population size: " ++ show populationSize'
-        withoutExtra <- minimizeF
+        print' $ "Possible candidates: " ++ showNumCandidates numCands
+        print' $ "Population size: " ++ show populationSize'
+        withoutExtra <- espressoOptimize numVars $ filter (not . f) (assignments numVars)
         let numLitsWithoutExtra = numLiterals withoutExtra
-        (printMessage options) $ "CNF without extra variables has " ++ show numLitsWithoutExtra ++ " literals:"
+        print' $ "CNF without extra variables has " ++ show numLitsWithoutExtra ++ " literals:"
         (printCNF options) withoutExtra
         rand <- R.newStdGen
         let initialPopulation = flip evalRand rand $ replicateM populationSize' (randomCandidate expansions ones)
-        bestCNF <- lifecycle initialPopulation (withoutExtra, numLitsWithoutExtra, 0) Map.empty 
+        bestCNF <- lifecycle initialPopulation (withoutExtra, numLitsWithoutExtra, 0, 0) Map.empty 
         return $ bestCNF
 
 numCandidates :: Int -> Int -> Integer

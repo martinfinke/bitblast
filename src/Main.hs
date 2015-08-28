@@ -29,6 +29,7 @@ import qualified Data.Set as Set
 import Data.List(sortBy)
 import Data.Ord(comparing)
 import Text.Printf(printf)
+import Control.Monad(void)
 
 import Test.Hspec
 import Test.QuickCheck
@@ -78,8 +79,7 @@ main = do
           minimizeGen circuitType circuit numBits args = do
             let extraVars = read (args!!3)
             putStrLn $ printf "Optimizing %s (%d bit)..." circuitType numBits
-            minimizeGeneticEndless extraVars circuit
-            return ()
+            void $ minimizeGeneticEndless extraVars circuit
           table circuitType circuit numBits args = do
             let extraVars = read (args!!3)
             let clauseMode = read (args!!4) :: Bool
