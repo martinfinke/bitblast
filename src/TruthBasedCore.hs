@@ -20,7 +20,6 @@ import qualified Satchmo.Counting.Binary as C
 
 import Debug.Trace(traceShow)
 import Utils(indexed)
-import Data.Time.Clock(getCurrentTime)
 
 newtype Lit = Lit Int
     deriving (Eq, Ord, Show)

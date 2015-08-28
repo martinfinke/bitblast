@@ -16,6 +16,7 @@ import Numeric(showEFloat)
 import Utils(shuffleList, parallelForM, Amount(..), toAbs)
 import Data.List
 import Data.Ord(comparing)
+import Data.Time.Clock
 
 -- A candidate maps each f-One-Assignment to a non-empty list of (f' \ f)-Assignments.
 newtype Candidate = Candidate (Map.Map Assignment [Assignment])
@@ -52,7 +53,7 @@ data EvolutionOptions = EvolutionOptions {
     surviveQuantity :: Amount,
     numThreads :: Int,
     allowedReshuffles :: Maybe Int, -- ^ How many restarts are allowed. 'Just 0' means none at all, 'Nothing' means infinitely many.
-    reshuffleAge :: Maybe Int, -- ^ If this many generations in sequence fail to improve, the algorithm will restart with a new, completely shuffled population.
+    reshuffleAge :: Maybe Int, -- ^ If this many generations in sequence fail to improve, the algorithm will restart with a new, completely shuffled population. If 'Nothing', it will never reshuffle and run indefinitely.
     printCNF :: (CNF -> IO ()), -- ^ Used to show the current best CNF
     printMessage :: (String -> IO ()) -- ^ Used to show stats about the current progress
     }
@@ -65,9 +66,9 @@ defaultOptions = EvolutionOptions {
     surviveQuantity = Percent 20,
     numThreads = 10,
     allowedReshuffles = Just 20,
-    reshuffleAge = Just 20,
-    printCNF = print,
-    printMessage = putStrLn
+    reshuffleAge = Just 50,
+    printCNF = \cnf -> do t <- getCurrentTime; putStrLn $ show t ++ ": " ++ show cnf,
+    printMessage = \msg -> do t <- getCurrentTime; putStrLn $ show t ++ ": " ++ msg
     }
 
 silentOptions = defaultOptions{
@@ -86,6 +87,8 @@ minimizeGeneticPretty endless numExtraVars formula =
         varsWithExtra = vars ++ newVars'
         opts = defaultOptions{
             printCNF = \cnf -> do
+                t <- getCurrentTime;
+                putStrLn $ show t ++ ":"
                 print . prettyPrint $ fromCoreCNF varsWithExtra cnf,
             allowedReshuffles = if endless then Nothing else (allowedReshuffles defaultOptions)
             }
@@ -150,7 +153,7 @@ optimizeWith options numVars f numExtraVars =
                         else let newGeneration = flip evalRand rand $ generation options numExtraVars sortedCands
                              in lifecycle newGeneration (newBest, newBestFitness, age, doneRestarts) fitnessMemory'
         reshufflePopulation (best, bestFitness, _, doneRestarts) fitnessMemory rand = do
-            print' $ "Reshuffling population..."
+            --print' $ "Shuffling population..."
             let randomPopulation = flip evalRand rand $ replicateM populationSize' (randomCandidate expansions ones)
             lifecycle randomPopulation (best, bestFitness, 0, doneRestarts + 1) fitnessMemory
     in do
@@ -161,8 +164,7 @@ optimizeWith options numVars f numExtraVars =
         print' $ "CNF without extra variables has " ++ show numLitsWithoutExtra ++ " literals:"
         (printCNF options) withoutExtra
         rand <- R.newStdGen
-        let initialPopulation = flip evalRand rand $ replicateM populationSize' (randomCandidate expansions ones)
-        bestCNF <- lifecycle initialPopulation (withoutExtra, numLitsWithoutExtra, 0, 0) Map.empty 
+        bestCNF <- reshufflePopulation (withoutExtra, numLitsWithoutExtra, 0, 0) Map.empty rand
         return $ bestCNF
 
 numCandidates :: Int -> Int -> Integer
