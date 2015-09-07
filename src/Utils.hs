@@ -11,7 +11,6 @@ import Data.List
 import Data.Ord(comparing)
 import Control.Concurrent
 
-
 data Amount = Percent Float
             | Abs Int
 toAbs :: Integral a => Amount -> a -> a

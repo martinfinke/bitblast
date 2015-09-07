@@ -5,6 +5,7 @@ module Formula (Formula(..),
                 prettyPrint,
                 isModelOf,
                 variableSet,
+                numVars,
                 toTruthTable,
                 possibleAssignments,
                 allBoolCombinations,
@@ -75,6 +76,9 @@ variableSet formula = case formula of
     Xor fs -> foldList fs
     Equiv fs -> foldList fs
     where foldList = foldr (Set.union . variableSet) Set.empty
+
+numVars :: Formula -> Int
+numVars = Set.size . variableSet
 
 -- | Generates a 'TruthTable' from a given 'Formula'
 toTruthTable :: Formula -> TruthTable

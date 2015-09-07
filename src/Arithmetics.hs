@@ -30,23 +30,27 @@ fullAdder :: (Formula,Formula) -> (Formula,Formula) -> Formula -> Formula
 fullAdder (x,y) (cIn,cOut) s = And [Equiv [s, s'], Equiv [cOut, cOut']]
     where (s',cOut') = fullAdderSegment (x,y) cIn
 
-summerSegment :: [Formula] -> [Formula] -> ([Formula], Formula)
-summerSegment (x:[]) (y:[]) = ([s], cOut)
-    where (s,cOut) = halfAdderSegment (x,y)
-summerSegment (x:xs) (y:ys)
+summerSegment :: Maybe Formula -> [Formula] -> [Formula] -> ([Formula], Formula)
+summerSegment maybeCarry (x:[]) (y:[]) = ([s], cOut)
+    where (s,cOut) = case maybeCarry of
+            Nothing -> halfAdderSegment (x,y)
+            Just carry -> fullAdderSegment (x,y) carry
+summerSegment maybeCarry (x:xs) (y:ys)
     | length xs /= length ys = error "The input bit vectors must have the same width."
     | otherwise = (s:sums, cOut)
     where (s,cOut) = fullAdderSegment (x,y) finalC
-          (sums,finalC) = summerSegment xs ys
+          (sums,finalC) = summerSegment maybeCarry xs ys
 
 data OverflowMode = Forbid | DontCare | Connect Formula
     deriving(Eq)
 
 summer :: OverflowMode -> [Formula] -> [Formula] -> [Formula] -> Formula
-summer overflowMode xs ys sums
+summer = summerWithCarry Nothing
+summerWithCarry :: Maybe Formula -> OverflowMode -> [Formula] -> [Formula] -> [Formula] -> Formula
+summerWithCarry maybeCarry overflowMode xs ys sums
     | length xs /= length ys || length ys /= length sums = error "The input bit vectors must have the same width."
     | otherwise = And outputFormula
-    where (sums', cOut') = summerSegment xs ys
+    where (sums', cOut') = summerSegment maybeCarry xs ys
           sumEquivs = map (\(s,s') -> Equiv [s, s']) $ zip sums' sums
           outputFormula = case overflowMode of
                 Forbid -> Not cOut' : sumEquivs

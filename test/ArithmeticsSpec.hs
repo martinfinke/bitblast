@@ -10,6 +10,7 @@ import ArithmeticTruthTables
 import Control.Monad
 import Assignment
 import TruthTable
+import ParseCnf
 
 spec :: Spec
 spec = do
@@ -52,14 +53,14 @@ spec = do
         it "is equivalent to a fullAdderSegment for 1 bit" $ do
             let ([y,x],varSet) = mkVars 2
             let (s', cOut') = halfAdderSegment (x,y)
-            let (s'', cOut'') = summerSegment [x] [y]
+            let (s'', cOut'') = summerSegment Nothing [x] [y]
             let equiv = And [Equiv [s', head s''], Equiv [cOut', cOut'']]
             toTruthTable equiv `shouldBe` allTrueTable varSet
 
         it "has the correct truth table for 2 bits" $ do
             let ([cOut,s0,s1,y0,y1,x0,x1],varSet) = mkVars 7
             
-            let ([s1',s0'], cOut') = summerSegment [x1,x0] [y1,y0]
+            let ([s1',s0'], cOut') = summerSegment Nothing [x1,x0] [y1,y0]
             let equiv = And [Equiv [s1, s1'], Equiv [s0, s0'], Equiv [cOut, cOut']]
             let smer = summer (Connect cOut) [x1,x0] [y1,y0] [s1,s0]
             let trueAssignments = map (assignmentFromString varSet) addition2BitConnectOverflow
@@ -84,7 +85,6 @@ spec = do
                     "101"
                     ]
             toTruthTable forbid `shouldBe` trueOnlyForAssignments varSet forbidAssigments
-            
 
         it "has the correct truth table for 3 bits" $ do
             let ([s0,s1,s2,cOut,y0,y1,y2,x0,x1,x2],varSet) = mkVars 10
@@ -94,7 +94,7 @@ spec = do
 
         it "can forbid overflow" $ do
             let ([s0,s1,y0,y1,x0,x1],varSet) = mkVars 6
-            let ([s1',s0'], cOut') = summerSegment [x1,x0] [y1,y0]
+            let ([s1',s0'], cOut') = summerSegment Nothing [x1,x0] [y1,y0]
             let equiv = And [Equiv [s1, s1'], Equiv [s0, s0'], Not cOut']
             let smer = summer Forbid [x1,x0] [y1,y0] [s1,s0]
             let trueAssignments = map (assignmentFromString varSet) addition2BitForbidOverflow
@@ -103,12 +103,32 @@ spec = do
 
         it "can not care about overflow" $ do
             let ([s0,s1,y0,y1,x0,x1],varSet) = mkVars 6
-            let ([s1',s0'], _) = summerSegment [x1,x0] [y1,y0]
+            let ([s1',s0'], _) = summerSegment Nothing [x1,x0] [y1,y0]
             let equiv = And [Equiv [s1, s1'], Equiv [s0, s0']]
             let smer = summer DontCare [x1,x0] [y1,y0] [s1,s0]
             let trueAssignments = map (assignmentFromString varSet) addition2BitDontCareOverflow
             toTruthTable equiv `shouldBe` trueOnlyForAssignments varSet trueAssignments
             toTruthTable smer `shouldBe` trueOnlyForAssignments varSet trueAssignments
+
+    describe "summerWithCarry" $ do
+        it "uses an incoming carry in 1-bit" $ do
+            let [x,y,cIn,cOut,s] = map Atom $ makeVars 5
+            let f = summerWithCarry (Just cIn) (Connect cOut) [x] [y] [s]
+            f `shouldBe` And [
+                Equiv [cOut, Or [And [y,cIn], And [x,cIn], And [x,y]]],
+                Equiv [Xor [x,y,cIn], s]
+                ]
+        it "uses an incoming carry in 2-bit" $ do
+            let [x1,x2,y1,y2,cIn,cOut,s1,s2] = map Atom $ makeVars 8
+            let f = summerWithCarry (Just cIn) (Connect cOut) [x1,x2] [y1,y2] [s1,s2]
+            let carryFromLsb = Or [And [y2,cIn], And [x2,cIn], And [x2,y2]]
+            let expected = And [
+                    Equiv [cOut, Or [And [y1,carryFromLsb], And [x1,carryFromLsb], And [x1,y1]]],
+                    Equiv [Xor [x1,y1,carryFromLsb], s1],
+                    Equiv [Xor [x2,y2,cIn], s2]
+                    ]
+            f `shouldBe` expected
+
 
     describe "multiplierSegmentDontCareOverflow (from Boolector)" $ do
         it "multiplies two one-bit numbers" $ do
@@ -275,3 +295,7 @@ spec = do
                     "1111 1"
                     ]
             toTruthTable f `shouldBe` expected
+
+    describe "combine" $ do
+        it "combines two 1-bit additions to a 2-bit addition" $ do
+            pending
