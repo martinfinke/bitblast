@@ -3,9 +3,11 @@ module Tseitin where
 import Variable
 import Formula
 import qualified Data.Set as Set
+import qualified Data.Map.Strict as Map
 import Data.List(sortBy,partition)
 import Data.Maybe(catMaybes)
 import Assignment
+import Data.Maybe
 
 data TseitinFormula = TseitinFormula {
     modFormula :: Formula,
@@ -13,6 +15,21 @@ data TseitinFormula = TseitinFormula {
     equivTerms :: [Formula]
     }
     deriving(Eq, Show)
+
+remapVars :: Set.Set Variable -> Formula -> Formula
+remapVars alreadyTaken f =
+    let oldVars = Set.toAscList $ variableSet f
+        newVars = take (length oldVars) $ newVariables alreadyTaken
+        mapping = Map.fromList $ zip oldVars newVars
+        replaceVars f = case f of
+            Atom v -> Atom $ mapping Map.! v
+            Not f -> Not $ replaceVars f
+            And fs -> And $ map replaceVars fs
+            Or fs -> Or $ map replaceVars fs
+            Implies prem conc -> Implies (replaceVars prem) (replaceVars conc)
+            Xor fs -> Xor $ map replaceVars fs
+            Equiv fs -> Equiv $ map replaceVars fs
+    in replaceVars f
 
 findAndReplace :: Formula -> Variable -> Formula -> (Bool,Formula)
 findAndReplace toReplace extraVar formula

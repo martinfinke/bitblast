@@ -60,11 +60,6 @@ setVar (Variable i) b (Assignment intMap) = Assignment $ IntMap.insert i b intMa
 assignedVars :: Assignment -> Set.Set Variable
 assignedVars (Assignment intMap) = Set.fromList $ map Variable (IntMap.keys intMap)
 
-newVariables :: Set.Set Variable -> [Variable]
-newVariables varSet
-    | Set.null varSet = [head (makeVars 1) ..]
-    | otherwise = [succ (Set.findMax varSet)..]
-
 expandOrReduce :: Bool -> Set.Set Variable -> Assignment -> Assignment
 expandOrReduce b variableSet assignment@(Assignment intMap) =
     let alreadyAssigned = assignedVars assignment

@@ -6,6 +6,7 @@ import Formula
 import Variable(makeVars)
 import Tseitin
 import qualified Data.Set as Set
+import Control.Monad
 
 spec :: Spec
 spec = do
@@ -15,6 +16,26 @@ spec = do
     let varSet = Set.fromList vars
     let [x0,x1,x2,x3,x4,x5,x6,x7,x8,x9] = map Atom vars
 
+    describe "remapVars" $ do
+        it "does nothing on empty formulas" $ do
+            let fs = [
+                    And [],
+                    Or [And []],
+                    Xor [Not $ Equiv [], And [Or []]]
+                    ]
+            forM_ fs $ \f -> remapVars Set.empty f `shouldBe` f
+        it "does nothing if nothing has to be replaced" $ do
+            let used = Set.fromList [v0,v1]
+            let f = And [x2, Not x3]
+            remapVars used f `shouldBe` f
+        it "replaces an atom" $ do
+            let used = Set.fromList [v0,v1,v2]
+            remapVars used x0 `shouldBe` x3
+        it "works with a nested formula" $ do
+            let used = Set.fromList [v0,v1,v4]
+            let f = Implies (And [x3, Not x0, Or [Xor [x1], And [x3]]]) (Equiv [Not x1])
+            let f' = Implies (And [x7, Not x5, Or [Xor [x6], And [x7]]]) (Equiv [Not x6])
+            remapVars used f `shouldBe` f'
 
     describe "findAndReplace" $ do
         it "replaces a positive literal" $ do
