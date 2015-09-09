@@ -12,9 +12,10 @@ module TruthTable(TruthTable,
                   allAssignments,
                   merge,
                   tableVariableSet,
-                  trueAndFalse) where
+                  trueAndFalse,
+                  trim) where
 
-import qualified Data.Map.Lazy as Map
+import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import Data.List(sort)
 import Assignment
@@ -82,3 +83,13 @@ trueAndFalse table =
         trues = map fst . filter snd $ list
         falses = map fst . filter (not . snd) $ list
     in (trues, falses)
+
+-- | Removes columns off a table. This creates duplicate rows, which are merged using ||. This is useful for checking equisatisfiability.
+trim :: Set.Set Variable -> TruthTable -> TruthTable
+trim varSet table@(TruthTable m)
+    | varSet == tableVarSet = table
+    | not $ varSet `Set.isSubsetOf` tableVarSet = error "TruthTable.trim: Can't trim a table to a variable set that is not a subset."
+    | otherwise = TruthTable $ Map.mapKeysWith (||) reduce m
+    where tableVarSet = tableVariableSet table
+          reduce = expandOrReduce False varSet
+

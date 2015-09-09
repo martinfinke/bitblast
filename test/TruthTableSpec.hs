@@ -34,5 +34,21 @@ spec = do
             let varSet' = Set.fromList [var 0, var 1]
             tableFromString varSet' xorString `shouldBe` toTruthTable (Xor [Atom $ var 0, Atom $ var 1])
 
+    describe "trim" $ do
+        it "trims a table to a variable set" $ do
+            let varSet = Set.fromList [var 0, var 1]
+            let table = tableFromString varSet $ unlines [
+                    "00 | 0",
+                    "01 | 0",
+                    "10 | 1",
+                    "11 | 0"
+                    ]
+            let smallerVarSet = Set.fromList [var 0]
+            let expected = tableFromString smallerVarSet $ unlines [
+                    "0 | 1",
+                    "1 | 0"
+                    ]
+            trim smallerVarSet table `shouldBe` expected
+            
 
 

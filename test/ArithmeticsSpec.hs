@@ -129,7 +129,6 @@ spec = do
                     ]
             f `shouldBe` expected
 
-
     describe "multiplierSegmentDontCareOverflow (from Boolector)" $ do
         it "multiplies two one-bit numbers" $ do
             let ([x,y],varSet) = mkVars 2

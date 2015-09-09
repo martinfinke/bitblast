@@ -21,15 +21,17 @@ remapVars alreadyTaken f =
     let oldVars = Set.toAscList $ variableSet f
         newVars = take (length oldVars) $ newVariables alreadyTaken
         mapping = Map.fromList $ zip oldVars newVars
-        replaceVars f = case f of
-            Atom v -> Atom $ mapping Map.! v
-            Not f -> Not $ replaceVars f
-            And fs -> And $ map replaceVars fs
-            Or fs -> Or $ map replaceVars fs
-            Implies prem conc -> Implies (replaceVars prem) (replaceVars conc)
-            Xor fs -> Xor $ map replaceVars fs
-            Equiv fs -> Equiv $ map replaceVars fs
-    in replaceVars f
+    in replaceVars mapping f
+
+replaceVars :: Map.Map Variable Variable -> Formula -> Formula
+replaceVars mapping f = case f of
+    Atom v -> Atom $ mapping Map.! v
+    Not f -> Not $ replaceVars mapping f
+    And fs -> And $ map (replaceVars mapping) fs
+    Or fs -> Or $ map (replaceVars mapping) fs
+    Implies prem conc -> Implies (replaceVars mapping prem) (replaceVars mapping conc)
+    Xor fs -> Xor $ map (replaceVars mapping) fs
+    Equiv fs -> Equiv $ map (replaceVars mapping) fs
 
 findAndReplace :: Formula -> Variable -> Formula -> (Bool,Formula)
 findAndReplace toReplace extraVar formula

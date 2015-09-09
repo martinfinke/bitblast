@@ -282,3 +282,33 @@ spec = do
             toTree (And [Or [x1,x2,x3], x5, Not x4]) `shouldBe` And [Or [x1, Or [x2,x3]], And [x5, Not x4]]
         it "produces only equivalent Formulas" $ do
             property $ \f -> toTruthTable (toTree f) `shouldBe` toTruthTable f
+
+    describe "equiv" $ do
+        let [x0,x1,x2,x3,x4,x5,x6,x7,x8,x9] = map Atom $ V.makeVars 10
+        it "is True if two formulas are equivalent" $ do
+            let f = And [x0,x1]
+            let f' = And [x0,x1,Or [x0, Not x0]]
+            equiv f f' `shouldBe` True
+        it "is False if two formulas are not equivalent" $ do
+            let f = And [x0,x1]
+            let f' = And [x0, Not x1]
+            equiv f f' `shouldBe` False
+        it "is False if two formulas don't have the same variable set" $ do
+            let f = And [x0,x1]
+            let f' = And [x0,x2]
+            equiv f f' `shouldBe` False
+
+    describe "equisatGTE" $ do
+        let [x0,x1,x2,x3,x4,x5,x6,x7,x8,x9] = map Atom $ V.makeVars 10
+        it "is False if the variable set is not a superset" $ do
+            let base = And [x0,x2]
+            let ex = And [x0,x1]
+            ex `equisatGTE` base `shouldBe` False
+        it "is False if two formulas are not equisatisfiable" $ do
+            let base = And [x0,x2]
+            let ex = And [x0,Not x2,x1]
+            ex `equisatGTE` base `shouldBe` False
+        it "is True if two formulas are equisatisfiable" $ do
+            let base = And [x0,x2]
+            let ex = And [x0,x2, Or [x3,x4]]
+            ex `equisatGTE` base `shouldBe` True

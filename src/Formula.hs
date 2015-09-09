@@ -11,7 +11,9 @@ module Formula (Formula(..),
                 allBoolCombinations,
                 isLiteral,
                 isPositiveLiteral,
-                toTree
+                toTree,
+                equiv,
+                equisatGTE
                 ) where
 
 import Variable hiding(prettyPrint)
@@ -110,10 +112,23 @@ toTree formula = case formula of
     Or fs -> treeify Or fs
     Implies premise conclusion -> Implies (toTree premise) (toTree conclusion)
     Xor fs -> treeify Xor fs
-    -- Equiv can't be converted to a tree because it's not associative:
+    -- Equiv must not be converted because it's not associative:
     Equiv fs -> Equiv fs
     where treeify op fs = case fs of
             [] -> op []
             (f:[]) -> f
             (f:f':[]) -> op [toTree f, toTree f']
             (f:fs) -> op [toTree f, treeify op fs]
+
+
+equiv :: Formula -> Formula -> Bool
+equiv f1 f2 = toTruthTable f1 == toTruthTable f2
+
+-- | Naive equisatisfiability test. Takes a long time (of course) for formulas with many variables.
+equisatGTE :: Formula -> Formula -> Bool
+equisatGTE ex base
+    | not $ baseVars `Set.isSubsetOf` exVars = False
+    | otherwise = trimmed == toTruthTable base
+    where exVars = variableSet ex
+          baseVars = variableSet base
+          trimmed = trim baseVars $ toTruthTable ex

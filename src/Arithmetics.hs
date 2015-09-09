@@ -8,9 +8,13 @@ import Data.List(zip3)
 import Text.Printf(printf)
 import Control.Monad
 import qualified Data.Set as Set
+import qualified Data.Map.Strict as Map
 import Variable
 import Assignment
 import TruthTable
+import Tseitin(remapVars,replaceVars)
+import Data.List(sort)
+import Debug.Trace(traceShow)
 
 halfAdderSegment :: (Formula,Formula) -> (Formula,Formula)
 halfAdderSegment (x,y) = (s,c)
