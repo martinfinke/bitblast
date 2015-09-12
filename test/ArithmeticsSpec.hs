@@ -196,6 +196,16 @@ spec = do
             pendingWith "Takes a little too long, but has passed before. Uncomment to test again."
             --toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments varSet trueAssignments
 
+    describe "multiplierSegment" $ do
+        let combinations = [(numBits,mode) | numBits <- [1,2,3,4], mode <- [Forbid,DontCare]]
+        let test numBits mode = do
+                let expectedFormula = getFormula $ multiplication mode numBits
+                let actualFormula = nBitMultiplication mode numBits
+                actualFormula `equiv` expectedFormula `shouldBe` True
+        forM_ combinations $ \(numBits,mode) -> do
+            it ("is equivalent to the table based version for " ++ show numBits ++ " bit, " ++ show mode ++ " overflow") $ do
+                test numBits mode
+
     describe "multiplier" $ do
         it "has the correct truth table for 1 bit" $ do
             let ([s,y,x],varSet) = mkVars 3

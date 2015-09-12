@@ -40,16 +40,6 @@ vars@[v0,v1,v2,v3,v4,v5,v6,v7,v8,v9] = makeVars 10
 varSet = Set.fromList vars
 [x0,x1,x2,x3,x4,x5,x6,x7,x8,x9] = map Atom vars
 
-
-[rx,ry,cOut,rs] = map Atom $ makeVars 4
-rhs = summer (Connect cOut) [rx] [ry] [rs]
-[lx,ly,cIn,ls] = map Atom $ makeVars 4 -- clash intended, should work
-lhs = summerWithCarry (Just cIn) Forbid [lx] [ly] [ls]
-
--- ((-0 || 2 || 3) && (-0 || 1 || 3) && (-0 || 1 || 2) && (0 || -1 || 2) && (0 || 1 || -2) && (-1 || -2 || -3))
--- (\neg x0 \lor x2 \lor x3) \land (\neg x0 \lor x1 \lor x3) \land (\neg x0 \lor x1 \lor x2) \land (x0 \lor \neg x1 \lor x2) \land (x0 \lor x1 \lor \neg x2) \land (\neg x0 \lor \neg x2 \lor \neg x3)
-testF = And [Or [Not x0, x2, x3], Or [Not x0, x1, x3], Or [Not x0, x1, x2], Or [x0, Not x1, x2], Or [x0, x1, Not x2], Or [Not x1, Not x2, Not x3]]
-
 main = do
     args <- getArgs
     let mode = args!!0

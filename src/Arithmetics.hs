@@ -15,6 +15,7 @@ import TruthTable
 import Tseitin(remapVars,replaceVars)
 import Data.List(sort)
 import Debug.Trace(traceShow)
+import Data.Maybe
 
 halfAdderSegment :: (Formula,Formula) -> (Formula,Formula)
 halfAdderSegment (x,y) = (s,c)
@@ -46,7 +47,7 @@ summerSegment maybeCarry (x:xs) (y:ys)
           (sums,finalC) = summerSegment maybeCarry xs ys
 
 data OverflowMode = Forbid | DontCare | Connect Formula
-    deriving(Eq)
+    deriving(Eq, Show)
 
 summer :: OverflowMode -> [Formula] -> [Formula] -> [Formula] -> Formula
 summer = summerWithCarry Nothing
@@ -69,14 +70,34 @@ multiplierSegmentDontCareOverflow xs ys =
         forAllRemainingRows (i,y) previousRow =
               let relevantXs = drop (length xs - 1 - i) xs
                   andGates = [And [x,y] | x <- relevantXs]
-                  (currentRow,_) = foldr innerLoop (drop (i+1) previousRow, Nothing) $ zip andGates previousRow
+                  (currentRow,_) = foldr makeAndConnectAdder (drop (i+1) previousRow, Nothing) $ zip andGates previousRow
               in currentRow
-        innerLoop (andGate,incomingSum) (res,maybeCarry) =
-              let (adderSum,adderCout) = case maybeCarry of
-                    Nothing -> halfAdderSegment (andGate,incomingSum)
-                    Just carry -> fullAdderSegment (andGate,incomingSum) carry
-              in (adderSum : res, Just adderCout)
     in foldr forAllRemainingRows firstRow $ zip [0..length ys - 2] (init ys)
+
+multiplierSegment :: [Formula] -> [Formula] -> [Formula]
+multiplierSegment xs ys =
+    let andGates y = [And [x, y] | x <- xs]
+        firstRow = andGates (last ys)
+        firstRowCarry = Or [] -- aka False
+        (finalRow,finalCarry) = foldr (makeRow xs) (firstRow, firstRowCarry) (init ys)
+    in finalCarry : finalRow
+
+makeRow :: [Formula] -> Formula -> ([Formula], Formula) -> ([Formula], Formula)
+makeRow xs y (previousRow,previousCOut) =
+    let inputsFromPreviousRow = previousCOut : init previousRow
+        numBits = length xs
+        andGates = [And [x, y] | x <- xs]
+        zipped = zip andGates inputsFromPreviousRow
+        keepFromAbove = drop (numBits-1) previousRow
+        (row,maybeCarry) = foldr makeAndConnectAdder (keepFromAbove, Nothing) zipped
+    in traceShow "makeRow" (row,fromJust maybeCarry)
+
+makeAndConnectAdder :: (Formula, Formula) -> ([Formula], Maybe Formula) -> ([Formula], Maybe Formula)
+makeAndConnectAdder (andGate,inputFromPreviousRow) (accum,maybeCarryFromRight) =
+    let (adderSum,adderCout) = case maybeCarryFromRight of
+            Nothing -> halfAdderSegment (andGate, inputFromPreviousRow)
+            Just carryFromRight -> fullAdderSegment (andGate, inputFromPreviousRow) carryFromRight
+    in (adderSum:accum, Just adderCout)
 
 -- | Has DontCare overflow.
 multiplier :: [Formula] -> [Formula] -> [Formula] -> Formula
@@ -97,15 +118,19 @@ nBitAddition overflowMode numBits =
     in summer overflowMode first second sums
 
 nBitMultiplication :: OverflowMode -> Int -> Formula
-nBitMultiplication Forbid numBits = getFormula $ multiplication Forbid numBits
-nBitMultiplication DontCare numBits = 
-    let vars = makeVars (3*numBits)
-        atoms = map Atom vars
-        first = reverse $ take numBits atoms
-        second = reverse $ take numBits $ drop numBits atoms
-        sums = reverse $ take numBits $ drop (2*numBits) atoms
-    in multiplier first second sums
-nBitMultiplication _ _ = error "nBitMultiplication: OverflowMode not implemented."
+nBitMultiplication mode numBits
+    | mode == DontCare = multiplier first second sums
+    | mode == Forbid =
+        let (overflowing,allowed) = splitAt numBits $ multiplierSegment first second
+            forbidOverflow = map Not overflowing
+            equivs = [Equiv [s,s'] | (s,s') <- zip sums allowed]
+        in And $ forbidOverflow ++ equivs
+    | otherwise = error "nBitMultiplication: OverflowMode not implemented."
+    where vars = makeVars (3*numBits)
+          atoms = map Atom vars
+          first = reverse $ take numBits atoms
+          second = reverse $ take numBits $ drop numBits atoms
+          sums = reverse $ take numBits $ drop (2*numBits) atoms
 
 -- has DontCare overflow
 multiplicationTableGen :: Int -> Int -> [String]
@@ -129,6 +154,7 @@ lessThanEq = operation2 (<=)
 greaterThan = operation2 (>)
 greaterThanEq = operation2 (>=)
 
+-- | Encodes a binary operation (like "a < b") as a canonical CNF
 operation2 :: (Int -> Int -> Bool) -> Int -> Canonical
 operation2 op numBits =
     let vars = makeVars (2*numBits)
@@ -149,7 +175,7 @@ operation2 op numBits =
         table = foldr (flip setRow True) (allFalseTable varSet) trues 
     in tableToCnf varSet table
 
--- | Encodes an operation with 3 numbers (like "a+b=c" or "a*b=c") as a canonical CNF
+-- | Encodes a ternary operation (like "a+b=c" or "a*b=c") as a canonical CNF
 operation3 :: (Int -> Int -> Int) -> OverflowMode -> Int -> Canonical
 operation3 op overflowMode numBits =
     let vars = makeVars (3*numBits)
@@ -164,7 +190,7 @@ operation3 op overflowMode numBits =
         trueRowStrings = do
             x <- range
             y <- range
-            when (overflowMode == Forbid) $ guard (x `op` y < 2^numBits)
+            when (overflowMode == Forbid) $ guard ((x `op` y) < 2^numBits)
             return $ bits x ++ bits y ++ bits (x `op` y)
         convertRowString str = assignmentFromList $ zip orderedVars $ map (== '1') str
         trues = map convertRowString trueRowStrings

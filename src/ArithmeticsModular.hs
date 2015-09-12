@@ -36,10 +36,18 @@ forbidOverflow :: Int -> Formula -> Formula
 forbidOverflow numBits f =
     let vars = Set.toAscList (variableSet f)
         (_,_,_,_,cOut,_) = bitVectors numBits vars
-    in And[f, Not $ Atom cOut]
+    in And [f, Not $ Atom cOut]
 
 noCarryIn :: Int -> Formula -> Formula
 noCarryIn numBits f =
     let vars = Set.toAscList (variableSet f)
         (_,_,_,cIn,_,_) = bitVectors numBits vars
-    in And[f, Not $ Atom cIn]
+    in And [f, Not $ Atom cIn]
+
+
+
+
+
+
+
+
