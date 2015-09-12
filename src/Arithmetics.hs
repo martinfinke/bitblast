@@ -62,18 +62,6 @@ summerWithCarry maybeCarry overflowMode xs ys sums
                 DontCare -> sumEquivs
                 Connect cOut -> Equiv [cOut,cOut'] : sumEquivs
 
--- Port from Boolector's mul_aigvec. Has DontCare overflow.
--- As opposed to Boolector's version, this one uses a half adder for the first (rightmost) element in each row. Boolector uses a full adder with an always-false carry input.
-multiplierSegmentDontCareOverflow :: [Formula] -> [Formula] -> [Formula]
-multiplierSegmentDontCareOverflow xs ys =
-    let firstRow = [And [x, last ys] | x <- xs]
-        forAllRemainingRows (i,y) previousRow =
-              let relevantXs = drop (length xs - 1 - i) xs
-                  andGates = [And [x,y] | x <- relevantXs]
-                  (currentRow,_) = foldr makeAndConnectAdder (drop (i+1) previousRow, Nothing) $ zip andGates previousRow
-              in currentRow
-    in foldr forAllRemainingRows firstRow $ zip [0..length ys - 2] (init ys)
-
 multiplierSegment :: [Formula] -> [Formula] -> [Formula]
 multiplierSegment xs ys =
     let andGates y = [And [x, y] | x <- xs]
@@ -99,14 +87,6 @@ makeAndConnectAdder (andGate,inputFromPreviousRow) (accum,maybeCarryFromRight) =
             Just carryFromRight -> fullAdderSegment (andGate, inputFromPreviousRow) carryFromRight
     in (adderSum:accum, Just adderCout)
 
--- | Has DontCare overflow.
-multiplier :: [Formula] -> [Formula] -> [Formula] -> Formula
-multiplier xs ys sums
-    | length xs /= length ys = error "The factors must have the same width."
-    | otherwise = And outputFormula
-    where sums' = multiplierSegmentDontCareOverflow xs ys
-          outputFormula = map (\(s,s') -> Equiv [s, s']) $ zip sums' sums
-
 nBitAddition :: OverflowMode -> Int -> Formula
 nBitAddition overflowMode numBits =
     -- Variable ordering is [x2,x1,x0] + [x5,x4,x3] = [x8,x7,x6]
@@ -119,34 +99,20 @@ nBitAddition overflowMode numBits =
 
 nBitMultiplication :: OverflowMode -> Int -> Formula
 nBitMultiplication mode numBits
-    | mode == DontCare = multiplier first second sums
-    | mode == Forbid =
-        let (overflowing,allowed) = splitAt numBits $ multiplierSegment first second
-            forbidOverflow = map Not overflowing
-            equivs = [Equiv [s,s'] | (s,s') <- zip sums allowed]
-        in And $ forbidOverflow ++ equivs
+    | mode == DontCare = And equivs
+    | mode == Forbid = And $ forbidOverflow ++ equivs
     | otherwise = error "nBitMultiplication: OverflowMode not implemented."
     where vars = makeVars (3*numBits)
           atoms = map Atom vars
           first = reverse $ take numBits atoms
           second = reverse $ take numBits $ drop numBits atoms
           sums = reverse $ take numBits $ drop (2*numBits) atoms
+          (overflowing,allowed) = splitAt numBits $ multiplierSegment first second
+          forbidOverflow = map Not overflowing
+          equivs = [Equiv [s,s'] | (s,s') <- zip sums allowed]
 
--- has DontCare overflow
-multiplicationTableGen :: Int -> Int -> [String]
-multiplicationTableGen termBits resultBits =
-    let formatString = "%0" ++ show termBits ++ "b"
-        resultFormatString = "%0" ++ show resultBits ++ "b"
-        range = [0..(2^termBits)-1] :: [Int]
-        calculate = (*)
-        printResult i j =
-            let str = printf resultFormatString (calculate i j) :: String
-            in drop (length str - resultBits) str
-        rows = [printf formatString i ++ printf formatString j ++ printResult i j | i <- range, j <- range] :: [String]
-    in rows
-
-multiplication :: OverflowMode -> Int -> Canonical
-multiplication = operation3 (*)
+multiplicationTableBased :: OverflowMode -> Int -> Canonical
+multiplicationTableBased = operation3 (*)
 
 lessThan, lessThanEq, greaterThan, greaterThanEq :: Int -> Canonical
 lessThan = operation2 (<)

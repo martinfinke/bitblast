@@ -129,101 +129,21 @@ spec = do
                     ]
             f `shouldBe` expected
 
-    describe "multiplierSegmentDontCareOverflow (from Boolector)" $ do
-        it "multiplies two one-bit numbers" $ do
-            let ([x,y],varSet) = mkVars 2
-            let mulSeg = multiplierSegmentDontCareOverflow [x] [y]
-            let prod = last mulSeg
-            let trueAssignments = map (assignmentFromString varSet) [
-                    "11"
-                    ]
-            toTruthTable prod `shouldBe` trueOnlyForAssignments varSet trueAssignments
-        it "has the correct truth table for 1 bit" $ do
-            let ([s,y,x],varSet) = mkVars 3
-            let mulSeg = multiplierSegmentDontCareOverflow [x] [y]
-            let connectedOutputs = Equiv [s, last mulSeg]
-            let trueAssignments = map (assignmentFromString varSet) [
-                    "000",
-                    "010",
-                    "100",
-                    "111"
-                    ]
-            toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments varSet trueAssignments
-        it "has the correct truth table for 2 bits" $ do
-            let ([s0,s1,y0,y1,x0,x1],varSet) = mkVars 6
-            let [s1',s0'] = multiplierSegmentDontCareOverflow [x1,x0] [y1,y0]
-            let connectedOutputs = And [
-                    Equiv [s0,s0'],
-                    Equiv [s1,s1']
-                    ]
-            let trueAssignments = map (assignmentFromString varSet) multiplication2BitDontCareOverflow
-            toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments varSet trueAssignments
-
-        it "has the correct truth table for 3 bits" $ do
-            let ([s0,s1,s2,y0,y1,y2,x0,x1,x2],varSet) = mkVars 9
-            let [s2',s1',s0'] = multiplierSegmentDontCareOverflow [x2,x1,x0] [y2,y1,y0]
-            let connectedOutputs = And [
-                    Equiv [s0,s0'],
-                    Equiv [s1,s1'],
-                    Equiv [s2,s2']
-                    ]
-            let trueAssignments = map (assignmentFromString varSet) $ multiplicationTableGen 3 3
-            toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments varSet trueAssignments
-
-        it "has the correct truth table for 4 bits" $ do
-            let ([s0,s1,s2,s3,y0,y1,y2,y3,x0,x1,x2,x3],varSet) = mkVars 12
-            let [s3',s2',s1',s0'] = multiplierSegmentDontCareOverflow [x3,x2,x1,x0] [y3,y2,y1,y0]
-            let connectedOutputs = And [
-                    Equiv [s0,s0'],
-                    Equiv [s1,s1'],
-                    Equiv [s2,s2'],
-                    Equiv [s3,s3']
-                    ]
-            let trueAssignments = map (assignmentFromString varSet) $ multiplicationTableGen 4 4
-            toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments varSet trueAssignments
-
-        it "has the correct truth table for 5 bits" $ do
-            let ([s0,s1,s2,s3,s4,y0,y1,y2,y3,y4,x0,x1,x2,x3,x4],varSet) = mkVars 15
-            let [s4',s3',s2',s1',s0'] = multiplierSegmentDontCareOverflow [x4,x3,x2,x1,x0] [y4,y3,y2,y1,y0]
-            let connectedOutputs = And [
-                    Equiv [s0,s0'],
-                    Equiv [s1,s1'],
-                    Equiv [s2,s2'],
-                    Equiv [s3,s3'],
-                    Equiv [s4,s4']
-                    ]
-            let trueAssignments = map (assignmentFromString varSet) $ multiplicationTableGen 5 5
-            pendingWith "Takes a little too long, but has passed before. Uncomment to test again."
-            --toTruthTable connectedOutputs `shouldBe` trueOnlyForAssignments varSet trueAssignments
-
     describe "multiplierSegment" $ do
         let combinations = [(numBits,mode) | numBits <- [1,2,3,4], mode <- [Forbid,DontCare]]
         let test numBits mode = do
-                let expectedFormula = getFormula $ multiplication mode numBits
+                let expectedFormula = getFormula $ multiplicationTableBased mode numBits
                 let actualFormula = nBitMultiplication mode numBits
                 actualFormula `equiv` expectedFormula `shouldBe` True
         forM_ combinations $ \(numBits,mode) -> do
             it ("is equivalent to the table based version for " ++ show numBits ++ " bit, " ++ show mode ++ " overflow") $ do
                 test numBits mode
 
-    describe "multiplier" $ do
-        it "has the correct truth table for 1 bit" $ do
-            let ([s,y,x],varSet) = mkVars 3
-            let mul = multiplier [x] [y] [s]
-            let trueAssignments = map (assignmentFromString varSet) $ multiplicationTableGen 1 1
-            toTruthTable mul `shouldBe` trueOnlyForAssignments varSet trueAssignments
-
-        it "has the correct truth table for 3 bits" $ do
-            let ([s0,s1,s2,y0,y1,y2,x0,x1,x2],varSet) = mkVars 9
-            let trueAssignments = map (assignmentFromString varSet) $ multiplicationTableGen 3 3
-            let mul = multiplier [x2,x1,x0] [y2,y1,y0] [s2,s1,s0]
-            toTruthTable mul `shouldBe` trueOnlyForAssignments varSet trueAssignments
-
-    describe "multiplication" $ do
+    describe "multiplicationTableBased" $ do
         describe "DontCare overflow mode" $ do
             let test numBits =
                     let f = nBitMultiplication DontCare numBits
-                        g = getFormula $ multiplication DontCare numBits
+                        g = getFormula $ multiplicationTableBased DontCare numBits
                     in toTruthTable f `shouldBe` toTruthTable g
             it "returns an equivalent formula as nBitMultiplication (1 Bit)" $ do
                 test 1
@@ -233,7 +153,7 @@ spec = do
                 test 3
         describe "Forbid overflow mode" $ do
             let test numBits assignments expected =
-                    let f = getFormula $ multiplication Forbid numBits
+                    let f = getFormula $ multiplicationTableBased Forbid numBits
                         varSet = variableSet f
                     in forM_ assignments $ \str -> do
                         let a = assignmentFromString varSet str

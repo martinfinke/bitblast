@@ -1,10 +1,5 @@
 module ArithmeticTruthTables where
 
-import Arithmetics(OverflowMode(..), multiplicationTableGen)
-import Numeric (showIntAtBase)
-import Data.Char (intToDigit)
-import Text.Printf(printf)
-
 addition2BitConnectOverflow = [
     "0000000",
     "0001010",
@@ -182,6 +177,3 @@ multiplication2BitConnectOverflow = [
     "11111001"
     ]
 
-
-
-multiplication3BitConnectOverflow = multiplicationTableGen 3 6
