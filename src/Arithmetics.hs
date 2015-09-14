@@ -46,7 +46,7 @@ summerSegment maybeCarry (x:xs) (y:ys)
     where (s,cOut) = fullAdderSegment (x,y) finalC
           (sums,finalC) = summerSegment maybeCarry xs ys
 
-data OverflowMode = Forbid | DontCare | Connect Formula
+data OverflowMode = Forbid | DontCare | Connect Formula | ToSum
     deriving(Eq, Show)
 
 summer :: OverflowMode -> [Formula] -> [Formula] -> [Formula] -> Formula
@@ -101,15 +101,18 @@ nBitMultiplication :: OverflowMode -> Int -> Formula
 nBitMultiplication mode numBits
     | mode == DontCare = And equivs
     | mode == Forbid = And $ forbidOverflow ++ equivs
-    | otherwise = error "nBitMultiplication: OverflowMode not implemented."
-    where vars = makeVars (3*numBits)
+    | mode == ToSum = And $ longEquivs
+    | otherwise = error $ "nBitMultiplication: OverflowMode not implemented: " ++ show mode
+    where vars = makeVars (4*numBits)
           atoms = map Atom vars
           first = reverse $ take numBits atoms
           second = reverse $ take numBits $ drop numBits atoms
           sums = reverse $ take numBits $ drop (2*numBits) atoms
+          longSums = reverse $ take (2*numBits) $ drop (2*numBits) atoms
           (overflowing,allowed) = splitAt numBits $ multiplierSegment first second
           forbidOverflow = map Not overflowing
           equivs = [Equiv [s,s'] | (s,s') <- zip sums allowed]
+          longEquivs = [Equiv [s,s'] | (s,s') <- zip longSums (overflowing++allowed)]
 
 additionTableBased, multiplicationTableBased :: OverflowMode -> Int -> Canonical
 additionTableBased = operation3 (+)

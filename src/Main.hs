@@ -25,7 +25,7 @@ import Variable
 import Utils
 import WorthExtraVariables
 
-import System.Environment(getArgs)
+import System.Environment(getArgs, withArgs)
 import qualified Data.Set as Set
 import Data.List(sortBy)
 import Data.Ord(comparing)
@@ -57,6 +57,7 @@ main = do
         "min_truth" -> minimizeTruth circuitType circuit numBits args
         "min_genetic" -> minimizeGen circuitType circuit numBits args
         "table" -> table circuitType circuit numBits args
+        "test_comb" -> testComb
         _ -> worthExtraVars args
     where minimize circuitType circuit numBits = do
             putStrLn $ printf "Optimizing %s (%d bit)..." circuitType numBits
@@ -98,11 +99,49 @@ smallestWorthExtra numVars = do
 
 xor = odd . length . filter id
 
----- ((0 || 1 || 2) && (0 || -1 || 2) && (0 || -1 || -2) && (-0 || 1 || 2) && (-0 || 1 || -2))
---smallestWorthExtra = And [
---    Or [x0,x1,x2],
---    Or [x0,Not x1,x2],
---    Or [x0,Not x1,Not x2],
---    Or [Not x0,x1,x2],
---    Or [Not x0,x1,Not x2]
---    ]
+testComb = withArgs [] $ hspec $ do
+    describe "combineAdd" $ do
+        let finalize numBits = forbidOverflow numBits . noCarryIn numBits
+        it "returns a circuit that is equisatGTE to a circuit that was created in one piece" $ do
+            let bitGroups = [
+                      (1,1)
+                    , (1,2)
+                    , (2,1)
+                    , (2,2)
+                    ]
+            let check (lBits,hBits) =
+                    let numBits = lBits + hBits
+                        onePiece = nBitAddition Forbid numBits
+                        lhs = summerModule lBits
+                        rhs = summerModule hBits
+                        comb = combineAdd (lBits,hBits) lhs rhs
+                        result = finalize numBits comb `equisatGTE` onePiece
+                    in result `shouldBe` True
+            mapM_ check bitGroups
+
+        it "works when combining two circuits that were combined from circuits" $ do
+            let onePiece = nBitAddition Forbid 4
+                oneBit = summerModule 1
+                twoBit = combineAdd (1,1) oneBit oneBit
+                comb = combineAdd (2,2) twoBit twoBit
+            --finalize 4 comb `equisatGTE` onePiece `shouldBe` True
+            pending
+
+    describe "combineMul" $ do
+        it "returns a circuit that is equisatGTE to a circuit that was created in one piece" $ do
+            let bitGroups = [
+                      (1,1)
+                    --, (1,2)
+                    --, (2,1)
+                    --, (2,2)
+                    --, (2,3)
+                    --, (3,2)
+                    ]
+            let check (lBits,hBits) =
+                    let numBits = lBits + hBits
+                        onePiece = nBitMultiplication ToSum numBits
+                        multiplier = multiplierModule lBits
+                        comb = combineMul numBits multiplier
+                        result = comb `equisatGTE` onePiece
+                    in result `shouldBe` True
+            mapM_ check bitGroups
