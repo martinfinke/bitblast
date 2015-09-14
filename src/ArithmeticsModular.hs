@@ -9,8 +9,8 @@ import qualified Data.Set as Set
 import qualified Data.Map.Strict as Map
 import Data.List(sort)
 
-combine :: (Int,Int) -> Formula -> Formula -> Formula
-combine (lBits,hBits) low oldHigh =
+combineAdd :: (Int,Int) -> Formula -> Formula -> Formula
+combineAdd (lBits,hBits) low oldHigh =
     let high = remapVars (variableSet low) oldHigh
         [lVars,hVars] = map (Set.toAscList . variableSet) [low,high]
         (lFst,lSnd,lRes,lCIn,lCout,lExtra) = bitVectors lBits lVars
@@ -48,6 +48,9 @@ noCarryIn numBits f =
 
 
 
-
+combineMul :: Int -> Formula -> Formula -> Formula
+combineMul totalNumBits halfMul adder =
+    let x = 0
+    in undefined
 
 

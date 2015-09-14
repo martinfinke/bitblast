@@ -78,7 +78,7 @@ makeRow xs y (previousRow,previousCOut) =
         zipped = zip andGates inputsFromPreviousRow
         keepFromAbove = drop (numBits-1) previousRow
         (row,maybeCarry) = foldr makeAndConnectAdder (keepFromAbove, Nothing) zipped
-    in traceShow "makeRow" (row,fromJust maybeCarry)
+    in (row,fromJust maybeCarry)
 
 makeAndConnectAdder :: (Formula, Formula) -> ([Formula], Maybe Formula) -> ([Formula], Maybe Formula)
 makeAndConnectAdder (andGate,inputFromPreviousRow) (accum,maybeCarryFromRight) =
@@ -111,7 +111,8 @@ nBitMultiplication mode numBits
           forbidOverflow = map Not overflowing
           equivs = [Equiv [s,s'] | (s,s') <- zip sums allowed]
 
-multiplicationTableBased :: OverflowMode -> Int -> Canonical
+additionTableBased, multiplicationTableBased :: OverflowMode -> Int -> Canonical
+additionTableBased = operation3 (+)
 multiplicationTableBased = operation3 (*)
 
 lessThan, lessThanEq, greaterThan, greaterThanEq :: Int -> Canonical
@@ -143,6 +144,7 @@ operation2 op numBits =
 
 -- | Encodes a ternary operation (like "a+b=c" or "a*b=c") as a canonical CNF
 operation3 :: (Int -> Int -> Int) -> OverflowMode -> Int -> Canonical
+operation3 _ (Connect _) _ = error "Arithmetics.operation3: Connect overflow not available"
 operation3 op overflowMode numBits =
     let vars = makeVars (3*numBits)
         varSet = Set.fromList vars

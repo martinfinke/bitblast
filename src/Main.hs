@@ -48,8 +48,8 @@ main = do
     let circuit
             | circuitType == "add_forbid" = nBitAddition Forbid numBits
             | circuitType == "add_dontcare" = nBitAddition DontCare numBits
-            | circuitType == "mul_forbid" = getFormula $ multiplication Forbid numBits
-            | circuitType == "mul_dontcare" = getFormula $ multiplication DontCare numBits
+            | circuitType == "mul_forbid" = nBitMultiplication Forbid numBits
+            | circuitType == "mul_dontcare" = nBitMultiplication DontCare numBits
             | circuitType == "gt" = getFormula $ greaterThan numBits
             | circuitType == "ge" = getFormula $ greaterThanEq numBits
     case mode of

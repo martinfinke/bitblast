@@ -224,7 +224,3 @@ spec = do
                     "1111 1"
                     ]
             toTruthTable f `shouldBe` expected
-
-    describe "combine" $ do
-        it "combines two 1-bit additions to a 2-bit addition" $ do
-            pending
