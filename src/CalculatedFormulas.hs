@@ -47,7 +47,8 @@ formulas = Map.fromList [
         ]),
         ("mul", Map.fromList [
             get "OptNatNoExtra" "mul" 1,
-            get "OptNatNoExtra" "mul" 2
+            get "OptNatNoExtra" "mul" 2,
+            get "OptNatNoExtra" "mul" 3 -- Introducing an extra variable has at least (22,59) clauses/literals
         ]),
         ("gt", Map.fromList [
             get "OptNatNoExtra" "gt" 1,
