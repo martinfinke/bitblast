@@ -32,7 +32,7 @@ runLimpCBC numVars primes ones =
     let program = toLimpProgram numVars primes ones
         solution = solve program
         essentialPrimeIndices = case solution of
-            Left _ -> error "No solution."
+            Left _ -> error "runLimpCBC: No solution."
             Right assignment -> filter (\i -> zOf assignment i /= 0) (variableNames primes)
         essentialPrimes = map snd $ filter (\(i,_) -> i `elem` essentialPrimeIndices) $ zip [0..] primes
     in return essentialPrimes

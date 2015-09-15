@@ -59,15 +59,14 @@ minimizeFormulaWith options formula =
                 let assignment' = expandOrReduce False varSet assignment
                 in assignment' `isModelOf` formula `shouldBe` assignment' `isModelOf` primesFormula
         
-        essentialPrimes <- (useSolver options) numVars primes ones
-        let cnf = qmTermsToFormula varSet cnfMode essentialPrimes
+        minimumCover <- (useSolver options) numVars primes ones
+        let cnf = qmTermsToFormula varSet cnfMode minimumCover
 
         when (verifyResult options) $ do
             putStrLn "Validating minimized Formula..."
             quickCheck $ property $ \assignment ->
                 let assignment' = expandOrReduce False varSet assignment
                 in assignment' `isModelOf` formula `shouldBe` assignment' `isModelOf` cnf
-
         return cnf
 
 minimizeFormula :: Formula -> IO Formula

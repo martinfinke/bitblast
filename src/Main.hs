@@ -54,6 +54,7 @@ main = do
             | circuitType == "ge" = getFormula $ greaterThanEq numBits
     case mode of
         "min" -> minimize circuitType circuit numBits
+        "min_struct" -> minimizeStruct circuitType circuit numBits args
         "min_truth" -> minimizeTruth circuitType circuit numBits args
         "min_genetic" -> minimizeGen circuitType circuit numBits args
         "table" -> table circuitType circuit numBits args
@@ -63,6 +64,14 @@ main = do
             putStrLn $ printf "Optimizing %s (%d bit)..." circuitType numBits
             optimized <- minimizeFormula circuit
             putStrLn $ "Minimized formula:"
+            putStrLn . Formula.prettyPrint $ optimized
+            print optimized
+            print $ getStats optimized
+          minimizeStruct circuitType circuit numBits args = do
+            let extraVars = read (args!!3)
+            putStrLn $ printf "Optimizing %s (%d bit)..." circuitType numBits
+            optimized <- fmap fst $ minimizeWithNExtraVars extraVars circuit
+            putStrLn $ printf "Smallest formula for k=%d:" extraVars
             putStrLn . Formula.prettyPrint $ optimized
             print optimized
             print $ getStats optimized
