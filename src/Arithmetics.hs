@@ -99,9 +99,9 @@ nBitAddition overflowMode numBits =
 
 nBitMultiplication :: OverflowMode -> Int -> Formula
 nBitMultiplication mode numBits
-    | mode == DontCare = And equivs
-    | mode == Forbid = And $ forbidOverflow ++ equivs
-    | mode == ToSum = And $ longEquivs
+    | mode == DontCare = simplify $ And equivs
+    | mode == Forbid = simplify $ And $ forbidOverflow ++ equivs
+    | mode == ToSum = simplify $ And $ longEquivs
     | otherwise = error $ "nBitMultiplication: OverflowMode not implemented: " ++ show mode
     where vars = makeVars (4*numBits)
           atoms = map Atom vars

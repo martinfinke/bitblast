@@ -23,13 +23,17 @@ randomFormula variables 0 = do
     variable <- elements variables
     return $ Atom variable
 randomFormula variables depth = do
-    breadth <- choose (2,4::Int)
+    breadth <- choose (0,4::Int)
     subFormulas <- vectorOf breadth $ randomFormula variables (depth-1)
     operator <- elements [
-        Not . head,
+        \fs -> case fs of
+            [] -> And []
+            _ -> Not (head fs),
         And,
         Or,
-        \(f1:f2:_) -> Implies f1 f2,
+        \fs -> case fs of
+            (f1:f2:_) -> Implies f1 f2
+            _ -> Or [],
         Xor,
         Equiv
         ]
@@ -282,6 +286,18 @@ spec = do
             toTree (And [Or [x1,x2,x3], x5, Not x4]) `shouldBe` And [Or [x1, Or [x2,x3]], And [x5, Not x4]]
         it "produces only equivalent Formulas" $ do
             property $ \f -> toTruthTable (toTree f) `shouldBe` toTruthTable f
+
+    describe "simplify" $ do
+        it "flattens a tree of empty Ands" $ do
+            simplify (And [And [And [And [And []]]]]) `shouldBe` And []
+        it "flattens a tree of empty Ands with one Or in between" $ do
+            simplify (And [And [Or [And [And []]]]]) `shouldBe` And []
+        it "removes implications that are never false" $ do
+            simplify (And [And [Implies (Or []) (Xor [])]]) `shouldBe` And []
+            simplify (And [And [Implies (And []) (And [])]]) `shouldBe` And []
+            simplify (And [And [Implies (And []) (Equiv [])]]) `shouldBe` And []
+        it "always returns a result that is equisatLTE (not equivalent because variables may get lost)" $ do
+            property $ \f -> f `equisatGTE` simplify f `shouldBe` True
 
     describe "equiv" $ do
         let [x0,x1,x2,x3,x4,x5,x6,x7,x8,x9] = map Atom $ V.makeVars 10

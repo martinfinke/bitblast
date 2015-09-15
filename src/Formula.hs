@@ -12,6 +12,7 @@ module Formula (Formula(..),
                 isLiteral,
                 isPositiveLiteral,
                 toTree,
+                simplify,
                 equiv,
                 equisatGTE
                 ) where
@@ -106,7 +107,7 @@ isPositiveLiteral _ = False
 -- | Converts a Formula to tree form. This means that all And, Or and Xor lists will be converted to nested binary operators with two operands each.
 toTree :: Formula -> Formula
 toTree formula = case formula of
-    Atom v -> formula
+    Atom _ -> formula
     Not f -> Not (toTree f)
     And fs -> treeify And fs
     Or fs -> treeify Or fs
@@ -120,6 +121,47 @@ toTree formula = case formula of
             (f:f':[]) -> op [toTree f, toTree f']
             (f:fs) -> op [toTree f, treeify op fs]
 
+simplify :: Formula -> Formula
+simplify formula = case formula of
+    Atom _ -> formula
+    Not f -> Not (simplify f)
+    And _ -> simplifyAnd formula
+    Or _ -> simplifyOr formula
+    Implies _ _ -> simplifyImplies formula
+    Xor _ -> simplifyXor formula
+    Equiv _ -> simplifyEquiv formula
+
+simplifyAnd, simplifyOr, simplifyXor, simplifyEquiv, simplifyImplies :: Formula -> Formula
+simplifyAnd (And fs)
+    | Or [] `elem` fs' = Or []
+    | length fs' == 1 = head fs'
+    | otherwise = And fs'
+    where fs' = filter (/= And []) . map simplify $ fs
+
+simplifyOr (Or fs)
+    | And [] `elem` fs' || Equiv [] `elem` fs' = And []
+    | length fs' == 1 = head fs'
+    | otherwise = Or fs'
+    where fs' = filter (/= Or []) . map simplify $ fs
+
+simplifyXor (Xor fs)
+    | null fs' = Or []
+    | length fs' == 1 = head fs'
+    | otherwise = Xor fs'
+    where fs' = filter (/= Or []) . map simplify $ fs
+
+simplifyEquiv (Equiv fs)
+    | length fs' <= 1 = And []
+    | And [] `elem` fs' && Or [] `elem` fs' = Or []
+    | And [] `elem` fs' && Xor [] `elem` fs' = Or []
+    | otherwise = Equiv fs'
+    where fs' = map simplify fs
+
+simplifyImplies f = case f of
+    Implies (Or []) _ -> And []
+    Implies _ (And []) -> And []
+    Implies _ (Equiv []) -> And []
+    _ -> f
 
 equiv :: Formula -> Formula -> Bool
 equiv f1 f2 = toTruthTable f1 == toTruthTable f2
