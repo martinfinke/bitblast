@@ -72,28 +72,28 @@ minimizeFormulaWith options formula =
 minimizeFormula :: Formula -> IO Formula
 minimizeFormula = minimizeFormulaWith defaultMinimizeFormulaOptions
 
-
-minimizeWithNExtraVars :: Int -> Formula -> IO (Formula, [Variable])
-minimizeWithNExtraVars numExtraVars f =
-    let varSet = variableSet f
-        possibilities = possibleReplacementsNWith numExtraVars selectOptions f
-        replaced = map (\rs -> tseitin varSet rs f) possibilities :: [TseitinFormula]
+minimizeStructural :: Int -> Formula -> IO (Formula, [Variable])
+minimizeStructural numExtraVars f =
+    let possibilities = possibleReplacementsNWith numExtraVars selectOptions f
     in do
-        optimized <- forM replaced $ \(TseitinFormula f newVars equivTerms) -> do
-            And clauses <- minimizeFormula f
-            equivClauses <- fmap (concat . map removeAnd) $ forM equivTerms minimizeFormula
-            return (And (clauses ++ equivClauses), newVars, equivTerms)
-        let (f,vars,equivs) = minimumBy (comparing $ \(f,_,_) -> numLiterals $ getStats f) optimized
-        print equivs
-        return (f,vars)
-    where removeAnd (And fs) = fs
+        optimized <- forM possibilities $ flip minimizeByReplacing f
+        return $ minimumBy (comparing $ numLiterals . getStats . fst) optimized
 
-minimizeWithExtraVarRange :: (Int,Int) -> Formula -> IO (Formula, [Variable])
-minimizeWithExtraVarRange (min',max') f = do
-    bestForEveryAllowedNumber <- forM [min'..max'] (flip minimizeWithNExtraVars f)
+minimizeStructuralWithRange :: (Int,Int) -> Formula -> IO (Formula, [Variable])
+minimizeStructuralWithRange (min',max') f = do
+    bestForEveryAllowedNumber <- forM [min'..max'] (flip minimizeStructural f)
     return $ minimumBy byNumLiterals bestForEveryAllowedNumber
-            
 
+minimizeByReplacing :: [Formula] -> Formula -> IO (Formula, [Variable])
+minimizeByReplacing replacementTerms f =
+    let varSet = variableSet f
+        (TseitinFormula f' newVars equivTerms) = tseitin varSet replacementTerms f
+        removeAnd (And fs) = fs
+    in do
+        And clauses <- minimizeFormula f'
+        equivClauses <- fmap (concat . map removeAnd) $ forM equivTerms minimizeFormula
+        return (And (clauses ++ equivClauses), newVars)
+            
 byNumLiterals = comparing $ numLiterals . getStats . fst
 
 canonicalToBitVectors :: Set.Set Variable -> Canonical -> [BitVector]

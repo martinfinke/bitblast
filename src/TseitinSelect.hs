@@ -1,7 +1,8 @@
 module TseitinSelect where
 
 import Formula
-import Data.List(nub,sort)
+import Data.List(nub,sort,sortBy)
+import Data.Ord(comparing)
 import Utils(combinationsNoMirror)
 
 data SelectOptions = SelectOptions {
@@ -45,3 +46,24 @@ possibleReplacementsNWith len options f =
     let replacements = possibleReplacementsWith options f
         combinations = combinationsNoMirror len replacements
     in combinations
+
+possibleReplacementsSorted :: Formula -> [Formula]
+possibleReplacementsSorted f =
+    let replacements = possibleReplacements f
+    in sortBy (comparing $ negate . numOccurrences f) replacements
+
+numOccurrences :: Formula -> Formula -> Int
+numOccurrences f term = numOccurrences' term 0 f
+
+numOccurrences' :: Formula -> Int -> Formula -> Int
+numOccurrences' term num formula = case formula of
+    Atom _ -> current
+    Not f -> numOccurrences' term current f
+    And fs -> current + numInChildren fs
+    Or fs -> current + numInChildren fs
+    Implies prem conc -> current + numInChildren [prem, conc]
+    Xor fs -> current + numInChildren fs
+    Equiv fs -> current + numInChildren fs
+    where current = if term == formula then num+1 else num
+          numInChildren fs = sum . map (numOccurrences' term 0) $ fs
+

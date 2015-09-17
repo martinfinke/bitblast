@@ -108,5 +108,29 @@ spec = do
                     ]
             testWith 2 selectOptions f `shouldBe` expected
 
+    describe "numOccurrences" $ do
+        it "is 0 if the term doesn't appear in the formula" $ do
+            numOccurrences (And []) (Or []) `shouldBe` 0
+        it "is 1 if it appears once" $ do
+            numOccurrences (And [Or []]) (Or []) `shouldBe` 1
+            numOccurrences (And [Or [Or []]]) (Or []) `shouldBe` 1
+        it "is 2 if it appears twice" $ do
+            numOccurrences (And [Or [Or []], Or []]) (Or []) `shouldBe` 2
+        it "works if there are variables" $ do
+            let [x0,x1,x2] = map Atom (makeVars 3)
+            let f = Equiv [Implies (Not x0) (And [Xor [x0, And [x1]], Or [x2, Not (And [x1])]])]
+            numOccurrences f x0 `shouldBe` 2
+            numOccurrences f (Not x0) `shouldBe` 1
+            numOccurrences f (And [x1]) `shouldBe` 2
+            numOccurrences f x2 `shouldBe` 1
+            numOccurrences f (Not x2) `shouldBe` 0
+            numOccurrences f (Or [x2, Not (And [x1])]) `shouldBe` 1
+            numOccurrences f (Or [x2, Not (And [x0])]) `shouldBe` 0
+    describe "possibleReplacementsSorted" $ do
+        let [x0,x1,x2] = map Atom (makeVars 3)
+        it "sorts by descending number of occurrences" $ do
+            let f = And [x0, Not x2, Or [Implies x2 x0, Not x0]]
+            take 2 (possibleReplacementsSorted f) `shouldBe` [x0, x2]
+
 
             

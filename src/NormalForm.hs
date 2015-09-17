@@ -1,5 +1,5 @@
 {-|
-Functions to convert 'Formula'e to canonical CNF/DNF.
+Functions to convert 'Formula's to canonical CNF/DNF.
 -}
 module NormalForm (Canonical,
                    getFormula,

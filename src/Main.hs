@@ -70,7 +70,7 @@ main = do
           minimizeStruct circuitType circuit numBits args = do
             let extraVars = read (args!!3)
             putStrLn $ printf "Optimizing %s (%d bit)..." circuitType numBits
-            optimized <- fmap fst $ minimizeWithNExtraVars extraVars circuit
+            optimized <- fmap fst $ minimizeStructural extraVars circuit
             putStrLn $ printf "Smallest formula for k=%d:" extraVars
             putStrLn . Formula.prettyPrint $ optimized
             print optimized

@@ -296,7 +296,7 @@ spec = do
             simplify (And [And [Implies (Or []) (Xor [])]]) `shouldBe` And []
             simplify (And [And [Implies (And []) (And [])]]) `shouldBe` And []
             simplify (And [And [Implies (And []) (Equiv [])]]) `shouldBe` And []
-        it "always returns a result that is equisatLTE (not equivalent because variables may get lost)" $ do
+        it "always returns a result that is equisatLTE (not necessarily equivalent because variables may get lost)" $ do
             property $ \f -> f `equisatGTE` simplify f `shouldBe` True
 
     describe "equiv" $ do

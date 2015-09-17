@@ -3,7 +3,7 @@ module SatchmoOutput where
 import Formula
 import NormalForm
 import Arithmetics
-import MinimizeFormula(minimizeFormula, minimizeWithExtraVarRange)
+import MinimizeFormula(minimizeFormula, minimizeStructuralWithRange)
 import TruthBased(minimizeTruthBased)
 import CalculatedFormulas
 
@@ -14,7 +14,7 @@ import qualified Data.Set as Set
 
 outputNoExtra = createSatchmo "OptNatNoExtra" minimizeFormula Nothing
 outputStructural =
-    let minimizer = fmap fst . minimizeWithExtraVarRange (0,1) . toTree
+    let minimizer = fmap fst . minimizeStructuralWithRange (0,1) . toTree
     in createSatchmo "OptNatStruct" minimizer (Just 1)
 outputTruthBased = createSatchmo "OptNatTruth" (minimizeTruthBased 1) (Just 1)
 

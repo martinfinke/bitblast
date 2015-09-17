@@ -48,7 +48,12 @@ formulas = Map.fromList [
         ("mul", Map.fromList [
             get "OptNatNoExtra" "mul" 1,
             get "OptNatNoExtra" "mul" 2,
-            get "OptNatNoExtra" "mul" 3 -- Introducing an extra variable has at least (22,59) clauses/literals
+            get "OptNatNoExtra" "mul" 3, -- Introducing an extra variable has at least (22,59) clauses/literals
+
+            -- 4 Bit is worse (39,125) than without extra variables (37,123)
+            -- This is the replacement:
+            -- [Equiv [Atom (Variable 12),And [Or [],Or [And [And [Atom (Variable 3),Atom (Variable 4)],Or [And [And [Atom (Variable 2),Atom (Variable 4)],And [And [Atom (Variable 0),Atom (Variable 5)],And [Atom (Variable 1),Atom (Variable 4)]]],And [And [Atom (Variable 1),Atom (Variable 5)],And [And [Atom (Variable 0),Atom (Variable 5)],And [Atom (Variable 1),Atom (Variable 4)]]],And [And [Atom (Variable 1),Atom (Variable 5)],And [Atom (Variable 2),Atom (Variable 4)]]]],And [And [Atom (Variable 2),Atom (Variable 5)],Or [And [And [Atom (Variable 2),Atom (Variable 4)],And [And [Atom (Variable 0),Atom (Variable 5)],And [Atom (Variable 1),Atom (Variable 4)]]],And [And [Atom (Variable 1),Atom (Variable 5)],And [And [Atom (Variable 0),Atom (Variable 5)],And [Atom (Variable 1),Atom (Variable 4)]]],And [And [Atom (Variable 1),Atom (Variable 5)],And [Atom (Variable 2),Atom (Variable 4)]]]], And [And [Atom (Variable 2),Atom (Variable 5)],And [Atom (Variable 3),Atom (Variable 4)]]]]]]
+            (4, parseCnf "((-12) && (-3 || -6) && (4 || -8) && (-2 || -5 || 11) && (-0 || -6 || 10) && (-3 || 4 || -11) && (-0 || -4 || 8) && (1 || 5 || -9) && (0 || 4 || -9) && (-0 || -5 || 9 || -10) && (-1 || -6 || 11) && (0 || -7 || -11) && (-1 || -5 || 8 || 10) && (-1 || -4 || 5 || 9) && (-3 || -7) && (4 || 5 || 6 || -10) && (1 || 4 || 6 || -10) && (0 || 1 || 2 || -10) && (-1 || -2 || -4 || -5) && (-2 || -6) && (-3 || -5) && (2 || 6 || -8 || -10) && (-0 || -7 || 11) && (-3 || -4 || 11) && (0 || 1 || -9) && (-1 || -4 || 9 || -10) && (4 || 5 || -9) && (-1 || -7) && (0 || -8) && (0 || 2 || 5 || -10) && (-0 || 1 || -5 || 9) && (2 || 6 || -10 || -11) && (-2 || -4 || 10) && (-0 || 2 || -5 || 7 || -9 || -11) && (-1 || -5 || -8 || 11) && (1 || 2 || 3 || 7 || -11) && (3 || 5 || 6 || 7 || -11) && (-2 || -7) && (-12))")
         ]),
         ("gt", Map.fromList [
             get "OptNatNoExtra" "gt" 1,
