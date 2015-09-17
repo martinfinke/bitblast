@@ -19,7 +19,7 @@ import TruthBasedNaive
 import VariableSpec
 import Utils
 import TruthTable(trueAndFalse)
-import TruthBased(minimizeTruthBasedWith, bestOptions)
+import TruthBased(minimizeTruthBasedWith, bestOptions, fromCoreCNF)
 
 import Control.Monad(when, forM, foldM)
 import System.Info(os)
@@ -47,8 +47,8 @@ espressoMinimize :: Formula -> IO Formula
 espressoMinimize f =
     let vars = Set.toAscList $ variableSet f
         zeros = snd $ trueAndFalse $ toTruthTable f
-    --in fmap (fromCoreCNF vars) $ espressoOptimize (length vars) zeros
-    in undefined
+        toCoreAssignment = map snd . sortBy (comparing fst) . assignmentToList
+    in fmap (fromCoreCNF vars) $ espressoOptimize (length vars) (map toCoreAssignment zeros)
 
 minimizeFormulaWith :: MinimizeFormulaOptions -> Formula -> IO Formula
 minimizeFormulaWith options formula =
@@ -86,8 +86,9 @@ minimizeStructural :: Int -> Formula -> IO (Formula, [Variable])
 minimizeStructural numExtraVars f =
     let treeF = toTree f
         possibilities = possibleReplacementsNWith numExtraVars selectOptions treeF
+        actions = map (flip (minimizeByReplacing minimizeFormula) treeF) possibilities
     in do
-        optimized <- forM possibilities $ flip minimizeByReplacing treeF
+        optimized <- parallelForM 10 actions
         return $ minimumBy (comparing $ numLiterals . getStats . fst) optimized
 
 minimizeStructuralWithRange :: (Int,Int) -> Formula -> IO (Formula, [Variable])
@@ -95,18 +96,25 @@ minimizeStructuralWithRange (min',max') f = do
     bestForEveryAllowedNumber <- forM [min'..max'] (flip minimizeStructural f)
     return $ minimumBy byNumLiterals bestForEveryAllowedNumber
 
-minimizeByReplacing :: [Formula] -> Formula -> IO (Formula, [Variable])
-minimizeByReplacing replacementTerms f =
+minimizeByReplacing :: (Formula -> IO Formula) -> [Formula] -> Formula -> IO (Formula, [Variable])
+minimizeByReplacing minimizer replacementTerms f =
     let varSet = variableSet f
         (TseitinFormula f' newVars equivTerms) = tseitin varSet replacementTerms f
         removeAnd (And fs) = fs
     in do
-        And clauses <- minimizeFormula f'
-        equivClauses <- fmap (concat . map removeAnd) $ forM equivTerms minimizeFormula
+        And clauses <- minimizer f'
+        equivClauses <- fmap (concat . map removeAnd) $ forM equivTerms minimizer
         return (And (clauses ++ equivClauses), newVars)
 
-minimizeNonExactByReplacingMostCommon :: Int -> Formula -> IO (Formula, [Variable])
-minimizeNonExactByReplacingMostCommon numExtraVars f = undefined
+-- | Non-exact. Uses Espresso to minimize.
+minimizeByReplacingMostCommon :: Int -> Formula -> IO Formula
+minimizeByReplacingMostCommon numExtraVars f =
+    let treeF = toTree f
+        replacements = take numExtraVars $ possibleReplacementsSorted treeF :: [Formula]
+        minimize rep = fmap fst $ minimizeByReplacing espressoMinimize rep treeF
+    in do
+        optimized <- minimize replacements
+        return $ optimized
 
 minimizeTruthBased :: Int -> Formula -> IO Formula
 minimizeTruthBased = minimizeTruthBasedWith bestOptions minimizeFormula
