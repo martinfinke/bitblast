@@ -97,6 +97,14 @@ nBitAddition overflowMode numBits =
         sums = reverse $ take numBits $ drop (2*numBits) atoms
     in summer overflowMode first second sums
 
+-- | The n-th carry term for an adder with numBits bits. Useful for specifically replacing certain carries by extra variables.
+adderCarry :: Int -> Int -> Formula
+adderCarry 0 numBits = And [Atom $ var 0, Atom $ var numBits]
+adderCarry which numBits =
+    let current = (Atom . var $ which+numBits, Atom . var $ which)
+        previous = adderCarry (which-1) numBits
+    in Or [And [fst current, previous], And [snd current, previous], And [snd current, fst current]]
+
 nBitMultiplication :: OverflowMode -> Int -> Formula
 nBitMultiplication mode numBits
     | mode == DontCare = simplify $ And equivs
