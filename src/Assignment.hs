@@ -4,6 +4,7 @@ module Assignment(
                 allTrue,
                 allFalse,
                 assignmentFromList,
+                assignmentToList,
                 assignmentFromString,
                 assignmentToString,
                 expandOrReduce,
@@ -19,6 +20,8 @@ import Variable
 import qualified Data.IntMap as IntMap
 import qualified Data.Set as Set
 import Text.Printf(printf)
+import Data.List(sortBy)
+import Data.Ord(comparing)
 
 newtype Assignment = Assignment (IntMap.IntMap Bool)
     deriving(Eq, Show, Ord)
@@ -34,6 +37,9 @@ assignmentFromList :: [(Variable, Bool)] -> Assignment
 assignmentFromList ls =
     let ls' = map (\(Variable i, b) -> (i,b)) ls
     in Assignment $ IntMap.fromList ls'
+
+assignmentToList :: Assignment -> [(Variable, Bool)]
+assignmentToList (Assignment intMap) = sortBy (comparing fst) . map (\(i,b) -> (var i, b)) . IntMap.toList $ intMap
 
 assignmentFromString :: Set.Set Variable -> String -> Assignment
 assignmentFromString varSet string
