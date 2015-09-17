@@ -13,6 +13,7 @@ module Formula (Formula(..),
                 isPositiveLiteral,
                 toTree,
                 simplify,
+                isTautology,
                 equiv,
                 equisatGTE
                 ) where
@@ -162,6 +163,12 @@ simplifyImplies f = case f of
     Implies _ (And []) -> And []
     Implies _ (Equiv []) -> And []
     _ -> f
+
+isTautology :: Formula -> Bool
+isTautology f =
+    let table = toTruthTable f
+        falses = snd $ trueAndFalse table
+    in null falses
 
 equiv :: Formula -> Formula -> Bool
 equiv f1 f2 = toTruthTable f1 == toTruthTable f2

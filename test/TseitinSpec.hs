@@ -1,5 +1,6 @@
 module TseitinSpec where
 
+import Arithmetics
 import SpecHelper
 import FormulaSpec
 import Formula
@@ -161,4 +162,16 @@ spec = do
             let toReplace = Atom t0
             let call = tseitin varSet [toReplace] x1
             evaluate call `shouldThrow` anyException
+
+    describe "fullTseitin" $ do
+        it "yields an equisatGTE formula for 1-bit addition" $ do
+            let f = nBitAddition Forbid 1
+            let f' = fullTseitin f
+            f' `equisatGTE` f `shouldBe` True
+        it "always yields an equisatGTE formula" $ do
+            pendingWith "Has passed before, but takes long."
+            --property $ \f -> do
+            --    let f' = fullTseitin f
+            --    f' `equisatGTE` f `shouldBe` True
+
             

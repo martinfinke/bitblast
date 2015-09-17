@@ -1,5 +1,4 @@
 module MinimizeFormulaSpec where
-
 import SpecHelper
 import MinimizeFormula
 import Variable hiding(eval)
@@ -9,6 +8,7 @@ import NormalForm
 import NormalFormSpec
 import QmcTypes
 import qualified Data.Set as Set
+import Control.Monad
 
 
 spec :: Spec
@@ -103,3 +103,5 @@ spec = do
             let expected = And [Or [Not (Atom (var 2)),Atom (var 3),Atom (var 6)],Or [Atom (var 2),Not (Atom (var 3)),Atom (var 6)],Or [Not (Atom (var 1)),Atom (var 2),Atom (var 6)],Or [Not (Atom (var 0)),Atom (var 2),Atom (var 6)],Or [Not (Atom (var 0)),Not (Atom (var 1)),Atom (var 6)],Or [Atom (var 1),Not (Atom (var 2)),Not (Atom (var 3)),Not (Atom (var 6))],Or [Atom (var 0),Not (Atom (var 2)),Not (Atom (var 3)),Not (Atom (var 6))],Or [Atom (var 0),Atom (var 1),Atom (var 2),Atom (var 3),Not (Atom (var 6))],Or [Not (Atom (var 5)),Atom (var 6)],Or [Atom (var 5),Not (Atom (var 6))]]
             minimized `shouldBe` expected
             minimized `equisatGTE` f `shouldBe` True
+
+    

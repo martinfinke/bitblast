@@ -8,6 +8,8 @@ import Data.List(sortBy,partition)
 import Data.Maybe(catMaybes)
 import Assignment
 import Data.Maybe
+import TseitinSelect
+import NormalForm(toCanonicalCnf, getFormula)
 
 data TseitinFormula = TseitinFormula {
     modFormula :: Formula,
@@ -73,6 +75,18 @@ tseitin varSet toReplaces formula
         replaced = foldr replace formula (reverse normalized)
         equivs = map makeEquiv normalized
     in TseitinFormula replaced newVars equivs
+
+fullTseitin :: Formula -> Formula
+fullTseitin f =
+    let treeF = toTree f
+        varSet = variableSet treeF
+        replacements = possibleReplacementsSorted treeF
+        (TseitinFormula f' newVars equivTerms) = tseitin varSet replacements treeF
+        removeAnd (And fs) = fs
+        convert = removeAnd . getFormula . toCanonicalCnf
+        f'' = convert f'
+        equivs = concatMap convert equivTerms 
+    in And (f'' ++ equivs)
 
 makeEquiv :: (Formula,Variable) -> Formula
 makeEquiv (f,variable) = Equiv [Atom variable, f]
