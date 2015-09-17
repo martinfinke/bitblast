@@ -40,6 +40,11 @@ vars@[v0,v1,v2,v3,v4,v5,v6,v7,v8,v9] = makeVars 10
 varSet = Set.fromList vars
 [x0,x1,x2,x3,x4,x5,x6,x7,x8,x9] = map Atom vars
 
+addition3ReplaceFirstCarry = fmap fst $ minimizeByReplacing [And [x0, x3]] $ nBitAddition Forbid 3
+addition3ReplaceSecondCarry = fmap fst $ minimizeByReplacing [And [x1, x4]] $ nBitAddition Forbid 3
+addition4ReplaceFirstCarry = fmap fst $ minimizeByReplacing [And [x0, x4]] $ nBitAddition Forbid 4
+addition5ReplaceFirstCarry = fmap fst $ minimizeByReplacing [And [x0, x5]] $ nBitAddition Forbid 5
+
 main = do
     args <- getArgs
     let mode = args!!0

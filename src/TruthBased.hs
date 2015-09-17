@@ -1,7 +1,6 @@
 module TruthBased(
                   bestOptions,
-                  minimizeTruthBased,
-                  minimizeTruthBasedQmc,
+                  minimizeTruthBasedWith,
                   toTable,
                   variables,
                   newVars,
@@ -15,7 +14,6 @@ module TruthBased(
 import Variable
 import Assignment
 import Formula
-import MinimizeFormula
 import NormalForm
 import QmcTypes
 import ModifiedQmc(modifiedQmc)
@@ -33,14 +31,8 @@ bestOptions = Core.defaultOptions{
     Core.removeIllegals=True
 }
 
-minimizeTruthBased, minimizeTruthBasedQmc :: Int -> Formula -> IO Formula
-minimizeTruthBased = minimizeTruthBasedWith bestOptions
-
-minimizeTruthBasedQmc = minimizeTruthBasedWith opts
-    where opts = Core.defaultOptions{Core.clauseProvider=modifiedQmcClauseProvider, Core.removeIllegals=True}
-
-minimizeTruthBasedWith :: Core.Options -> Int -> Formula -> IO Formula
-minimizeTruthBasedWith options numExtraVars formula =
+minimizeTruthBasedWith :: Core.Options -> (Formula -> IO Formula) -> Int -> Formula -> IO Formula
+minimizeTruthBasedWith options minimizer numExtraVars formula =
     let vars = variables formula
         numVars = length vars
         f = toCoreFormula vars formula
@@ -49,7 +41,7 @@ minimizeTruthBasedWith options numExtraVars formula =
             then Core.removeIllegalClauses numVars table
             else table
     in do
-        withoutExtraVariables <- minimizeFormula formula
+        withoutExtraVariables <- minimizer formula
         let numLits = numLiterals . getStats $ withoutExtraVariables
         result <- Core.optimizeParallel options numLits numVars f numExtraVars cls
         return $ case result of

@@ -49,7 +49,8 @@ possibleReplacementsNWith len options f =
 
 possibleReplacementsSorted :: Formula -> [Formula]
 possibleReplacementsSorted f =
-    let replacements = possibleReplacements f
+    let noLiterals = selectOptions{includeLiterals=False}
+        replacements = possibleReplacementsWith noLiterals f
     in sortBy (comparing $ negate . numOccurrences f) replacements
 
 numOccurrences :: Formula -> Formula -> Int

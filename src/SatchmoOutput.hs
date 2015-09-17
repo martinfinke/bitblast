@@ -3,8 +3,7 @@ module SatchmoOutput where
 import Formula
 import NormalForm
 import Arithmetics
-import MinimizeFormula(minimizeFormula, minimizeStructuralWithRange)
-import TruthBased(minimizeTruthBased)
+import MinimizeFormula(minimizeFormula, minimizeStructuralWithRange, minimizeTruthBased)
 import CalculatedFormulas
 
 import Data.List

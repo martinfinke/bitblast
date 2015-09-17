@@ -1,6 +1,7 @@
 module MinimizeFormula where
 
 import LimpCBCInterface
+import EspressoInterface(espressoOptimize)
 import Formula
 import NormalForm
 import qualified Data.Set as Set
@@ -17,6 +18,8 @@ import TseitinSelect
 import TruthBasedNaive
 import VariableSpec
 import Utils
+import TruthTable(trueAndFalse)
+import TruthBased(minimizeTruthBasedWith, bestOptions)
 
 import Control.Monad(when, forM, foldM)
 import System.Info(os)
@@ -39,6 +42,13 @@ defaultMinimizeFormulaOptions = MinimizeFormulaOptions {
     verifyPrimes = False,
     verifyResult = False
 }
+
+espressoMinimize :: Formula -> IO Formula
+espressoMinimize f =
+    let vars = Set.toAscList $ variableSet f
+        zeros = snd $ trueAndFalse $ toTruthTable f
+    --in fmap (fromCoreCNF vars) $ espressoOptimize (length vars) zeros
+    in undefined
 
 minimizeFormulaWith :: MinimizeFormulaOptions -> Formula -> IO Formula
 minimizeFormulaWith options formula =
@@ -74,9 +84,10 @@ minimizeFormula = minimizeFormulaWith defaultMinimizeFormulaOptions
 
 minimizeStructural :: Int -> Formula -> IO (Formula, [Variable])
 minimizeStructural numExtraVars f =
-    let possibilities = possibleReplacementsNWith numExtraVars selectOptions f
+    let treeF = toTree f
+        possibilities = possibleReplacementsNWith numExtraVars selectOptions treeF
     in do
-        optimized <- forM possibilities $ flip minimizeByReplacing f
+        optimized <- forM possibilities $ flip minimizeByReplacing treeF
         return $ minimumBy (comparing $ numLiterals . getStats . fst) optimized
 
 minimizeStructuralWithRange :: (Int,Int) -> Formula -> IO (Formula, [Variable])
@@ -93,6 +104,12 @@ minimizeByReplacing replacementTerms f =
         And clauses <- minimizeFormula f'
         equivClauses <- fmap (concat . map removeAnd) $ forM equivTerms minimizeFormula
         return (And (clauses ++ equivClauses), newVars)
+
+minimizeNonExactByReplacingMostCommon :: Int -> Formula -> IO (Formula, [Variable])
+minimizeNonExactByReplacingMostCommon numExtraVars f = undefined
+
+minimizeTruthBased :: Int -> Formula -> IO Formula
+minimizeTruthBased = minimizeTruthBasedWith bestOptions minimizeFormula
             
 byNumLiterals = comparing $ numLiterals . getStats . fst
 

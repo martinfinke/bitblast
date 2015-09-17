@@ -129,6 +129,15 @@ spec = do
                     ]
             f `shouldBe` expected
 
+    describe "adderCarry" $ do
+        let [x0,x1,x2,x3,x4,x5] = map Atom $ makeVars 6
+        it "returns the carry for an adder formula" $ do
+            adderCarry 0 2 `shouldBe` And [x0, x2]
+            adderCarry 1 2 `shouldBe` Or [And [x3, adderCarry 0 2], And [x1, adderCarry 0 2], And [x1, x3]]
+            adderCarry 0 3 `shouldBe` And [x0, x3]
+            adderCarry 1 3 `shouldBe` Or [And [x4, adderCarry 0 3], And [x1, adderCarry 0 3], And [x1, x4]]
+            adderCarry 2 3 `shouldBe` Or [And [x5, adderCarry 1 3], And [x2, adderCarry 1 3], And [x2, x5]]
+
     describe "multiplierSegment" $ do
         let combinations = [(numBits,mode) | numBits <- [1,2,3,4], mode <- [Forbid,DontCare]]
         let test numBits mode = do

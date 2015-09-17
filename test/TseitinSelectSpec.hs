@@ -2,11 +2,13 @@ module TseitinSelectSpec where
 
 import TseitinSelect
 
+import Arithmetics(nBitAddition, OverflowMode(..), adderCarry)
 import SpecHelper
 import Formula
 import Variable
 import qualified Data.Set as Set
 import Utils(combinationsNoMirror)
+import Control.Monad(forM_)
 
 spec :: Spec
 spec = do
@@ -126,11 +128,12 @@ spec = do
             numOccurrences f (Not x2) `shouldBe` 0
             numOccurrences f (Or [x2, Not (And [x1])]) `shouldBe` 1
             numOccurrences f (Or [x2, Not (And [x0])]) `shouldBe` 0
+
     describe "possibleReplacementsSorted" $ do
         let [x0,x1,x2] = map Atom (makeVars 3)
-        it "sorts by descending number of occurrences" $ do
-            let f = And [x0, Not x2, Or [Implies x2 x0, Not x0]]
-            take 2 (possibleReplacementsSorted f) `shouldBe` [x0, x2]
-
-
-            
+        it "sorts by descending number of occurrences, and doesn't include literals" $ do
+            let f = And [x0, Not x2, Or [Implies x2 x0, Not x0, And [x1]], Xor [And [x1], Or [Implies x2 x0]]]
+            let rs = possibleReplacementsSorted f
+            take 2 rs `shouldBe` [Implies x2 x0, And [x1]]
+            x0 `elem` rs `shouldBe` False
+            Not x0 `elem` rs `shouldBe` False
