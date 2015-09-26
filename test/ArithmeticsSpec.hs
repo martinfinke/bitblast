@@ -152,6 +152,14 @@ spec = do
         test (nBitAddition,"nBitAddition")
         test (nBitMultiplication,"nBitMultiplication")
 
+    describe "greaterThan" $ do
+        let numBits = [1,2,3,4]
+        forM_ numBits $ \b -> do
+            it ("is equivalent to the table based version for " ++ show b ++ " bit") $ do
+                let expectedFormula = getFormula $ greaterThanTableBased b
+                let actualFormula = greaterThan b
+                actualFormula `equiv` expectedFormula `shouldBe` True
+
     describe "multiplicationTableBased" $ do
         describe "DontCare overflow mode" $ do
             let test numBits =

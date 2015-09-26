@@ -129,7 +129,10 @@ makeAndOrderVars numBits sumLengthFactor = (first, second, sums)
           sums = reverse $ take (sumLengthFactor*numBits) $ drop (2*numBits) vars
 
 greaterThan, greaterThanEq :: Int -> Formula
-greaterThan numBits = undefined
+greaterThan numBits =
+    let (first,second,_) = makeAndOrderAtoms numBits 0
+        zipped = zip (reverse first) (reverse second)
+    in Or . fst $ foldr (\(a,b) (accum,allHigherEqual) -> (And (a : Not b : allHigherEqual) : accum, Equiv [a,b] : allHigherEqual)) ([],[]) zipped
 greaterThanEq numBits = undefined -- TODO
 
 additionTableBased, multiplicationTableBased :: OverflowMode -> Int -> Canonical
