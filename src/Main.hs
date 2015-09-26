@@ -65,8 +65,8 @@ main = do
             | circuitType == "add_dontcare" = nBitAddition DontCare numBits
             | circuitType == "mul_forbid" = nBitMultiplication Forbid numBits
             | circuitType == "mul_dontcare" = nBitMultiplication DontCare numBits
-            | circuitType == "gt" = getFormula $ greaterThanTableBased numBits -- TODO: Change this
-            | circuitType == "ge" = getFormula $ greaterThanEqTableBased numBits -- TODO: and this
+            | circuitType == "gt" = greaterThan numBits
+            | circuitType == "ge" = greaterThanEq numBits
     case mode of
         "min" -> minimize circuitType circuit numBits
         "min_struct" -> minimizeStruct circuitType circuit numBits args

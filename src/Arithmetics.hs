@@ -128,6 +128,7 @@ makeAndOrderVars numBits sumLengthFactor = (first, second, sums)
           second = reverse $ take numBits $ drop numBits vars
           sums = reverse $ take (sumLengthFactor*numBits) $ drop (2*numBits) vars
 
+-- | The "all higher bits are equal" constraints are arranged so that they share common subtrees.
 greaterThan, greaterThanEq :: Int -> Formula
 greaterThan numBits =
     let (first,second,_) = makeAndOrderAtoms numBits 0
