@@ -173,5 +173,6 @@ spec = do
             --property $ \f -> do
             --    let f' = fullTseitin f
             --    f' `equisatGTE` f `shouldBe` True
+        -- TODO: add more tests with small formulas
 
             

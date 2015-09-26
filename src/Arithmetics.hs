@@ -89,12 +89,7 @@ makeAndConnectAdder (andGate,inputFromPreviousRow) (accum,maybeCarryFromRight) =
 
 nBitAddition :: OverflowMode -> Int -> Formula
 nBitAddition overflowMode numBits =
-    -- Variable ordering is [x2,x1,x0] + [x5,x4,x3] = [x8,x7,x6]
-    let vars = makeVars (3*numBits)
-        atoms = map Atom vars
-        first = reverse $ take numBits atoms
-        second = reverse $ take numBits $ drop numBits atoms
-        sums = reverse $ take numBits $ drop (2*numBits) atoms
+    let (first,second,sums) = makeAndOrderAtoms numBits 1
     in summer overflowMode first second sums
 
 -- | The n-th carry term for an adder with numBits bits. Useful for specifically replacing certain carries by extra variables.
@@ -112,65 +107,68 @@ nBitMultiplication mode numBits
     | mode == ToSum = simplify $ And $ longEquivs
     | otherwise = error $ "nBitMultiplication: OverflowMode not implemented: " ++ show mode
     where vars = makeVars (4*numBits)
-          atoms = map Atom vars
-          first = reverse $ take numBits atoms
-          second = reverse $ take numBits $ drop numBits atoms
-          sums = reverse $ take numBits $ drop (2*numBits) atoms
-          longSums = reverse $ take (2*numBits) $ drop (2*numBits) atoms
+          atoms = makeAndOrderAtoms numBits $ if mode == ToSum then 2 else 1
+          (first,second,sums) = atoms
           (overflowing,allowed) = splitAt numBits $ multiplierSegment first second
           forbidOverflow = map Not overflowing
           equivs = [Equiv [s,s'] | (s,s') <- zip sums allowed]
-          longEquivs = [Equiv [s,s'] | (s,s') <- zip longSums (overflowing++allowed)]
+          longEquivs = [Equiv [s,s'] | (s,s') <- zip sums (overflowing++allowed)]
+
+
+makeAndOrderAtoms :: Int -> Int -> ([Formula], [Formula], [Formula])
+makeAndOrderAtoms numBits sumLengthFactor =
+    let (first,second,sums) = makeAndOrderVars numBits sumLengthFactor
+    in (map Atom first, map Atom second, map Atom sums)
+
+-- | Variable ordering is: [x2,x1,x0] + [x5,x4,x3] = [x8,x7,x6].
+makeAndOrderVars :: Int -> Int -> ([Variable], [Variable], [Variable])
+makeAndOrderVars numBits sumLengthFactor = (first, second, sums)
+    where vars = makeVars $ (2+sumLengthFactor)*numBits
+          first = reverse $ take numBits vars
+          second = reverse $ take numBits $ drop numBits vars
+          sums = reverse $ take (sumLengthFactor*numBits) $ drop (2*numBits) vars
+
+greaterThan, greaterThanEq :: Int -> Formula
+greaterThan numBits = undefined
+greaterThanEq numBits = undefined -- TODO
 
 additionTableBased, multiplicationTableBased :: OverflowMode -> Int -> Canonical
 additionTableBased = operation3 (+)
 multiplicationTableBased = operation3 (*)
 
-lessThan, lessThanEq, greaterThan, greaterThanEq :: Int -> Canonical
-lessThan = operation2 (<)
-lessThanEq = operation2 (<=)
-greaterThan = operation2 (>)
-greaterThanEq = operation2 (>=)
+lessThanTableBased, lessThanEqTableBased, greaterThanTableBased, greaterThanEqTableBased :: Int -> Canonical
+lessThanTableBased = operation2 (<)
+lessThanEqTableBased = operation2 (<=)
+greaterThanTableBased = operation2 (>)
+greaterThanEqTableBased = operation2 (>=)
 
 -- | Encodes a binary operation (like "a < b") as a canonical CNF
 operation2 :: (Int -> Int -> Bool) -> Int -> Canonical
-operation2 op numBits =
-    let vars = makeVars (2*numBits)
-        varSet = Set.fromList vars
-        first = reverse $ take numBits vars
-        second = reverse $ take numBits $ drop numBits vars
-        orderedVars = first ++ second
-        trim str = drop (length str - numBits) str
-        bits = trim . (printf $ "%0" ++ show numBits ++ "b") :: (Int -> String)
-        range = [0..(2^numBits)-1]
-        trueRowStrings = do
-            x <- range
-            y <- range
-            guard (x `op` y)
-            return $ bits x ++ bits y
-        convertRowString str = assignmentFromList $ zip orderedVars $ map (== '1') str
-        trues = map convertRowString trueRowStrings
-        table = foldr (flip setRow True) (allFalseTable varSet) trues 
-    in tableToCnf varSet table
+operation2 op numBits = makeCanonical False numBits $ \bits x y -> do
+        guard (x `op` y)
+        return $ bits x ++ bits y
 
 -- | Encodes a ternary operation (like "a+b=c" or "a*b=c") as a canonical CNF
 operation3 :: (Int -> Int -> Int) -> OverflowMode -> Int -> Canonical
 operation3 _ (Connect _) _ = error "Arithmetics.operation3: Connect overflow not available"
-operation3 op overflowMode numBits =
-    let vars = makeVars (3*numBits)
-        varSet = Set.fromList vars
-        first = reverse $ take numBits vars
-        second = reverse $ take numBits $ drop numBits vars
-        sums = reverse $ take numBits $ drop (2*numBits) vars
+operation3 op overflowMode numBits = makeCanonical True numBits $ \bits x y -> do
+        when (overflowMode == Forbid) $ guard ((x `op` y) < 2^numBits)
+        return $ bits x ++ bits y ++ bits (x `op` y)
+
+type RowMaker = (Int -> String) -> Int -> Int -> [String]
+
+makeCanonical :: Bool -> Int -> RowMaker -> Canonical
+makeCanonical hasResultBits numBits f =
+    let (first,second,sums) = makeAndOrderVars numBits $ if hasResultBits then 1 else 0
         orderedVars = first ++ second ++ sums
+        varSet = Set.fromList orderedVars
         trim str = drop (length str - numBits) str
         bits = trim . (printf $ "%0" ++ show numBits ++ "b") :: (Int -> String)
         range = [0..(2^numBits)-1]
         trueRowStrings = do
             x <- range
             y <- range
-            when (overflowMode == Forbid) $ guard ((x `op` y) < 2^numBits)
-            return $ bits x ++ bits y ++ bits (x `op` y)
+            f bits x y
         convertRowString str = assignmentFromList $ zip orderedVars $ map (== '1') str
         trues = map convertRowString trueRowStrings
         table = foldr (flip setRow True) (allFalseTable varSet) trues 

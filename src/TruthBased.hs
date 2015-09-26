@@ -59,13 +59,13 @@ toTableQmc = toTableWith opts
     where opts = Core.defaultOptions{Core.clauseProvider=modifiedQmcClauseProvider, Core.removeIllegals=True}
 toTableWith opts numExtraVars f = common numExtraVars f (Core.tableWith opts)
 
-
 variables :: Formula -> [Variable]
 variables = Set.toAscList . variableSet
 
 newVars :: Int -> Formula -> [Variable]
 newVars numExtraVars = take numExtraVars . newVariables . variableSet
 
+-- TODO: Rename this to "toCoreFunction". The result is not a formula.
 toCoreFormula :: [Variable] -> Formula -> (Core.Assignment -> Bool)
 toCoreFormula vars f = \bools ->
     let assignment = assignmentFromList $ zip vars bools

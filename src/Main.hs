@@ -45,6 +45,16 @@ addition3ReplaceSecondCarry = fmap fst $ minimizeByReplacing minimizeFormula [An
 addition4ReplaceFirstCarry = fmap fst $ minimizeByReplacing minimizeFormula [And [x0, x4]] $ nBitAddition Forbid 4
 addition5ReplaceFirstCarry = fmap fst $ minimizeByReplacing minimizeFormula [And [x0, x5]] $ nBitAddition Forbid 5
 
+
+
+testTerm1 = Implies x4 x3
+testTerm2 = Equiv [x3, Equiv [Or [x1, x0], x4]]
+testTerm3 = Equiv [x4, Xor [x0,x2]]
+
+originalF = Implies (Xor [x0,x2]) (Equiv [Or [x1,x0], Xor [x0,x2]])
+f = And $ concatMap (removeAnd . getFormula . toCanonicalCnf) [testTerm1, testTerm2, testTerm3]
+    where removeAnd (And fs) = fs
+
 main = do
     args <- getArgs
     let mode = args!!0
@@ -55,8 +65,8 @@ main = do
             | circuitType == "add_dontcare" = nBitAddition DontCare numBits
             | circuitType == "mul_forbid" = nBitMultiplication Forbid numBits
             | circuitType == "mul_dontcare" = nBitMultiplication DontCare numBits
-            | circuitType == "gt" = getFormula $ greaterThan numBits
-            | circuitType == "ge" = getFormula $ greaterThanEq numBits
+            | circuitType == "gt" = getFormula $ greaterThanTableBased numBits -- TODO: Change this
+            | circuitType == "ge" = getFormula $ greaterThanEqTableBased numBits -- TODO: and this
     case mode of
         "min" -> minimize circuitType circuit numBits
         "min_struct" -> minimizeStruct circuitType circuit numBits args

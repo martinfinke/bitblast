@@ -138,15 +138,19 @@ spec = do
             adderCarry 1 3 `shouldBe` Or [And [x4, adderCarry 0 3], And [x1, adderCarry 0 3], And [x1, x4]]
             adderCarry 2 3 `shouldBe` Or [And [x5, adderCarry 1 3], And [x2, adderCarry 1 3], And [x2, x5]]
 
-    describe "multiplierSegment" $ do
-        let combinations = [(numBits,mode) | numBits <- [1,2,3,4], mode <- [Forbid,DontCare]]
-        let test numBits mode = do
-                let expectedFormula = getFormula $ multiplicationTableBased mode numBits
-                let actualFormula = nBitMultiplication mode numBits
-                actualFormula `equiv` expectedFormula `shouldBe` True
-        forM_ combinations $ \(numBits,mode) -> do
-            it ("is equivalent to the table based version for " ++ show numBits ++ " bit, " ++ show mode ++ " overflow") $ do
-                test numBits mode
+    describe "nBitAddition and -Multiplication" $ do
+        let test (f,name) = do
+                describe name $ do
+                    let combinations = [(numBits,mode) | numBits <- [1,2,3,4], mode <- [Forbid,DontCare]]
+                    let test numBits mode = do
+                            let expectedFormula = getFormula $ multiplicationTableBased mode numBits
+                            let actualFormula = nBitMultiplication mode numBits
+                            actualFormula `equiv` expectedFormula `shouldBe` True
+                    forM_ combinations $ \(numBits,mode) -> do
+                        it ("is equivalent to the table based version for " ++ show numBits ++ " bit, " ++ show mode ++ " overflow") $ do
+                            test numBits mode
+        test (nBitAddition,"nBitAddition")
+        test (nBitMultiplication,"nBitMultiplication")
 
     describe "multiplicationTableBased" $ do
         describe "DontCare overflow mode" $ do
