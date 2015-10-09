@@ -107,9 +107,9 @@ cnfToSatchmo returnResult name f numBits
             clauses = normalFormChildren f
             allVars = Set.toAscList . variableSet $ f
             vars = take (3*numBits) allVars
-            xs' = reverse . take numBits $ vars
-            ys' = reverse . take numBits . drop numBits $ vars
-            rs' = reverse . drop (2*numBits) $ vars
+            xs' = take numBits $ vars
+            ys' = take numBits . drop numBits $ vars
+            rs' = drop (2*numBits) $ vars
             extraVars = drop (3*numBits) allVars
             createExtraVars
                 | null extraVars = ""
@@ -118,11 +118,12 @@ cnfToSatchmo returnResult name f numBits
                 then "rs <- replicateM " ++ show numBits ++ " B.boolean"
                 else ""
             clauseCode = unlines $ map printClause $ zip clauses [1..]
-            printClause ((Or lits), i) = indent 4 $ "clause" ++ show i ++ " <- B.or [" ++ intercalate ", " (map mapLit lits) ++ "]"
+            printClause ((Or lits), i)
+                | returnResult = indent 4 $ "B.assert [" ++ intercalate ", " (map mapLit lits) ++ "]"
+                | otherwise = indent 4 $ "clause" ++ show i ++ " <- B.or [" ++ intercalate ", " (map mapLit lits) ++ "]"
             printAnd = "cnf <- B.and [" ++ intercalate ", " (map (\i -> "clause" ++ show i) [1..length clauses]) ++ "]"
-            returnRs = if returnResult
-                then "B.assert [cnf]; return rs"
-                else "return cnf"
+
+            returnRs = "return " ++ if returnResult then "rs" else "cnf"
             mapVar v
                 | v `elem` xs' = str "xs" xs'
                 | v `elem` ys' = str "ys" ys'
@@ -138,7 +139,7 @@ cnfToSatchmo returnResult name f numBits
             createExtraVars,
             indent 4 createResult,
             clauseCode,
-            indent 4 printAnd,
+            indent 4 $ if returnResult then "" else printAnd,
             indent 4 returnRs
             ]
 
