@@ -78,15 +78,20 @@ tseitin varSet toReplaces formula
 
 fullTseitin :: Formula -> Formula
 fullTseitin f =
-    let treeF = toTree f
-        varSet = variableSet treeF
-        replacements = possibleReplacementsSorted treeF
-        (TseitinFormula f' newVars equivTerms) = tseitin varSet replacements treeF
+    let (f', equivTerms) = fullTseitinSep f
         removeAnd (And fs) = fs
         convert = removeAnd . getFormula . toCanonicalCnf
         f'' = convert f'
         equivs = concatMap convert equivTerms 
     in And (f'' ++ equivs)
+
+fullTseitinSep :: Formula -> (Formula, [Formula])
+fullTseitinSep f =
+    let treeF = toTree f
+        varSet = variableSet treeF
+        replacements = possibleReplacementsSorted treeF
+        (TseitinFormula f' _ equivTerms) = tseitin varSet replacements treeF
+    in (f', equivTerms)
 
 makeEquiv :: (Formula,Variable) -> Formula
 makeEquiv (f,variable) = Equiv [Atom variable, f]

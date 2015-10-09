@@ -116,6 +116,15 @@ minimizeByReplacingMostCommon numExtraVars f =
         optimized <- minimize replacements
         return $ optimized
 
+minimizeFullTseitin :: Formula -> IO Formula
+minimizeFullTseitin formula =
+    let (f,equivs) = fullTseitinSep formula
+        unwrap (And fs) = fs
+    in do
+        f' <- fmap unwrap $ minimizeFormula f
+        equivs' <- fmap (map unwrap) $ parallelForM 10 $ map minimizeFormula equivs
+        return . And $ f' ++ concat equivs'
+
 minimizeTruthBased :: Int -> Formula -> IO Formula
 minimizeTruthBased = minimizeTruthBasedWith bestOptions minimizeFormula
             

@@ -3,7 +3,7 @@ module SatchmoOutput where
 import Formula
 import NormalForm
 import Arithmetics
-import MinimizeFormula(minimizeFormula, minimizeStructuralWithRange, minimizeTruthBased)
+import MinimizeFormula(minimizeFormula, minimizeStructural, minimizeStructuralWithRange, minimizeTruthBased)
 import CalculatedFormulas
 
 import Data.List
@@ -13,7 +13,7 @@ import qualified Data.Set as Set
 
 outputNoExtra = createSatchmo "OptNatNoExtra" minimizeFormula Nothing
 outputStructural =
-    let minimizer = fmap fst . minimizeStructuralWithRange (0,1) . toTree
+    let minimizer = fmap fst . minimizeStructural 1 . toTree
     in createSatchmo "OptNatStruct" minimizer (Just 1)
 outputTruthBased = createSatchmo "OptNatTruth" (minimizeTruthBased 1) (Just 1)
 
@@ -109,8 +109,12 @@ cnfToSatchmo returnResult name f numBits
             vars = take (3*numBits) allVars
             xs' = take numBits $ vars
             ys' = take numBits . drop numBits $ vars
-            rs' = drop (2*numBits) $ vars
-            extraVars = drop (3*numBits) allVars
+            rs'
+                | returnResult = drop (2*numBits) $ vars
+                | otherwise = []
+            extraVars
+                | returnResult = drop (3*numBits) allVars
+                | otherwise = drop (2*numBits) allVars
             createExtraVars
                 | null extraVars = ""
                 | otherwise = indent 4 $ "extraVars <- replicateM " ++ show (length extraVars) ++ " B.boolean"
