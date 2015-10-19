@@ -271,7 +271,7 @@ header =
 
 makeCell :: OptMethod -> Int -> ArithmeticOp -> Int -> String
 makeCell optMethod numExtraVars op numBits =
-    let otherScores = catMaybes $ map (\method -> fmap (numLiterals . getStats) $ getIfAvailable method numExtraVars op numBits) $ delete optMethod $ map fst optMethods
+    let otherScores = catMaybes [fmap (numLiterals . getStats) (getIfAvailable method k op numBits) | (method,ks) <- optMethods, method /= optMethod, k <- ks]
         noExtraVarScore = maybe (maxBound::Int) (numLiterals . getStats) $ getIfAvailable NoExtraVars 0 op numBits
     in case getIfAvailable optMethod numExtraVars op numBits of
         Nothing -> " "
@@ -283,6 +283,6 @@ makeCell optMethod numExtraVars op numBits =
                     | optMethod == NoExtraVars = isBest
                     | otherwise = numLiterals stats < noExtraVarScore
                 color cell
-                    | shouldColor = "$\\Color{OliveGreen}{" ++ cell ++ "}$"
+                    | shouldColor = "\\cellcolor{LightOliveGreen}$" ++ cell ++ "$"
                     | otherwise = cell
             in color $ show (numClauses stats) ++ "/" ++ show (numLiterals stats)
