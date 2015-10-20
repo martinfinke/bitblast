@@ -6,25 +6,44 @@ import Arithmetics
 import MinimizeFormula(minimizeFormula, minimizeStructural, minimizeStructuralWithRange, minimizeTruthBased)
 import CalculatedFormulas
 
+import System.FilePath(joinPath)
 import Data.List
 import Data.Maybe
 import Control.Monad(forM, forM_, replicateM)
 import qualified Data.Set as Set
+import Data.Char(toLower)
 
-outputNoExtra = createSatchmo NoExtraVars minimizeFormula 0
+data OptSpec = Best -- ^ Use whatever encoding has the lowest number of literals
+             | Method OptMethod Int -- ^ Use a certain OptMethod with a number of extra variables.
+    deriving(Show,Eq)
+
+outputNoExtra = outputToFile (Method NoExtraVars 0) minimizeFormula
 outputStructural k =
     let minimizer = fmap fst . minimizeStructural k . toTree
-    in createSatchmo Structural minimizer k
-outputTruthBased k = createSatchmo TruthBased (minimizeTruthBased k) k
+    in outputToFile (Method Structural k) minimizer
+outputTruthBased k = outputToFile (Method TruthBased k) (minimizeTruthBased k)
+outputBest = outputToFile Best minimizeFormula
 
+outputToFile :: OptSpec -> (Formula -> IO Formula) -> [Int] -> IO ()
+outputToFile optSpec minimizer numBitsList =
+    let outputDir = "../con-test/"
+        moduleName = moduleNameForOptSpec optSpec
+        fileName = moduleName ++ ".hs"
+        outputFilename = joinPath [outputDir, fileName]
+    in do
+        str <- createSatchmo optSpec minimizer numBitsList
+        writeFile outputFilename str
 
 indent :: Int -> String -> String
 indent amount str = replicate amount ' ' ++ str
 
-createSatchmo :: OptMethod -> (Formula -> IO Formula) -> Int -> [Int] -> IO String
-createSatchmo optMethod minimizer numExtraVars numBitsList =
-    let moduleName = "OptNat" ++ show optMethod
-        fileName = moduleName ++ ".hs"
+moduleNameForOptSpec optSpec = "OptNat" ++ case optSpec of
+    Best -> "Best"
+    Method m k -> show m
+
+createSatchmo :: OptSpec -> (Formula -> IO Formula) -> [Int] -> IO String
+createSatchmo optSpec minimizer numBitsList =
+    let moduleName = moduleNameForOptSpec optSpec
         header = unlines [
             "{-# LANGUAGE FlexibleInstances #-}",
             "{-# LANGUAGE MultiParamTypeClasses #-}",
@@ -42,8 +61,8 @@ createSatchmo optMethod minimizer numExtraVars numBitsList =
         operations = [
             nBitAddition Forbid,
             nBitMultiplication Forbid,
-            getFormula . greaterThanTableBased,
-            getFormula . greaterThanTableBased
+            greaterThan,
+            greaterThanEq
             ]
         operationKeys = [Add, Mul, GreaterThan, GreaterThanEq]
         outputsResult  = [True, True, False, False]
@@ -66,16 +85,19 @@ createSatchmo optMethod minimizer numExtraVars numBitsList =
                     "plus " ++ args ++ " = fmap " ++ typeName ++ " $ add" ++ show numBits ++ " xs ys",
                     "times " ++ args ++ " = fmap " ++ typeName ++ " $ mul" ++ show numBits ++ " xs ys",
                     "positive " ++ xs ++ "= B.or xs",
-                    "greater " ++ args ++ " = gt" ++ show numBits ++ " xs ys",
-                    "greater_equal " ++ args ++ " = ge" ++ show numBits ++ " xs ys"
+                    "greater " ++ args ++ " = greaterthan" ++ show numBits ++ " xs ys",
+                    "greater_equal " ++ args ++ " = greaterthaneq" ++ show numBits ++ " xs ys"
                     ])
         mkDefs numBits = do
             let ops = map ($ numBits) operations
             cnfs <- forM (zip operationKeys ops) $ \(opKey,op) -> do
-                case getIfAvailable optMethod numExtraVars opKey numBits of
+                let maybeCnf = case optSpec of
+                        Best -> getBest opKey numBits
+                        Method m k -> getIfAvailable m k opKey numBits
+                case maybeCnf of
                     Just cnf -> return cnf
                     Nothing -> do
-                        putStrLn $ "Formula for " ++ show optMethod ++ "/" ++ show opKey ++ "/" ++ show numBits ++ " not minimized yet. Minimizing..."
+                        putStrLn $ "Formula for " ++ show optSpec ++ "/" ++ show opKey ++ "/" ++ show numBits ++ " not minimized yet. Minimizing..."
                         cnf <- minimizer op
                         putStrLn $ "Minimized formula:"
                         putStrLn $ prettyPrint cnf
@@ -95,7 +117,7 @@ cnfToSatchmo :: Bool -> ArithmeticOp -> Formula -> Int -> String
 cnfToSatchmo returnResult op f numBits
     | not (isCnf f) = error $ "cnfToSatchmo: Formula is not a CNF:\n" ++ show f
     | otherwise =
-        let functionName = show op ++ show numBits
+        let functionName = map toLower (show op) ++ show numBits
             typeSignature = functionName ++ " :: B.MonadSAT m => [B.Boolean] -> [B.Boolean] -> m " ++ if returnResult
                 then "[B.Boolean]"
                 else "B.Boolean"

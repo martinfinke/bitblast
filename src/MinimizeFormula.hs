@@ -52,7 +52,7 @@ espressoMinimize f =
 
 minimizeFormulaWith :: MinimizeFormulaOptions -> Formula -> IO Formula
 minimizeFormulaWith options formula =
-    let canonical = ensureCanonical formula
+    let canonical = toCanonicalCnf formula
         cnfMode = (getType canonical == CNFType)
         varSet = variableSet formula
         numVars = Set.size varSet
@@ -102,7 +102,10 @@ minimizeByReplacing minimizer replacementTerms f =
         (TseitinFormula f' newVars equivTerms) = tseitin varSet replacementTerms f
         removeAnd (And fs) = fs
     in do
-        And clauses <- minimizer f'
+        cnf <- minimizer f'
+        let clauses = case cnf of
+                And cls -> cls
+                invalid -> error $ "Invalid result from minimizer: " ++ show invalid
         equivClauses <- fmap (concat . map removeAnd) $ forM equivTerms minimizer
         return (And (clauses ++ equivClauses), newVars)
 
