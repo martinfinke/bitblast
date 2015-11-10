@@ -45,6 +45,9 @@ noCarryIn numBits f =
         (_,_,_,cIn,_,_) = addBitVectors numBits vars
     in And [f, Not $ Atom cIn]
 
+finalize :: Int -> Formula -> Formula
+finalize numBits = forbidOverflow numBits . noCarryIn numBits
+
 -- | finalNumBits is the length of an operand of the final circuit. The output of the final circuit has the length: 2*finalNumBits.
 -- NOT WORKING CORRECTLY YET
 combineMul :: Int -> Formula -> Formula

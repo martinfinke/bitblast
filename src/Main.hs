@@ -125,7 +125,6 @@ xor = odd . length . filter id
 
 testComb = withArgs [] $ hspec $ do
     describe "combineAdd" $ do
-        let finalize numBits = forbidOverflow numBits . noCarryIn numBits
         it "returns a circuit that is equisatGTE to a circuit that was created in one piece" $ do
             let bitGroups = [
                       (1,1)
@@ -148,11 +147,11 @@ testComb = withArgs [] $ hspec $ do
                 oneBit = summerModule 1
                 twoBit = combineAdd (1,1) oneBit oneBit
                 comb = combineAdd (2,2) twoBit twoBit
-            --finalize 4 comb `equisatGTE` onePiece `shouldBe` True
-            pending
+            finalize 4 comb `equisatGTE` onePiece `shouldBe` True
 
     describe "combineMul" $ do
         it "returns a circuit that is equisatGTE to a circuit that was created in one piece" $ do
+            pending
             let bitGroups = [
                       (1,1)
                     --, (1,2)
