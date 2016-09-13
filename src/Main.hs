@@ -45,7 +45,34 @@ addition3ReplaceSecondCarry = fmap fst $ minimizeByReplacing minimizeFormula [An
 addition4ReplaceFirstCarry = fmap fst $ minimizeByReplacing minimizeFormula [And [x0, x4]] $ nBitAddition Forbid 4
 addition5ReplaceFirstCarry = fmap fst $ minimizeByReplacing minimizeFormula [And [x0, x5]] $ nBitAddition Forbid 5
 
+introductionXor4EquivCnf = parseCnf "((-0 || -1 || -2 || -3) && (-0 || -1 || 2 || 3) && (-0 || 1 || 2 || -3) && (0 || -1 || -2 || 3) && (0 || 1 || -2 || -3) && (-0 || 1 || -2 || 3) && (0 || -1 || -2 || -3) && (0 || 1 || 2 || 3))"
 
+introductionXor4EquivCnf' = And [
+    Or [Not x0, Not x1, Not x2, Not x3],
+    Or [Not x0, Not x1, x2, x3],
+    Or [Not x0, x1, x2, Not x3],
+    Or [x0, Not x1, Not x2, x3],
+    Or [x0, x1, Not x2, Not x3],
+    Or [Not x0, x1, Not x2, x3],
+    Or [x0, Not x1, x2, Not x3],
+    Or [x0, x1, x2, x3]
+    ]
+
+introductionXor4EquisatCnf = And [
+    Or [Not x1, Not x2, x9],
+    Or [Not x1, x2, Not x9],
+    Or [Not x0, Not x3, Not x9],
+    Or [Not x0, x3, x9],
+    Or [x0, Not x3, x9],
+    Or [x0, x3, Not x9],
+    Or [x1, Not x2, Not x9],
+    Or [x1, x2, x9]
+    ]
+
+translateXor (Xor []) = Or []
+translateXor (Xor (f:fs)) = Not $ Equiv [f, translateXor $ Xor fs]
+
+verifyTranslateXor = all id [Xor fs `equiv` translateXor (Xor fs) | fs <- [[], [x0], [x0,x1], [x0,x1,x2], [x0,x1,x2,x3], [Not x0, x1, Not x2, x3]]]
 
 testTerm1 = Implies x4 x3
 testTerm2 = Equiv [x3, Equiv [Or [x1, x0], x4]]
