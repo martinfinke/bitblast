@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -F -pgmF hspec-discover #-}
+{-# OPTIONS_GHC -F -pgmF hspec-discover -optF --module-name=Spec #-}
 
 -- Expectations
 --      Pure:           sqrt 4 `shouldBe` 2
